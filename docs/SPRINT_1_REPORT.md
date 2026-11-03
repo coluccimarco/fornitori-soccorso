@@ -41,9 +41,12 @@ seed contiene le righe di esempio con hash BCrypt; gli script sono ripetibili se
 cancellazioni e riallineano le sequenze identity. L'assert SQL confronta conteggi,
 riepilogo e guadagni per autista.
 
-Conteggi e totale sono stati verificati direttamente nei fogli Excel. **Non sono
-stati verificati in PostgreSQL**: il server locale richiede una password che non è
-disponibile in questo ambiente.
+Conteggi e totale sono stati verificati direttamente nei fogli Excel. PostgreSQL
+18 è in esecuzione in locale e la porta `localhost:5432` è raggiungibile, ma
+l'autenticazione dell'utente applicativo non è stata verificata: il tentativo senza
+password ha restituito `fe_sendauth: no password supplied`. Gli script SQL non
+sono stati eseguiti sul DB locale. La baseline è stata invece eseguita con esito
+positivo nel job PostgreSQL effimero di GitHub Actions.
 
 ## D. API
 
@@ -58,14 +61,16 @@ I conteggi Excel e i valori riepilogativi sono stati verificati sulla sorgente;
 anche i 10 hash BCrypt sono stati confrontati con i valori del foglio senza
 stampare o versionare password in chiaro. Eclipse Temurin 25.0.5 è stato scaricato
 da Adoptium e verificato tramite SHA-256. `.\mvnw.cmd clean verify` su JDK 25 ha
-esito BUILD SUCCESS: 6 test MVC passati, test context-load saltato senza password
-PostgreSQL. La baseline DB non è stata eseguita localmente. Vedi
+esito BUILD SUCCESS: 6 test MVC passati, test context-load saltato senza
+`SPRING_DATASOURCE_PASSWORD`. La baseline DB locale non è stata eseguita; i job
+Java 25 e PostgreSQL di GitHub Actions sono passati. Vedi
 [TEST_EVIDENCE.md](./TEST_EVIDENCE.md).
 
 ## F. Problemi e decisioni aperte
 
-- Import e baseline DB non eseguiti per credenziali mancanti.
-- Build `clean verify` su JDK 25 PASS; esito GitHub Actions da validare dopo push.
+- Import e baseline DB non eseguiti localmente perché le credenziali applicative
+  non sono disponibili; servizio PostgreSQL 18 attivo e porta raggiungibile.
+- Build `clean verify` su JDK 25 PASS; job GitHub Actions Java 25 e PostgreSQL PASS.
 - L'Excel sceglie l'ora di accettazione per la maggiorazione notturna; il PDF non
   definisce quale timestamp usare. Decisione provvisoria registrata.
 - Il foglio missioni ha due missioni attive per l'autista 3; i record restano

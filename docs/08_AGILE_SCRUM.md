@@ -20,7 +20,7 @@ completamento.
 
 | Sprint | Goal | Stato reale / passaggio |
 |---|---|---|
-| 1 — Fondamenta | DB, autenticazione, API anagrafiche, contratti | Backend/seed/contratto presenti; build Java 25 e test MVC PASS; import PostgreSQL locale BLOCKED; UI e onboarding restano task successivi |
+| 1 — Fondamenta | DB, autenticazione, API anagrafiche, contratti | Backend/seed/contratto presenti; build Java 25 e test MVC PASS; PostgreSQL 18 locale attivo ma import bloccato da credenziali non configurate; baseline PostgreSQL in CI PASS; UI e onboarding restano task successivi |
 | 2 — Missioni | Creazione, proposta, accept/reject, timeout, chiusura, pricing, dashboard | Pianificato; entra solo dopo conferma regole tariffa e setup DB |
 | 3 — Integrazioni | Chatbot, mappe/routing, notifiche e idempotenza | Pianificato; usa contratti approvati Sprint 2 |
 | 4 — QA | E2E, sicurezza, accessibilità, bugfix e demo | Pianificato; richiede stack integrato e dati di test |

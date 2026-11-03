@@ -20,6 +20,10 @@ La working tree iniziale aveva la cartella `target/` non tracciata; ora è esclu
 ## 1. Preparazione PostgreSQL locale
 Prerequisiti: PostgreSQL e `psql`; database demo isolato. Impostare le credenziali
 solo nell'ambiente locale; non sono versionate.
+PostgreSQL 18 locale è attualmente in esecuzione e `localhost:5432` è raggiungibile.
+L'autenticazione dell'utente applicativo non è stata verificata: il tentativo senza
+password è stato rifiutato dal server; non aggirare l'autenticazione né modificare
+la configurazione del servizio.
 
 ```powershell
 createdb -U postgres fornitori
@@ -76,7 +80,7 @@ Usare un `Clock` iniettato nel codice Java per testare agevolmente il limite dei
 
 ## 5. Checklist Definition of Done S1
 - [x] Repository letto e branch locale `feature/backend` creato
-- [ ] SQL, seed e baseline eseguiti su PostgreSQL (credenziali non disponibili)
+- [ ] SQL, seed e baseline eseguiti su PostgreSQL locale (servizio attivo; credenziali applicative non disponibili)
 - [x] Login JSON, errore credenziali, sessione, CSRF e permessi coperti dai test MVC con mock
 - [ ] Anagrafiche e baseline verificate su PostgreSQL
 - [x] Seed con hash BCrypt; nessuna password in chiaro aggiunta al repository
@@ -84,9 +88,9 @@ Usare un `Clock` iniettato nel codice Java per testare agevolmente il limite dei
 - [ ] PR e integrazione di gruppo (non eseguite)
 
 Le sei prove web passano con Java 25; il test context-load è saltato localmente senza
-password DB. La pipeline CI con PostgreSQL effimero è definita, ma il suo risultato
-remoto va verificato e registrato. Questa checklist descrive il risultato al
-03/11/2026, non dichiara superato il test DB locale.
+password DB. La pipeline CI effimera con PostgreSQL ha superato schema, seed,
+assertion e verifica applicativa. Questa checklist non dichiara superato il test DB
+locale.
 
 ## 6. Primo demo script (5–7 minuti)
 1. Avvio backend e datasource locale.

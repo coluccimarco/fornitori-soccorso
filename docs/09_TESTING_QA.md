@@ -5,10 +5,11 @@
 
 ## Scopo e stato
 
-Definisce verifiche riproducibili. Backend MVC: **PASS su Java 25** (6 test).
-Test context con PostgreSQL locale: **BLOCKED** senza credenziali. Il workflow CI
-aggiunge un DB effimero e assertion baseline. Nessun test UI/chat/mappe è ancora
-disponibile.
+Definisce verifiche riproducibili. Backend MVC: **PASS su Java 25** (6 test). PostgreSQL 18 locale è in esecuzione e
+la porta `localhost:5432` è raggiungibile; il test context con il DB locale resta
+**BLOCKED** perché non sono configurate le credenziali dell'utente applicativo.
+Il workflow CI con DB effimero e assertion baseline è **PASS**. Nessun test
+UI/chat/mappe è ancora disponibile.
 
 ## Livelli
 

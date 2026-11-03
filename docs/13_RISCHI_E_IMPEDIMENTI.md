@@ -10,8 +10,8 @@ verifica o la delivery; non equivale a funzionalità fallita.
 
 | ID | Rischio | Stato | Impatto | Mitigazione / owner |
 |---|---|---|---|---|
-| R-01 | DB locale non accessibile senza credenziali; Docker Engine locale HTTP 500 | BLOCCATO locale; CI PostgreSQL configurata | Import/assertion e runtime locale non certificati | M1 ottiene credenziali autorizzate o osserva CI effimera; mai aggirare auth |
-| R-02 | Esecuzione CI GitHub non ancora osservata | DA VALIDARE | Quality gate remoto non attestato | M1 controlla workflow dopo push e registra link/risultato |
+| R-01 | PostgreSQL 18 locale attivo e porta raggiungibile; credenziali applicative non configurate. Docker Engine locale HTTP 500 | DB locale BLOCKED; CI PostgreSQL PASS | Import/assertion e runtime locale non certificati | M1 configura credenziali autorizzate o usa CI effimera; mai aggirare auth |
+| R-02 | CI GitHub verificata: job Java 25 e PostgreSQL passati | CHIUSO | Nessuno | Esito registrato in [TEST_EVIDENCE.md](./TEST_EVIDENCE.md) |
 | R-03 | Fascia notturna: PDF non specifica timestamp | DA CONFERMARE | Costi divergenti | M1 chiede decisione docente prima di pricing Sprint 2 |
 | R-04 | File Excel e hash/password di test sono dati sensibili | APERTO | Privacy e leakage | Conservare Excel fuori Git; mai stampare o versionare password |
 | R-05 | Missioni fixture includono assignment incoerenti e record passati | MITIGATO | Scheduler altera baseline | Separare con `is_fixture`; testare solo live |
