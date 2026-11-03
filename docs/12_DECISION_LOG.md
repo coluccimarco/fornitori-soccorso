@@ -6,14 +6,16 @@
 ## Scopo
 
 Il registro storico già presente in [`DECISION_LOG.md`](./DECISION_LOG.md) è la
-fonte canonica per le decisioni D-001–D-005. Non duplicare le decisioni: aggiungere
+fonte canonica per le decisioni D-001–D-006. Non duplicare le decisioni: aggiungere
 nuovi record lì con data, contesto, scelta, conseguenze e stato.
 
 ## Decisioni correnti
 
 - Storico docente `is_fixture=TRUE`, separato dall'operatività live.
-- Timestamp tariffario: accettazione, scelta provvisoria **DA CONFERMARE**.
-- Importi con `BigDecimal` e precisione centesimi; rounding finale da testare.
+- Timestamp tariffario: accettazione, implementato ma **DA CONFERMARE** col docente.
+- Importi con `BigDecimal`; rounding finale `HALF_UP` testato sui casi unitari.
+- Outbox per eventi accept/completamento con `channel=internal`; dispatcher esterno
+  ancora fuori perimetro.
 - Sessione server-side, login JSON, BCrypt e CSRF.
 - Target Java 25 LTS, release Maven 25; Spring Boot 4.1.2 mantenuto.
 

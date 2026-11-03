@@ -177,7 +177,8 @@ paths:
     get:
       tags: [Missioni]
       summary: Missioni per stato e modalità riferimento/live
-      x-implementation-status: designed
+      description: RESPONSABILE consulta live per default; mode reference include solo fixture storiche.
+      x-implementation-status: implemented
       x-required-role: RESPONSABILE
       parameters:
         - {name: stato, in: query, schema: {type: string}}
@@ -189,7 +190,8 @@ paths:
     post:
       tags: [Missioni]
       summary: Crea missione nuova da centrale
-      x-implementation-status: designed
+      description: Crea una missione live in stato nuova. Coordinate devono essere entrambe valorizzate o assenti; traino richiede officina.
+      x-implementation-status: implemented
       x-required-role: RESPONSABILE
       security:
         - sessionCookie: []
@@ -219,7 +221,8 @@ paths:
     get:
       tags: [Missioni]
       summary: Dettaglio missione secondo ruolo
-      x-implementation-status: designed
+      description: RESPONSABILE può consultare tutte le missioni; AUTISTA solo missioni proprie, anche nello storico delle proposte.
+      x-implementation-status: implemented
       x-required-role: [RESPONSABILE, ASSIGNED_AUTISTA]
       responses:
         '200': {description: Dettaglio missione, content: {application/json: {schema: {$ref: '#/components/schemas/Mission'}}}}
@@ -232,7 +235,8 @@ paths:
     post:
       tags: [Missioni]
       summary: Proponi o riproponi la missione a un autista libero (centrale)
-      x-implementation-status: designed
+      description: Il backend blocca missione e autista; timeout letto da pricing_config. I record storici delle proposte non vengono eliminati.
+      x-implementation-status: implemented
       x-required-role: RESPONSABILE
       security:
         - sessionCookie: []
@@ -256,7 +260,8 @@ paths:
     post:
       tags: [Autisti]
       summary: Accetta proposta corrente (solo autista destinatario)
-      x-implementation-status: designed
+      description: L'identità viene ricavata dalla sessione. now deve essere strettamente precedente alla scadenza.
+      x-implementation-status: implemented
       x-required-role: ASSIGNED_AUTISTA
       security:
         - sessionCookie: []
@@ -273,7 +278,8 @@ paths:
     post:
       tags: [Autisti]
       summary: Rifiuta proposta corrente
-      x-implementation-status: designed
+      description: Solo il destinatario della proposta. La risposta rimane nello storico e la missione può essere riproposta.
+      x-implementation-status: implemented
       x-required-role: ASSIGNED_AUTISTA
       security:
         - sessionCookie: []
@@ -290,7 +296,8 @@ paths:
     post:
       tags: [Autisti]
       summary: Chiudi missione accettata con esito OK, km reali e costo calcolato
-      x-implementation-status: designed
+      description: Solo l'autista assegnato. Il prezzo viene calcolato dal backend usando il timestamp di accettazione in Europe/Rome.
+      x-implementation-status: implemented
       x-required-role: ASSIGNED_AUTISTA
       security:
         - sessionCookie: []
@@ -314,7 +321,8 @@ paths:
     patch:
       tags: [Missioni]
       summary: Rettifica motivata del costo (solo centrale)
-      x-implementation-status: designed
+      description: Conserva costo calcolato e motivazione; registra l'attore e i valori precedenti nello storico eventi.
+      x-implementation-status: implemented
       x-required-role: RESPONSABILE
       security:
         - sessionCookie: []
@@ -338,7 +346,8 @@ paths:
     get:
       tags: [Missioni]
       summary: Note della missione
-      x-implementation-status: designed
+      description: RESPONSABILE o AUTISTA che ha ricevuto una proposta per la missione.
+      x-implementation-status: implemented
       x-required-role: [RESPONSABILE, ASSIGNED_AUTISTA]
       responses:
         '200': {description: Elenco note, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/MissionNote'}}}}}
@@ -347,9 +356,10 @@ paths:
         '404': {$ref: '#/components/responses/NotFound'}
     post:
       tags: [Autisti]
-      summary: Segnalazione testuale alla centrale
-      x-implementation-status: designed
-      x-required-role: ASSIGNED_AUTISTA
+      summary: Nota autorizzata sulla missione
+      description: RESPONSABILE o AUTISTA che ha ricevuto una proposta per la missione.
+      x-implementation-status: implemented
+      x-required-role: [RESPONSABILE, ASSIGNED_AUTISTA]
       security:
         - sessionCookie: []
           csrfHeader: []
@@ -369,7 +379,8 @@ paths:
     get:
       tags: [Dashboard]
       summary: Riepilogo 4 viste e totali per autista
-      x-implementation-status: designed
+      description: reference restituisce la baseline fixture Excel; live esclude tutte le fixture.
+      x-implementation-status: implemented
       x-required-role: RESPONSABILE
       parameters:
         - {name: mode, in: query, schema: {type: string, enum: [reference, live], default: live}}
@@ -393,7 +404,8 @@ paths:
     get:
       tags: [Autisti]
       summary: Missioni aperte del solo autista autenticato
-      x-implementation-status: designed
+      description: Restituisce proposte e missioni accettate live assegnate al principal.
+      x-implementation-status: implemented
       x-required-role: AUTISTA
       responses:
         '200': {description: Missioni dell'autista, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/Mission'}}}}}
@@ -403,7 +415,8 @@ paths:
     get:
       tags: [Autisti]
       summary: Missioni eseguite e guadagno del solo autista autenticato
-      x-implementation-status: designed
+      description: Include solo missioni live eseguite dall'autista corrente.
+      x-implementation-status: implemented
       x-required-role: AUTISTA
       responses:
         '200': {description: Storico e totale, content: {application/json: {schema: {$ref: '#/components/schemas/DriverHistory'}}}}
@@ -643,6 +656,7 @@ components:
         origineLat: {type: number, minimum: -90, maximum: 90, nullable: true}
         origineLng: {type: number, minimum: -180, maximum: 180, nullable: true}
         officinaId: {type: integer, format: int64, nullable: true}
+        kmStimati: {type: number, minimum: 0, nullable: true, description: Distanza stimata dalla mappa, non utilizzata come distanza effettiva}
         canaleOrigine: {type: string, enum: [centrale, whatsapp, telegram]}
     ProposeMission:
       type: object
@@ -719,6 +733,15 @@ components:
         stato: {type: string, enum: [nuova, proposta, accettata, eseguita, non_accettata, scaduta]}
         clienteId: {type: integer, format: int64}
         autistaId: {type: integer, format: int64, nullable: true}
+        tipoIntervento: {type: string, enum: [traino, riparazione_sul_posto]}
+        canaleOrigine: {type: string, enum: [centrale, whatsapp, telegram]}
+        descrizioneProblema: {type: string}
+        origineIndirizzo: {type: string}
+        origineLat: {type: number, nullable: true}
+        origineLng: {type: number, nullable: true}
+        officinaId: {type: integer, format: int64, nullable: true}
+        creataIl: {type: string, format: date-time}
+        propostaIl: {type: string, format: date-time, nullable: true}
         scadenzaIl: {type: string, format: date-time, nullable: true}
         accettataIl: {type: string, format: date-time, nullable: true}
         chiusaIl: {type: string, format: date-time, nullable: true}
@@ -727,6 +750,7 @@ components:
         notturno: {type: boolean, nullable: true}
         costoCalcolato: {type: number, nullable: true}
         costoFinale: {type: number, nullable: true}
+        rettificaMotivo: {type: string, nullable: true}
     Dashboard:
       type: object
       properties:
@@ -735,7 +759,14 @@ components:
         scadute: {type: integer}
         nonAccettate: {type: integer}
         totaleEur: {type: number}
-        totalePerAutista: {type: array, items: {type: object}}
+        totalePerAutista: {type: array, items: {$ref: '#/components/schemas/DriverTotal'}}
+    DriverTotal:
+      type: object
+      properties:
+        autistaId: {type: integer, format: int64}
+        autistaNome: {type: string}
+        missioniEseguite: {type: integer}
+        totaleEur: {type: number, minimum: 0}
     Route:
       type: object
       properties:

@@ -1,44 +1,40 @@
 # Sprint 2 — Workflow missioni
 
-**Versione:** 1.0 · **Data:** 03/11/2026 · **Responsabile:** Membro 1 — Scrum Master<br>
-**Indice:** goal · storie · dipendenze · acceptance · demo · rischi
+**Versione:** 1.1 · **Data:** 03/11/2026 · **Responsabile:** Membro 1 — Scrum Master<br>
+**Indice:** goal · implementazione backend · acceptance · test · blocchi
 
 ## Sprint Goal
 
-Concludere il flusso centrale/autista: missione, proposta, timeout, accept/reject,
-esecuzione, costi e dashboard. Tutto **PIANIFICATO**, non implementato in Sprint 1.
+Completare il workflow backend centrale/autista: missione, proposta, timeout,
+accept/reject, esecuzione, costi, note e dashboard.
 
-## Attività pianificate
+## Stato attività
 
 | Storia / attività | Owner | Dipendenze | Stima indicativa |
 |---|---|---|---|
-| Conferma regole tariffa/timestamp e stati | M1 + docente | D-002/D-003 | 1 h |
-| Service/repository missione con lock e transizioni | M1 | schema/DB | 4–6 h |
-| Endpoint OpenAPI e security per ruoli | M1 | contract review | 2–3 h |
-| UI centrale: create/list/detail/propose/countdown | M2 | API create/propose | 4–6 h |
-| UI autista: accept/reject/detail/complete | M2 | auth driver + APIs | 3–5 h |
-| Test concurrency, timeout, pricing, idempotenza | M1 | PostgreSQL, Clock | 3–5 h |
-| Smoke contract con UI e review | M1/M2 | feature complete | 1–2 h |
-
-M3/M4/M5 partecipano alle sessioni di contract refinement, non costruiscono
-integrazioni premature senza eventi/route definiti.
+| Regole pricing e stati | M1 | D-002/D-003 | Implementato; timestamp accept e `HALF_UP`, conferma docente pendente |
+| Service/repository missione, lock e transizioni | M1 | schema/DB | Implementato nel branch |
+| Endpoint REST e security per ruoli | M1 | contratto | Implementato; promozione OpenAPI dopo CI PostgreSQL |
+| Test pricing, deadline, permessi e concorrenza PostgreSQL | M1 | PostgreSQL, `Clock` | Unit/MVC e PostgreSQL CI PASS; locale senza password |
+| UI centrale e autista | M2 | API | Fuori dal lavoro backend; da integrare |
+| Contratti mappe, chatbot e notifiche | M3/M4/M5 | APIs/eventi | Integrazione e provider ancora da completare |
 
 ## Acceptance criteria
 
-- Missione creata `nuova`, proposta ad autista libero e registrata nello storico.
-- Accettazione a deadline valida; reject/expire e nuova proposta atomici.
-- `now >= deadline` impedisce acceptance anche senza scheduler.
-- Doppia assegnazione bloccata sotto concorrenza; fixture non alterate.
-- Chiusura calcola importo server-side una sola volta e rettifica ha motivo/audit.
-- Dashboard totalizza correttamente; UI gestisce 400/401/403/409.
+- Missione creata `nuova`; proposta registrata nello storico e assegnazione serializzata con lock.
+- `now >= deadline` impedisce acceptance; scheduler modifica solo missioni live.
+- Reject/expire mantengono lo storico; accettazione e chiusura generano eventi/outbox transazionali.
+- Chiusura calcola tariffa server-side in Europe/Rome; rettifica mantiene il costo calcolato e registra motivo/audit.
+- Autorizzazioni driver verificate server-side; dashboard distingue reference/live e storico è limitato all'autista autenticato.
+- Il test PostgreSQL di concorrenza e il flusso DB completo devono passare nella CI prima di promuovere le operazioni OpenAPI.
 
 ## Demo, DoD e rischi
 
-Demo: creare chiamata, proporre, rifiutare/accettare in due sessioni, chiudere,
-mostrare costo e aggregato. DoD: integration tests PostgreSQL verdi e diagrammi/API
-aggiornati. Rischi: tariffa ambigua, lock/timeout, scope e UI in un giorno.
-Passaggio a Sprint 3 solo dopo test di concurrency e payload congelati.
+Demo prevista: creare chiamata, proporre, rifiutare/accettare, chiudere, mostrare
+costo rettificato e aggregato. Implementazione backend disponibile sul branch `feature/backend`, con test
+unit/MVC e CI PostgreSQL passati. La verifica locale resta bloccata dall'assenza
+di credenziali; le operazioni OpenAPI sono state promosse a `implemented`.
 
 **Dipendenze:** decisioni, DB funzionante, Java25 CI, API approvate.
 **Riferimenti:** [business rules](../05_BUSINESS_RULES.md),
-[states](../diagrams/mission_states.mmd).
+[states](../diagrams/mission_states.mmd), [report Sprint 2](../SPRINT_2_REPORT.md).

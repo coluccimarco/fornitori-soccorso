@@ -21,24 +21,26 @@ Login JSON, CSRF, logout, profilo, sessione HttpOnly, ruoli e API anagrafiche:
 autisti, mezzi, compagnie, clienti (ricerca e inserimento), officine. Configura
 PostgreSQL da environment; applica script `database/01...04` in ordine.
 
-## Sprint 2 — PIANIFICATO
+## Sprint 2 — IMPLEMENTATO NEL BRANCH `feature/backend`
 
-- Missioni nuove, proposte e storico proposte; transizioni atomiche.
-- Timeout di 10 minuti; scheduler live-only e guard al momento dell'accept.
-- Lock pessimista/ottimista e indice DB contro autisti doppiamente occupati.
-- Chiusura OK, km effettivi, `BigDecimal`, rounding e rettifica con audit.
-- Dashboard reference/live con conteggi eseguite, pendenti, scadute e rifiutate,
-  totale e subtotali per autista; escludere fixture dal live.
-- `Clock` iniettato per deadline e fascia notturna.
-- Test DB di concorrenza, idempotenza, autorizzazioni e baseline fixture.
+- Missioni, proposte e storico proposte; transizioni transazionali.
+- Timeout da `pricing_config`, scheduler live-only e guard al momento dell'accept.
+- Lock pessimista missione/autista; indice DB contro doppie assegnazioni.
+- Chiusura con tariffa server-side, `BigDecimal`, `HALF_UP` e rettifica motivata con audit.
+- Dashboard reference/live, totale e subtotali per autista; fixture escluse dal live.
+- `Clock` iniettato per deadline; timezone tariffaria Europe/Rome.
+- Note e API autista con verifica dell'identità lato server.
+- Test unitari/MVC e test PostgreSQL end-to-end/concorrenza passati in CI;
+  la verifica PostgreSQL locale resta bloccata dall'assenza di credenziali.
 
 ## Logging, test e Definition of Done
 
 Log strutturati senza password/token/body PII; errori inattesi con correlation ID
 se introdotto, messaggi API generici. Prima di ogni PR: JDK25
-`.\mvnw.cmd clean verify`, DB test se tocca persistenza, diff check e OpenAPI.
+`.\mvnw.cmd clean verify`, test PostgreSQL, diff check e OpenAPI.
 
 **Dipendenze:** PostgreSQL, feedback tariffario, consumer M2–M5.
-**Risultato atteso Sprint 2:** mission workflow provato su PostgreSQL, API aggiornate,
-nessuna fixture mutata. **Riferimenti:** [runbook](../BACKEND_SPRINT1_RUNBOOK.md),
+**Completamento backend:** test PostgreSQL CI PASS; 13 operazioni OpenAPI
+promosse a `implemented`. **Riferimenti:**
+[runbook](../BACKEND_SPRINT1_RUNBOOK.md),
 [regole](../05_BUSINESS_RULES.md).

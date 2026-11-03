@@ -15,8 +15,8 @@ feature/notifications
 ```
 
 `main` contiene solo incrementi integrati e verificati. Non si introduce `develop`
-per il ciclo breve di quattro Sprint. Una feature branch parte da `main` aggiornato;
-il branch backend esistente è da coordinare prima di pubblicarlo.
+per il ciclo breve di quattro Sprint. Il backend continua sul branch condiviso
+`feature/backend`; gli altri componenti usano i branch dedicati.
 
 ## Routine PowerShell
 

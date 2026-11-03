@@ -2,20 +2,21 @@
 
 Project work ITS Developer 4.0 per coordinare richieste di soccorso stradale,
 centrale operativa, autisti e integrazioni esterne. Il repository è la baseline
-condivisa dei cinque componenti; al 03/11/2026 backend Sprint 1, schema, seed,
-autenticazione e anagrafiche sono implementati. Workflow missioni, UI e integrazioni
-restano pianificati o da validare: non considerarli funzionalità disponibili.
+condivisa dei cinque componenti; il branch `feature/backend` implementa il
+workflow backend delle missioni sopra la baseline Sprint 1. La verifica
+PostgreSQL CI è **PASS**; l'accesso al PostgreSQL locale è bloccato finché non
+vengono configurate credenziali autorizzate.
 
 ## Stato della baseline
 
 | Area | Stato |
 |---|---|
 | Java 25 LTS / Maven | **IMPLEMENTATO**; verificato con Temurin 25.0.5 |
-| Backend Spring Boot: sessione, CSRF, ruoli e anagrafiche | **IMPLEMENTATO**; 6 test MVC passati |
-| Schema, seed e baseline PostgreSQL | Script **IMPLEMENTATI**, esecuzione su database **BLOCCATA** senza credenziali locali |
-| Missioni, timeout, pricing, dashboard | **PIANIFICATO** per Sprint 2; non implementato |
+| Backend Spring Boot: sessione, CSRF, ruoli, anagrafiche e rotte missioni | **IMPLEMENTATO**; 11 test MVC passati |
+| Schema, seed e baseline PostgreSQL | Script **IMPLEMENTATI**; baseline PostgreSQL CI **PASS**; servizio locale attivo, ma accesso app locale da configurare con credenziali |
+| Missioni, timeout, pricing, note, dashboard e storico autista | **IMPLEMENTATO** in `feature/backend`; PostgreSQL CI **PASS** |
 | UI, chatbot, mappe e notifiche | **PIANIFICATO**; guide e contratti in `docs/` |
-| CI Java 25 | **IMPLEMENTATO** nel workflow; verificare l'esito GitHub dopo il push |
+| CI Java 25 | Build, test, OpenAPI e PostgreSQL baseline/integration **PASS** |
 
 ## Requisiti locali
 
@@ -97,7 +98,7 @@ La pipeline [backend-ci.yml](./.github/workflows/backend-ci.yml) verifica Java 2
 e, in un job separato, inizializza un PostgreSQL effimero con schema, seed e
 assertion di baseline.
 
-## API Sprint 1
+## API backend
 
 Tutte le anagrafiche e le operazioni di sessione, tranne il recupero CSRF e il login,
 richiedono una sessione. Le API centrali richiedono `RESPONSABILE`; il ruolo
@@ -116,8 +117,17 @@ il token ottenuto da `GET /api/v1/auth/csrf` nell'header `X-CSRF-TOKEN`.
 | GET | `/api/v1/clienti?search=...` | Implementato; nome o targa |
 | POST | `/api/v1/clienti` | Implementato; centrale |
 | GET | `/api/v1/officine` | Implementato |
+| GET/POST | `/api/v1/missioni` | Implementato nel branch Sprint 2 |
+| GET | `/api/v1/missioni/{id}` | Implementato nel branch Sprint 2; autista limitato alle missioni proposte/ricevute |
+| POST | `/api/v1/missioni/{id}/proposte` | Implementato nel branch Sprint 2 |
+| POST | `/api/v1/missioni/{id}/accept`, `/reject`, `/complete` | Implementato nel branch Sprint 2 |
+| PATCH | `/api/v1/missioni/{id}/cost` | Implementato nel branch Sprint 2 |
+| GET/POST | `/api/v1/missioni/{id}/notes` | Implementato nel branch Sprint 2 |
+| GET | `/api/v1/dashboard`, `/api/v1/autista/missioni`, `/api/v1/autista/storico` | Implementato nel branch Sprint 2 |
 
-Il contratto completo, incluse le API future, è in [api/openapi.yaml](./api/openapi.yaml).
+Il contratto completo è in [api/openapi.yaml](./api/openapi.yaml). Le 13 operazioni
+backend Sprint 2 sono marcate `implemented` dopo la verifica PostgreSQL CI;
+route, chatbot e webhook restano progettati.
 
 ## Struttura Spring Boot
 
@@ -149,6 +159,11 @@ password né hash. Il cookie di sessione è HttpOnly e le richieste mutative man
 la protezione CSRF.
 
 ## Componenti e documentazione
+
+Apri la [dashboard visuale Spring & Scrum](./docs/SPRING_SCRUM_DASHBOARD.html)
+nel browser per esplorare i layer Spring, filtrare il backlog per Sprint e
+scaricare un CSV importabile in Jira. È una vista statica del repository, non una
+dashboard collegata a Jira.
 
 | Componente | Responsabile | Guida |
 |---|---|---|

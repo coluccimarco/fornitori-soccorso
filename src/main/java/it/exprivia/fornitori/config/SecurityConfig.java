@@ -75,6 +75,15 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/login").permitAll()
                         .requestMatchers("/api/v1/auth/**").authenticated()
                         .requestMatchers("/api/v1/autista/**").hasRole(UserRole.AUTISTA.name())
+                        .requestMatchers(HttpMethod.POST,
+                                "/api/v1/missioni/*/accept",
+                                "/api/v1/missioni/*/reject",
+                                "/api/v1/missioni/*/complete")
+                        .hasRole(UserRole.AUTISTA.name())
+                        .requestMatchers(HttpMethod.GET, "/api/v1/missioni/*", "/api/v1/missioni/*/notes")
+                        .hasAnyRole(UserRole.AUTISTA.name(), UserRole.RESPONSABILE.name())
+                        .requestMatchers(HttpMethod.POST, "/api/v1/missioni/*/notes")
+                        .hasAnyRole(UserRole.AUTISTA.name(), UserRole.RESPONSABILE.name())
                         .requestMatchers("/api/v1/**").hasRole(UserRole.RESPONSABILE.name())
                         .anyRequest().denyAll())
                 .exceptionHandling(exceptions -> exceptions

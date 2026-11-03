@@ -5,11 +5,16 @@
 
 ## Scopo e stato
 
-Definisce verifiche riproducibili. Backend MVC: **PASS su Java 25** (6 test). PostgreSQL 18 locale è in esecuzione e
+Definisce verifiche riproducibili. Backend MVC: **PASS su Java 25** (11 test mirati). PostgreSQL 18 locale è in esecuzione e
 la porta `localhost:5432` è raggiungibile; il test context con il DB locale resta
 **BLOCKED** perché non sono configurate le credenziali dell'utente applicativo.
 Il workflow CI con DB effimero e assertion baseline è **PASS**. Nessun test
 UI/chat/mappe è ancora disponibile.
+`clean verify` locale ha terminato con BUILD SUCCESS: 17 test totali,
+0 fallimenti, 0 errori, 4 saltati (i tre PostgreSQL e il test di caricamento
+contestuale, per password assente). La CI sul branch `feature/backend` ha invece
+eseguito con successo sia la verifica Java/OpenAPI sia il job PostgreSQL 18 con
+schema, seed, baseline e test d'integrazione.
 
 ## Livelli
 

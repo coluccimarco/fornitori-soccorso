@@ -42,7 +42,13 @@ public class ApiExceptionHandler {
     @ExceptionHandler(ResponseStatusException.class)
     public ResponseEntity<ApiError> responseStatus(ResponseStatusException exception) {
         int status = exception.getStatusCode().value();
-        String error = status == 409 ? "conflict" : "invalid_request";
+        String error = switch (status) {
+            case 400 -> "invalid_request";
+            case 403 -> "forbidden";
+            case 404 -> "not_found";
+            case 409 -> "conflict";
+            default -> "internal_error";
+        };
         return ResponseEntity.status(exception.getStatusCode()).body(new ApiError(status, error));
     }
 }

@@ -14,6 +14,7 @@ import it.exprivia.fornitori.dto.AuthDtos;
 import it.exprivia.fornitori.dto.RegistryDtos;
 import it.exprivia.fornitori.service.AuthService;
 import it.exprivia.fornitori.service.DatabaseUserDetailsService;
+import it.exprivia.fornitori.service.MissionService;
 import it.exprivia.fornitori.service.RegistryService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,6 +47,9 @@ class ApiSecurityTests {
 
     @MockitoBean
     private RegistryService registryService;
+
+    @MockitoBean
+    private MissionService missionService;
 
     @Test
     void unauthenticatedRegistryRequestReturnsUnauthorized() throws Exception {
@@ -124,5 +128,52 @@ class ApiSecurityTests {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.token").isNotEmpty())
                 .andExpect(jsonPath("$.headerName").value("X-CSRF-TOKEN"));
+    }
+
+    @Test
+    void unauthenticatedMissionRequestReturnsUnauthorized() throws Exception {
+        mockMvc.perform(get("/api/v1/missioni"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error").value("unauthorized"));
+    }
+
+    @Test
+    @WithMockUser(username = "driver@example.test", roles = "AUTISTA")
+    void driverCanAccessOwnMissionEndpointsButNotCentralMissionList() throws Exception {
+        when(missionService.driverMissions("driver@example.test")).thenReturn(java.util.List.of());
+        when(missionService.list("driver@example.test", null, "live"))
+                .thenThrow(new it.exprivia.fornitori.common.ForbiddenOperationException());
+
+        mockMvc.perform(get("/api/v1/autista/missioni"))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/v1/missioni"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error").value("forbidden"));
+    }
+
+    @Test
+    @WithMockUser(username = "manager@example.test", roles = "RESPONSABILE")
+    void managerCanReadLiveMissionList() throws Exception {
+        when(missionService.list("manager@example.test", null, "live")).thenReturn(java.util.List.of());
+
+        mockMvc.perform(get("/api/v1/missioni"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(username = "driver@example.test", roles = "AUTISTA")
+    void driverCannotProposeMissionToAnotherDriver() throws Exception {
+        mockMvc.perform(post("/api/v1/missioni/1/proposte")
+                        .with(csrf())
+                        .contentType("application/json")
+                        .content("{\"autistaId\":1}"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(username = "manager@example.test", roles = "RESPONSABILE")
+    void managerCannotAcceptMissionAsDriver() throws Exception {
+        mockMvc.perform(post("/api/v1/missioni/1/accept").with(csrf()))
+                .andExpect(status().isForbidden());
     }
 }
