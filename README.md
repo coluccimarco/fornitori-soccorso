@@ -1,11 +1,19 @@
 # FORNITORI — gestione del soccorso stradale
 
 Project work ITS Developer 4.0 per coordinare richieste di soccorso stradale,
-centrale operativa, autisti e integrazioni esterne. Il repository è la baseline
-condivisa dei cinque componenti; il branch `feature/backend` implementa il
-workflow backend delle missioni sopra la baseline Sprint 1. La verifica
-PostgreSQL CI è **PASS**; l'accesso al PostgreSQL locale è bloccato finché non
-vengono configurate credenziali autorizzate.
+centrale operativa, autisti e integrazioni esterne. La baseline `main` integrata
+fino a `f763d53` comprende backend Java/Spring, client web statico, workflow
+missioni, chatbot Telegram e API di geocodifica/percorso. La UI non visualizza
+ancora mappe e WhatsApp resta pianificato. CI e controlli locali sulla baseline
+integrata sono completati; i limiti browser/provider sono esplicitati nei report.
+
+Apri la [documentazione aggiornata](./docs/README.md) o l'[indice generale](./docs/00_INDICE_GENERALE.md)
+per audit, BUR/FUD/TAD, guide, test e Word modificabili. Il PDF e l'Excel originali
+del docente non sono presenti nella working tree esaminata: i requisiti non sono
+quindi dichiarati approvati.
+
+Il [report conclusivo della revisione](./docs/management/FINAL_REVIEW_REPORT.md)
+riassume evidenze, deliverable e attività ancora bloccate.
 
 ## Stato della baseline
 
@@ -14,12 +22,12 @@ vengono configurate credenziali autorizzate.
 | Java 25 LTS / Maven | **IMPLEMENTATO**; verificato con Temurin 25.0.5 |
 | Backend Spring Boot: sessione, CSRF, ruoli, anagrafiche e rotte missioni | **IMPLEMENTATO**; 11 test MVC passati |
 | Schema, seed e baseline PostgreSQL | Script **IMPLEMENTATI**; baseline PostgreSQL CI **PASS**; servizio locale attivo, ma accesso app locale da configurare con credenziali |
-| Missioni, timeout, pricing, note, dashboard e storico autista | **IMPLEMENTATO** in `feature/backend`; PostgreSQL CI **PASS** |
-| Chatbot (`chatbot/`) e API `chat/*` | **IMPLEMENTATO**; provato da Telegram con backend e PostgreSQL locali |
-| Notifiche al cliente | **IMPLEMENTATO** e provato su Telegram per le missioni da chat; WhatsApp **PIANIFICATO** |
-| Mappe | API **IMPLEMENTATA**: geocodifica, percorso e km stimati; visualizzazione da fare nella UI |
-| UI | **IMPLEMENTATA** in `src/main/resources/static/`; mappa, rettifica costo e traino sulle missioni da chatbot da aggiungere |
-| CI Java 25 | Build, test, OpenAPI e PostgreSQL baseline/integration **PASS** |
+| Missioni, timeout, pricing, note, dashboard e storico autista | **IMPLEMENTATO** in `main`; PostgreSQL CI **PASS** |
+| Chatbot (`chatbot/`) e API `chat/*` | **IMPLEMENTATO**; prova Telegram dichiarata nel README del modulo |
+| Notifiche al cliente | Outbox/backend e dispatcher Telegram presenti; prova reale dichiarata nel README del modulo; WhatsApp **PIANIFICATO** |
+| UI web | **PRESENTE** in `src/main/resources/static/`: pagina pubblica, login, centrale e area autista; browser E2E **NOT RUN** |
+| API mappe | **PRESENTE** per geocodifica, percorso e distanza stimata; la UI non mostra ancora la mappa |
+| CI Java 25 | Build, test, OpenAPI e PostgreSQL baseline/integration **PASS** (run `41656606659`, commit `f763d53`) |
 
 ## Requisiti locali
 
@@ -129,17 +137,17 @@ il token ottenuto da `GET /api/v1/auth/csrf` nell'header `X-CSRF-TOKEN`.
 | GET | `/api/v1/clienti?search=...` | Implementato; nome o targa |
 | POST | `/api/v1/clienti` | Implementato; centrale |
 | GET | `/api/v1/officine` | Implementato |
-| GET/POST | `/api/v1/missioni` | Implementato nel branch Sprint 2 |
-| GET | `/api/v1/missioni/{id}` | Implementato nel branch Sprint 2; autista limitato alle missioni proposte/ricevute |
-| POST | `/api/v1/missioni/{id}/proposte` | Implementato nel branch Sprint 2 |
-| POST | `/api/v1/missioni/{id}/accept`, `/reject`, `/complete` | Implementato nel branch Sprint 2 |
-| PATCH | `/api/v1/missioni/{id}/cost` | Implementato nel branch Sprint 2 |
-| GET/POST | `/api/v1/missioni/{id}/notes` | Implementato nel branch Sprint 2 |
-| GET | `/api/v1/dashboard`, `/api/v1/autista/missioni`, `/api/v1/autista/storico` | Implementato nel branch Sprint 2 |
+| GET/POST | `/api/v1/missioni` | Implementato in `main` |
+| GET | `/api/v1/missioni/{id}` | Implementato; autista limitato alle missioni autorizzate |
+| POST | `/api/v1/missioni/{id}/proposte` | Implementato |
+| POST | `/api/v1/missioni/{id}/accept`, `/reject`, `/complete` | Implementato |
+| PATCH | `/api/v1/missioni/{id}/cost` | Implementato |
+| GET/POST | `/api/v1/missioni/{id}/notes` | Implementato |
+| GET | `/api/v1/dashboard`, `/api/v1/autista/missioni`, `/api/v1/autista/storico` | Implementato |
 | PATCH | `/api/v1/missioni/{id}/intervento` | Implementato; centrale |
 | GET | `/api/v1/maps/route` | Implementato; centrale e autista, usa Nominatim e OSRM |
 | POST | `/api/v1/chat/lookup-targa`, `/api/v1/chat/missioni` | Implementato; token di servizio del chatbot |
-| GET | `/api/v1/chat/missioni/{id}/stato` | Implementato; token di servizio del chatbot |
+| POST | `/api/v1/chat/stato` | Implementato; token di servizio del chatbot |
 | GET | `/api/v1/chat/notifiche` | Implementato; token di servizio del chatbot |
 | POST | `/api/v1/chat/notifiche/{id}/esito` | Implementato; token di servizio del chatbot |
 
@@ -147,9 +155,10 @@ Le API `chat/*` usano `Authorization: Bearer` con il valore di `FORNITORI_CHAT_T
 da impostare uguale sul backend e sul chatbot. Se manca, rispondono sempre `401`.
 Vedi [chatbot/README.md](./chatbot/README.md).
 
-Il contratto completo è in [api/openapi.yaml](./api/openapi.yaml). Le 13 operazioni
-backend Sprint 2 sono marcate `implemented` dopo la verifica PostgreSQL CI;
-i webhook restano progettati.
+Il contratto completo è in [api/openapi.yaml](./api/openapi.yaml); gli stati
+`implemented` e `designed` vanno letti per singola operation e non attestano da
+soli la verifica end-to-end. Le nuove API mappe sono parte del backend integrato.
+La UI non invoca ancora il servizio mappe.
 
 ## Struttura Spring Boot
 
@@ -195,13 +204,16 @@ dashboard collegata a Jira.
 | Mappe | Membro 4 | [Guida mappe](./docs/team/MEMBRO_4_MAPS.md) |
 | Notifiche | Membro 5 | [Guida notifiche](./docs/team/MEMBRO_5_NOTIFICATIONS.md) |
 
-- Inizia da [docs/00_START_HERE.md](./docs/00_START_HERE.md) e
-  [guida generale del team](./docs/01_GUIDA_GENERALE_TEAM.md).
-- Architettura, database, API e regole: [indice documentazione](./docs/00_START_HERE.md).
-- Piano Scrum: [docs/08_AGILE_SCRUM.md](./docs/08_AGILE_SCRUM.md) e [backlog](./docs/agile/PRODUCT_BACKLOG.md).
+- Inizia da [indice generale](./docs/00_INDICE_GENERALE.md) e
+  [guide del team](./docs/team/README.md).
+- Architettura, database, API e regole: [documentazione per area](./docs/README.md).
+- Piano Scrum: [registro](./docs/agile/README.md) e [backlog](./docs/agile/PRODUCT_BACKLOG.md).
 - Processo branch/PR: [docs/07_GIT_WORKFLOW.md](./docs/07_GIT_WORKFLOW.md).
 
 - Report Sprint 1: [docs/SPRINT_1_REPORT.md](./docs/SPRINT_1_REPORT.md)
-- Evidenze effettive: [docs/TEST_EVIDENCE.md](./docs/TEST_EVIDENCE.md)
-- Dizionario dati: [docs/DATABASE_DICTIONARY.md](./docs/DATABASE_DICTIONARY.md)
+- Evidenze effettive: [docs/quality/TEST_EVIDENCE.md](./docs/quality/TEST_EVIDENCE.md)
+- Database e dizionario: [docs/architecture/DATABASE_DESIGN.md](./docs/architecture/DATABASE_DESIGN.md)
 - Contratto API normativo: [api/openapi.yaml](./api/openapi.yaml)
+- Manuale tecnico: [docs/manuals/MANUALE_TECNICO.md](./docs/manuals/MANUALE_TECNICO.md)
+- Manuale utente: [docs/manuals/MANUALE_UTENTE.md](./docs/manuals/MANUALE_UTENTE.md)
+- Word editabili: [docs/word/](./docs/word/)

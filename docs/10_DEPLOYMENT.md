@@ -41,5 +41,6 @@ limitata al service effimero; non riutilizzarla in alcun ambiente persistente.
 
 **Dipendenze:** DB provisionato, JDK 25, segreti autorizzati, decisione hosting.
 **Criterio:** ambiente riproducibile e testato, piano rollback/backup verificato.
-**Riferimenti:** [README](../README.md), [sicurezza](./06_SICUREZZA.md),
-[rischi](./13_RISCHI_E_IMPEDIMENTI.md).
+**Riferimenti:** [README](../README.md),
+[sicurezza](./architecture/SECURITY_DESIGN.md),
+[rischi](./management/RISK_REGISTER.md).

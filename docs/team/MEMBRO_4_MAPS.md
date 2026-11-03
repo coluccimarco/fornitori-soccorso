@@ -1,44 +1,51 @@
 # Membro 4 — Mappe e routing
 
-**Versione:** 1.0 · **Data:** 03/11/2026 · **Responsabile:** Membro 4<br>
-**Indice:** obiettivo · stack · route · payload · fallback · test
+**Versione:** 1.1 · **Data:** 03/11/2026 · **Responsabile:** Membro 4
 
-## Scopo e stato
+## Stato e responsabilità
 
-Visualizzazione percorso e distanza. **IMPLEMENTATA** l'API `GET /api/v1/maps/route` con
-geocodifica Nominatim e percorso OSRM ([D-010](../DECISION_LOG.md)). Da fare: mostrare
-la mappa con Leaflet nel pannello e nell'area autisti e proporre i km alla chiusura.
+Il servizio backend è implementato in `MapController`, `MapService`,
+`NominatimGeocodingClient` e `OsrmRoutingClient`. `GET /api/v1/maps/route` restituisce
+punti, geometria e km stimati; i test automatici sono inclusi nella CI
+`41656606659` su `f763d53`. L'uso reale dei provider pubblici non è stato verificato
+in questa revisione. La UI web non richiama l'endpoint e non visualizza una mappa.
 
-## Tecnologie proposte
+## Contratto runtime
 
-Leaflet per UI e tiles OpenStreetMap secondo attribution/usage policy. OSRM o altro
-routing provider da confermare; rispettare limiti, cache, privacy e termini del
-provider. Geocoding non è geolocalizzazione live: distinguere indirizzo e coordinate.
+```text
+GET /api/v1/maps/route?missionId=<id>&driverId=<opzionale>
+```
 
-## Route
+- Richiede sessione autenticata e ruolo RESPONSABILE o AUTISTA assegnato alla
+  missione. L'autista usa il proprio mezzo; il responsabile può indicare un driver.
+- Itinerario: base mezzo → luogo sinistro; aggiunge officina se il tipo è traino.
+- Se mancano coordinate dell'origine, il backend geocodifica l'indirizzo con
+  Nominatim e salva coordinate e km stimati associati alla missione.
+- OSRM restituisce route geometry e distanza arrotondata a due decimali. I km
+  stimati non sono i km effettivi inseriti dall'autista alla chiusura.
+- `400`: driver non disponibile/indicato; `422`: indirizzo non trovato;
+  `503`: servizio esterno non disponibile; `401/403/404`: sessione, permesso o
+  risorsa.
 
-- Traino: base del mezzo → luogo sinistro → officina.
-- Riparazione sul posto: base del mezzo → luogo sinistro.
-- Input richiesti: coordinate origine missione, coordinate base mezzo, officina se
-  traino. Se origine indirizzo manca coordinate, geocoding asincrono validato.
-- Mostrare route stimata e chilometri con unità e provider; km suggeriti non sono i
-  km effettivi di chiusura.
-- Ritorno provider indisponibile: mostrare errore/indirizzo, consentire retry; non
-  inventare km né bloccare una chiusura autorizzata.
+## Provider e privacy
 
-## Contratto proposto
+I default sono Nominatim pubblico (`User-Agent` configurabile, limite di una
+richiesta al secondo) e OSRM pubblico. Il backend usa timeout e restituisce errori
+espliciti; provider e rete non sono garantiti. La geocodifica trasmette indirizzi
+a un servizio esterno: valutarne minimizzazione, policy, rate limit e licenza prima
+di un uso reale. Le proprietà sono documentate in
+[`MANUALE_TECNICO.md`](../manuals/MANUALE_TECNICO.md).
 
-Il backend fa da tramite verso i servizi pubblici: i dettagli sono in OpenAPI. I km
-suggeriti restano in `kmStimati` della missione; backend valida km confermati e tariffa.
+## Integrazione e verifica ancora necessarie
 
-## Test e acceptance
+- M2 deve integrare una vista cartografica/route nel browser, se richiesta dal
+  requisito approvato; al momento non c'è chiamata JS a `/maps/route`.
+- Etichettare chiaramente provider, unità e natura stimata dei km.
+- Non bloccare la chiusura missione quando il provider non risponde e non
+  inventare distanze.
+- Le suite `MapProviderClientsTests` e `MapPostgresIntegrationTests` verificano
+  il codice con test automatici; test provider live, UX/browser e acceptance
+  docente restano NOT RUN/DA CONFERMARE.
 
-Testare due tipi intervento, coordinate limite, officina mancante, percorso nullo,
-rate limit/offline, errore geocoding e separazione stimato/effettivo. Credenziali
-private non nel browser; OpenStreetMap attribution visibile. Acceptance: route
-renderizzata e fallback chiaro, km e fonti etichettati.
-
-**Dipendenze:** M1 coordinate/missione/endpoint e decisione provider; M2 UI map.
-**Risultato Sprint successivo:** spike route deterministico su coordinate fixture e
-specifica di fallback. **Riferimenti:** [API](../04_API_REST.md),
-[integration contracts](./INTEGRATION_CONTRACTS.md).
+**Riferimenti:** [API](../architecture/API_SPECIFICATION.md),
+[contratti](./INTEGRATION_CONTRACTS.md), [piano test](../quality/TEST_PLAN.md).

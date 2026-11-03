@@ -29,4 +29,5 @@ La review esterna/PR è da eseguire.
 
 **Dipendenze:** CI, code owner e criteri specifici della story.<br>
 **Completamento:** ogni checkbox applicabile è soddisfatta e documentata.<br>
-**Riferimenti:** [Testing QA](./09_TESTING_QA.md), [Git workflow](./07_GIT_WORKFLOW.md).
+**Riferimenti:** [Piano test](./quality/TEST_PLAN.md),
+[Git workflow](./07_GIT_WORKFLOW.md).

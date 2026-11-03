@@ -1,0 +1,14 @@
+%% Logical packages and external components in the integrated baseline.
+flowchart LR
+    Browser["Browser static client"] --> Static["src/main/resources/static"]
+    Static -->|same-origin + session + CSRF| Controller["controller<br/>Auth / Registry / Mission / Chat / Map"]
+    Controller --> DTO["dto + validation"]
+    Controller --> Service["service<br/>use case / transactions"]
+    Service --> Repo["repository<br/>JPA / locks"]
+    Repo --> Entity["entity + enums"]
+    Repo --> DB[("PostgreSQL 18")]
+    Config["config<br/>security / clock"] -. configures .-> Controller
+    Common["common<br/>API/domain errors"] -. shared .-> Controller
+    Bot["Python chatbot"] -->|HTTP + service bearer| Controller
+    Telegram["Telegram channel"] --> Bot
+    Service -->|route API only| Providers["Nominatim / OSRM"]

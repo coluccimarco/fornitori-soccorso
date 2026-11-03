@@ -30,7 +30,8 @@ anagrafiche autorizzate; l'area autista mostra gli ID e segnala che i recapiti e
 dettagli non sono forniti dall'API missioni. Non vengono effettuate chiamate alle
 API anagrafiche riservate al responsabile.
 
-La mappa resta esclusa finché non sarà disponibile un endpoint specifico.
+La pagina non integra una vista cartografica: l'API backend `/api/v1/maps/route`
+esiste, ma `app.js` non la richiama.
 
 ## Verifica e avvio
 
@@ -44,5 +45,8 @@ Con JDK 25 e database configurato, eseguire:
 Le credenziali del database vanno configurate nell'ambiente locale secondo il
 [README](../../README.md); non sono incluse nel frontend né nel repository.
 
+**Acceptance:** mostrare solo dati restituiti dal server, gestire loading/errori e
+permessi, mantenere il layout responsive; la verifica browser deve essere
+registrata separatamente dalla presenza del codice.
 **Riferimenti:** [contratti](./INTEGRATION_CONTRACTS.md),
-[API](../04_API_REST.md).
+[API](../architecture/API_SPECIFICATION.md), [manuale utente](../manuals/MANUALE_UTENTE.md).

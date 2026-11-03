@@ -55,4 +55,12 @@ Verifica mirata locale con Temurin 25.0.5:
    `internal`; chatbot e mappe restano componenti separati.
 2. Confermare col docente il timestamp di accettazione usato per la tariffa.
 
-Nessun merge in `main` è stato eseguito.
+Nessun merge in `main` era stato eseguito alla data di questo report.
+
+## Addendum di stato — 03/11/2026
+
+Il report rimane la fotografia del branch e del run indicati al momento della sua
+stesura. Successivamente PR #3 è stata integrata in `main`; il run più recente
+verificato dall'audit è `41656606659` sul commit `f763d53`, con entrambi i job CI
+in success. Non interpretare la frase storica “Nessun merge in `main`” come stato
+attuale. Nessun verbale Sprint o demo UI viene dedotto dal merge.

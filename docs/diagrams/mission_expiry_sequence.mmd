@@ -1,0 +1,13 @@
+%% Scheduler implemented; expiry applies only to live mission records.
+sequenceDiagram
+    participant Scheduler as MissionExpiryScheduler
+    participant Service as MissionService
+    participant DB as PostgreSQL
+    participant Centrale as Centrale
+    Scheduler->>Service: expire overdue proposals
+    Service->>DB: lock eligible non-fixture rows
+    DB-->>Service: due proposals
+    Service->>DB: mark proposal scaduta, update mission/event
+    DB-->>Service: commit
+    Centrale->>Service: re-propose (optional)
+    Service->>DB: append new proposal and keep history

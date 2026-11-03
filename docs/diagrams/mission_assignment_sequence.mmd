@@ -1,0 +1,18 @@
+%% Implemented backend proposal and driver response; no driver UI exists.
+sequenceDiagram
+    actor Centrale as RESPONSABILE
+    participant API as MissionController
+    participant Service as MissionService
+    participant DB as PostgreSQL
+    actor Autista as AUTISTA assegnato
+    Centrale->>API: POST /missioni/{id}/proposte
+    API->>Service: create proposal
+    Service->>DB: lock mission/driver, check LIVE, availability
+    Service->>DB: persist proposal, deadline, mission state
+    DB-->>API: persisted proposal
+    API-->>Centrale: deadline and proposal
+    Autista->>API: POST /missioni/{id}/accept or /reject
+    API->>Service: verify principal, current proposal, deadline
+    Service->>DB: lock and persist outcome + event
+    DB-->>API: committed outcome
+    API-->>Autista: result

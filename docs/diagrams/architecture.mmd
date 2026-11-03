@@ -1,15 +1,17 @@
-%% FORNITORI | v1.0 | 03/11/2026 | owner: Membro 1
-%% Implementato: API/sessione/DB/anagrafiche. Pianificato: UI, chatbot, routing, provider.
+%% FORNITORI | runtime integrato | baseline f763d53 | 03/11/2026
 flowchart LR
-    Centrale[UI Centrale<br/>PIANIFICATO] -->|HTTPS JSON + cookie + CSRF| API[Spring Boot REST<br/>IMPLEMENTATO]
-    Autista[UI Autista<br/>PIANIFICATO] -->|HTTPS JSON + cookie + CSRF| API
-    API --> Security[Spring Security<br/>IMPLEMENTATO]
-    API --> Controller[Controller]
-    Controller --> Service[Service]
-    Service --> Repo[Spring Data JPA]
-    Repo --> DB[(PostgreSQL)]
-    DB --> Fixture[Fixture Excel]
-    DB --> Live[Missioni live<br/>Sprint 2]
-    Chat[Chatbot guidato<br/>PIANIFICATO] -. API .-> API
-    Maps[Leaflet / routing<br/>PIANIFICATO] -. API coordinate .-> API
-    API -. Outbox eventi .-> Notify[WhatsApp / Telegram<br/>PIANIFICATO]
+    Centrale["Responsabile centrale<br/>browser UI presente"] -->|cookie sessione + CSRF| Web["Client statico<br/>HTML / CSS / JavaScript"]
+    Autista["Autista<br/>browser UI presente"] -->|cookie sessione + CSRF| Web
+    Web -->|API same-origin| API["Backend REST<br/>Spring Boot / Java 25"]
+    Cliente["Cliente"] -->|long polling / messaggi| TG["Telegram Bot<br/>Python"]
+    Console["Console locale<br/>fake backend"] --> Bot["ChatEngine"]
+    TG --> Bot
+    Bot -->|"service token"| API
+    API --> Security["Spring Security<br/>sessione/CSRF + chain chat stateless"]
+    API --> Services["Controller / Service<br/>Mission, Chat, Pricing, Map"]
+    Services --> Repos["Repository JPA<br/>lock / transazioni"]
+    Repos --> DB[("PostgreSQL 18")]
+    Services --> Outbox["Notification outbox<br/>persistente"]
+    Outbox --> Bot
+    Services -->|geocoding / routing| Maps["Nominatim / OSRM<br/>provider pubblici"]
+    WA["WhatsApp provider<br/>non implementato"] -. futuro .-> Bot

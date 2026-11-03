@@ -1,0 +1,27 @@
+%% Telegram long polling and supported notifications; not a provider CI test.
+sequenceDiagram
+    actor Cliente
+    participant Telegram as Telegram Bot API
+    participant Bot as Python ChatEngine / Dispatcher
+    participant API as ChatController
+    participant Service as ChatService / MissionService
+    participant DB as PostgreSQL
+    Cliente->>Telegram: sends plate / location / problem
+    Telegram-->>Bot: long-poll update
+    Bot->>API: POST /chat/lookup-targa (Bearer)
+    API->>Service: lookup and limiter
+    Service->>DB: read customer
+    API-->>Bot: lookup result
+    Bot->>API: POST /chat/missioni (requestId)
+    API->>Service: create idempotent mission
+    Service->>DB: persist mission and chat recipient
+    API-->>Bot: mission code and state
+    Bot-->>Telegram: confirmation
+    Service->>DB: transaction writes outbox on accepted/completed
+    Bot->>API: GET /chat/notifiche?canale=telegram
+    API->>DB: read pending messages
+    API-->>Bot: notification payloads
+    Bot->>Telegram: send message
+    Bot->>API: POST /chat/notifiche/{id}/esito
+    API->>DB: persist send result
+    Telegram-->>Cliente: accepted / completed update
