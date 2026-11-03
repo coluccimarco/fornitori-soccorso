@@ -129,7 +129,7 @@ autista limita l'identità all'utente autenticato. **Eccezioni:** `401/403`,
 risultato vuoto; mai includere altri autisti nello storico personale.
 **API:** `GET /api/v1/dashboard`, `/api/v1/autista/missioni`,
 `/api/v1/autista/storico`. **Test:** `MissionPostgresIntegrationTests`,
-`ApiSecurityTests`. **Stato:** IMPLEMENTATO, UI assente.
+`ApiSecurityTests`. **Stato:** API e client web presenti; browser E2E non eseguito.
 
 ## UC-010 — Conversazione cliente e consultazione stato
 
@@ -157,17 +157,20 @@ universale per missioni senza chat associata. **Test:** `test_notifications.py`,
 **Stato:** PARZIALE/IMPLEMENTATO per il canale Telegram documentato; WhatsApp e CI
 non verificano il provider reale.
 
-## UC-012 — Routing cartografico e manuali browser
+## UC-012 — Routing cartografico
 
 **Attore:** autista/centrale. **Flusso progettato:** base mezzo → luogo intervento →
 eventuale officina per traino; riparazione sul posto omette officina. Distanza
 stimata non equivale ai km effettivi.
-**API prevista:** `GET /api/v1/maps/route`, metadata `designed`.
-**Acceptance/test:** non applicabili prima di provider e interfaccia. **Stato:** PIANIFICATO.
+**API:** `GET /api/v1/maps/route`, metadata `implemented`; backend usa Nominatim
+per geocodifica opzionale e OSRM per route/km stimati. **Acceptance/test:**
+`MapProviderClientsTests` e `MapPostgresIntegrationTests` sono inclusi nella CI;
+provider live e vista cartografica browser sono NOT RUN/non integrati.
+**Stato:** API IMPLEMENTATA; UI cartografica DA FARE se richiesta.
 
 ## Diagrammi e confini
 
-Le schermate browser non sono state disegnate come se esistessero. I diagrammi
-Mermaid distinguono contesto runtime, componenti presenti e confini futuri:
+Il client browser è presente, ma la vista mappa non è integrata. I diagrammi Mermaid
+distinguono contesto runtime, componenti presenti e confini futuri:
 [`diagrams/`](../diagrams/). Regole di stato persistite: schema SQL e service
 implementati; i flussi UI restano design, non runtime.

@@ -63,4 +63,4 @@ generati con assistenza di Copilot.
 
 **Completamento:** test e diff check passano, review approvata, CI verde,
 documentazione/contratti allineati. **Riferimenti:** [Definition of Done](./11_DEFINITION_OF_DONE.md),
-[issue Scrum](./08_AGILE_SCRUM.md).
+[registro Scrum](./agile/README.md).

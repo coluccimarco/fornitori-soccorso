@@ -109,9 +109,9 @@ def build() -> Path:
                     language,
                     test_file.stem,
                     (
-                        "64 test PASS locale; suite non inclusa nel workflow CI."
+                        "Suite chatbot completa: 64 test PASS locale; non inclusa nel workflow CI."
                         if language == "Python"
-                        else "Maven JDK 25 BUILD SUCCESS; 21 pass/17 skip locali. PostgreSQL CI run 41651140562 PASS."
+                        else "Suite Maven completa: JDK 25 BUILD SUCCESS; 31 pass/29 skip locali. PostgreSQL CI run 41656606659 PASS."
                     ),
                 ]
             )

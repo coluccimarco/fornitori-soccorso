@@ -1,98 +1,113 @@
-# Manuale tecnico
+# Manuale tecnico FORNITORI
 
-**Codice:** FOR-TECH-001 · **Versione:** 1.0 · **Data:** 03/11/2026
-**Destinatari:** sviluppatori M1–M5 · **Baseline:** branch `documentazione`, commit base `25c613b`
+**Codice:** FOR-TECH-001 · **Versione:** 1.1 · **Data:** 03/11/2026
+**Destinatari:** sviluppatori M1–M5 · **Baseline applicativa:** `main` / `f763d53`
 
 ## Prerequisiti
 
-- Git.
-- JDK 25 (POM imposta `java.version` e `maven.compiler.release` a 25).
-- Maven Wrapper incluso; il README indica Maven 3.9.9.
-- PostgreSQL 18 o compatibile e `psql` per runtime/test database.
-- Python 3.10+ per chatbot; usa libreria standard.
+- Git e JDK 25; verificare `java -version` e `javac -version`.
+- PostgreSQL 18 o compatibile e `psql`; database e credenziali autorizzati.
+- Maven Wrapper incluso; non serve installare Maven separatamente.
+- Python 3.10+ per chatbot; la suite usa la libreria standard.
+- Node.js non è necessario: il frontend HTML/CSS/JavaScript è servito dalle
+  risorse statiche Spring Boot e non ha un package manager frontend.
 
-Frontend, Node, mappe e provider WhatsApp non sono richiesti: i rispettivi moduli
-non sono nella baseline.
+## Configurazione e avvio backend/web
 
-## Configurazione backend
-
-Da PowerShell, dalla root:
+Da PowerShell, nella root del repository:
 
 ```powershell
-java -version
-javac -version
-.\mvnw.cmd -version
 $env:SPRING_DATASOURCE_URL = "jdbc:postgresql://localhost:5432/fornitori"
 $env:SPRING_DATASOURCE_USERNAME = "fornitori_app"
-$env:SPRING_DATASOURCE_PASSWORD = "<secret autorizzato>"
+$env:SPRING_DATASOURCE_PASSWORD = "<password autorizzata>"
 ```
 
-Usare credenziali provisionate dall'amministratore. Non incollarle in shell history,
-Git, screenshot o log. Hibernate è `validate`: applicare SQL prima dell'avvio.
-Su database esistente applicare soltanto migrazioni additive non già installate.
-
-Script iniziali per database nuovo, nell'ordine descritto dal README:
-
-```powershell
-psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/01_schema.sql
-psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/02_seed.sql
-psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/03_verifiche.sql
-psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/04_assert_baseline.sql
-psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/05_chat_requests.sql
-psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/06_chat_recipient.sql
-```
-
-Gli script non sostituiscono backup/restore; verificare i prerequisiti prima di
-applicarli. Non eseguire operazioni distruttive in produzione.
-
-## Build, test e avvio
+Usare credenziali provisionate dall'amministratore. Non incollarle in shell
+history, Git, screenshot o log. Hibernate usa `validate`: schema e seed devono
+essere già stati applicati. Per un database nuovo, usare gli script nell'ordine
+indicato dal [README](../../README.md): `01_schema.sql`, `02_seed.sql`,
+`03_verifiche.sql`, `04_assert_baseline.sql`, `05_chat_requests.sql`,
+`06_chat_recipient.sql`. Su un database già esistente eseguire soltanto gli script
+additivi non ancora applicati; non riapplicare schema/seed senza verificare il
+contesto.
 
 ```powershell
-.\mvnw.cmd clean verify
+.\mvnw.cmd --batch-mode --no-transfer-progress clean verify
 .\mvnw.cmd spring-boot:run
 ```
 
-Il test di caricamento app richiede datasource configurato. La CI `Backend CI`
-fornisce PostgreSQL 18 effimero ed esegue baseline SQL e test. Se l'accesso locale
-è bloccato, registrarlo BLOCKED; non saltare silenziosamente i test DB.
+Aprire `http://localhost:8080/`. Spring Boot serve la pagina pubblica e il client
+riservato da `src/main/resources/static/`; login, sessione e CSRF sono same-origin.
+Non esiste un build Node/npm separato. Per usare l'area riservata servono utenti
+validi nel database. L'accesso locale a un DB con credenziali non configurate non
+è un test superato.
 
-## Avvio chatbot
+## Struttura frontend
 
-Da shell nella directory `chatbot`:
+| File | Responsabilità |
+|---|---|
+| `src/main/resources/static/index.html` | Pagina pubblica, login, workspace responsabile/autista, modali |
+| `src/main/resources/static/app.js` | API fetch, sessione/CSRF, dashboard, registri e flussi missione |
+| `src/main/resources/static/styles.css` | Layout area riservata, responsive |
+| `src/main/resources/static/public-site.css` | Presentazione del sito pubblico |
+| `src/main/resources/static/images/soccorso-stradale.svg` | Illustrazione locale |
+
+Il client comprende consultazione registri, ricerca/creazione clienti, creazione
+missione, proposta, accept/reject, note e completamento con km effettivi. La
+rettifica costo/intervento e la vista mappa non sono collegate al browser. Non sono
+presenti test Playwright o browser automatizzati; non dichiarare l'E2E verificato.
+
+## Mappe e routing
+
+`GET /api/v1/maps/route?missionId=...&driverId=...` è un endpoint backend
+autenticato. `driverId` è facoltativo per l'autista; un responsabile può indicare
+l'autista. `MapService` compone base del mezzo, sinistro e, per traino, officina.
+Se le coordinate dell'origine mancano, `NominatimGeocodingClient` usa Nominatim;
+`OsrmRoutingClient` interroga OSRM e restituisce km stimati/geometry. Il backend
+può salvare coordinate e km stimati, distinti dai km effettivi di chiusura.
+
+I provider pubblici hanno limiti/availability non garantiti e ricevono l'indirizzo
+da geocodificare. Le proprietà configurabili sono `fornitori.maps.nominatim-url`,
+`fornitori.maps.user-agent` e `fornitori.maps.osrm-url`; i default sono nel codice.
+Gli errori provider sono riportati come servizio non disponibile o indirizzo non
+trovato. I test automatizzati coprono client e integrazione con provider simulati;
+una chiamata live e la visualizzazione cartografica nel browser restano NOT RUN.
+
+## Suite e controlli
+
+```powershell
+.\mvnw.cmd --batch-mode --no-transfer-progress clean verify
+```
+
+La suite Python si esegue dalla cartella `chatbot/`:
 
 ```powershell
 python -m unittest discover
-python -m fornitori_chatbot
 ```
 
-La console usa il backend fake. Per backend HTTP configurare URL e token come da
-[`chatbot/README.md`](../../chatbot/README.md); non inserire token nel comando o nel
-repository. Per Telegram il provider richiede segreto del bot gestito fuori dal repo.
-La guida del modulo contiene i parametri esatti per shell POSIX/Windows.
+Per rigenerare deliverable documentali: dalla root `python tools/build_docs.py`;
+validare con `python tools/validate_docs.py`. Diagrammi: `powershell
+-ExecutionPolicy Bypass -File tools/build_diagrams.ps1`. Vedi
+[`quality/TEST_PLAN.md`](../quality/TEST_PLAN.md) per i livelli e
+[`quality/TEST_EVIDENCE.md`](../quality/TEST_EVIDENCE.md) per i risultati per commit.
 
-## Architettura e procedure
+## Chatbot
 
-Il backend è organizzato in `controller`, `dto`, `entity`, `enums`, `repository`,
-`service`, `config`, `common`. OpenAPI è il contratto; nessun client deve interrogare
-il DB. Branch e PR seguono [`07_GIT_WORKFLOW.md`](../07_GIT_WORKFLOW.md). Per una
-modifica:
+Da `chatbot/`, seguire [`chatbot/README.md`](../../chatbot/README.md) per console,
+backend HTTP e Telegram. Backend e bot condividono `FORNITORI_CHAT_TOKEN`; il
+segreto non deve essere scritto nel repository o in screenshot. Il client bot usa
+solo `/api/v1/chat/*`, mai il database direttamente.
 
-1. verificare story/requisito, owner e test esistenti;
-2. accordare i cambi API/schema con consumer;
-3. modificare codice, test e documenti correlati nello stesso changeset;
-4. eseguire `.\mvnw.cmd clean verify`, test chatbot e `git diff --check` pertinenti;
-5. confrontare l'esito con quello locale e CI, senza dichiarare PASS per parti non eseguite.
+## Sicurezza e troubleshooting
 
-## Problemi frequenti
+- `401/403`: verificare sessione, token e ruolo; non aggirare i permessi.
+- `400/409`: leggere il messaggio e lo stato prima di ritentare una mutazione.
+- Errore connessione/avvio DB: controllare servizio, schema, URL e credenziali
+  autorizzate; non disabilitare `validate` o l'autenticazione.
+- `503` mappe: servizio esterno non disponibile; non assumere distanza e non
+  confondere km stimati con km effettivi.
+- Non registrare password, bearer token, messaggi Telegram o PII non necessarie.
 
-| Sintomo | Verifica |
-|---|---|
-| build richiede release Java diversa | controllare `java -version`, `JAVA_HOME`; non abbassare POM |
-| backend non avvia | verificare PostgreSQL, variabili datasource, SQL applicato e `ddl-auto=validate` |
-| `fe_sendauth: no password supplied` | credenziale non configurata; chiedere accesso, non cambiare auth server |
-| API risponde `401/403` | verificare sessione/ruolo; per `/chat/*` usare service token |
-| mutazione rifiutata CSRF | eseguire prima `GET /auth/csrf`, inviare header conforme |
-| bot non raggiunge backend | controllare `FORNITORI_API_URL`, token e schema SQL chatbot |
-| mappa/webhook non disponibile | progettata, non runtime; non è errore di configurazione locale |
-
-Frontend non esistente: non è possibile documentare comandi o strumenti di avvio.
+Branch e PR seguono [`07_GIT_WORKFLOW.md`](../07_GIT_WORKFLOW.md). Per una modifica
+coordinare story, contratto API/schema, test, manuali e diagrammi nello stesso
+change. Gli esiti non eseguiti vanno indicati come BLOCKED o NOT RUN.

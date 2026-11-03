@@ -34,9 +34,9 @@ PostgreSQL da environment; applica script `database/01...04` in ordine.
   la verifica PostgreSQL locale resta bloccata dall'assenza di credenziali.
 
 Le 13 operazioni backend missione del report storico sono state integrate in
-`main` tramite PR #3. Il job CI latest `41651140562` è verde su Java 25 e
-PostgreSQL 18. Il conteggio corrente del contratto è 34 operazioni (29 implementate,
-5 progettate), non il conteggio storico Sprint 2.
+`main` tramite PR #3. Il job CI latest `41656606659` su `f763d53` è verde su Java 25
+e PostgreSQL 18. Il conteggio corrente è 34 operation (30 implementate, 4
+progettate), incluse geocodifica e routing backend.
 
 ## Logging, test e Definition of Done
 
@@ -48,4 +48,4 @@ se introdotto, messaggi API generici. Prima di ogni PR: JDK25
 **Completamento backend:** test PostgreSQL CI PASS; 13 operazioni OpenAPI
 promosse a `implemented`. **Riferimenti:**
 [runbook](../BACKEND_SPRINT1_RUNBOOK.md),
-[regole](../05_BUSINESS_RULES.md).
+[regole](../requirements/BUSINESS_RULES.md).

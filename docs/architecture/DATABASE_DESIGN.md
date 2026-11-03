@@ -1,7 +1,9 @@
 # Disegno del database
 
 **Codice:** FOR-DB-001 · **Versione:** 1.0 · **Data:** 03/11/2026
-Fonte schema: [`database/01_schema.sql`](../../database/01_schema.sql); modifiche chatbot: `05_chat_requests.sql`, `06_chat_recipient.sql`.
+Fonte schema: [`database/01_schema.sql`](../../database/01_schema.sql); modifiche chatbot:
+[`05_chat_requests.sql`](../../database/05_chat_requests.sql) e
+[`06_chat_recipient.sql`](../../database/06_chat_recipient.sql).
 
 ## Modello
 
@@ -14,6 +16,22 @@ configurazione singola; `notifications_outbox` conserva invio/esito.
 che il motore conversazionale Python dichiara stato in RAM.
 
 Diagramma generato da sorgente SQL: [`database_er.mmd`](../diagrams/database_er.mmd).
+
+| Tabella | Scopo e relazioni principali |
+|---|---|
+| `app_users` | Utenti autenticabili, email univoca, hash password BCrypt e ruolo |
+| `drivers` | Autista legato a un solo utente e a un solo mezzo; `stato_seed` è solo il valore importato |
+| `vehicles` | Targa univoca, tipologia, portata e coordinate della base operativa |
+| `insurance_companies` | Compagnie assicurative referenziate dai clienti |
+| `customers` | Cliente, targa normalizzata univoca, compagnia e scadenza polizza |
+| `workshops` | Officine e coordinate |
+| `missions` | Cliente/autista/officina FK, stato, località, date, chilometri, costi e flag fixture |
+| `mission_proposals` | Tentativi di proposta e scadenza, con storico |
+| `mission_notes` | Note collegate alla missione e all'utente |
+| `mission_events` | Audit della missione con dettagli JSON |
+| `pricing_config` | Parametri tariffari e durata della proposta |
+| `chat_sessions` | Metadati di canale/chat; non rende persistente lo stato del motore Python in RAM |
+| `notifications_outbox` | Eventi da inviare e stato dei tentativi di notifica |
 
 ## Integrità e comportamento
 
@@ -41,3 +59,22 @@ Il report storico documenta 10 utenti, 8 autisti, 8 mezzi, 4 compagnie, 40 clien
 è incluso nell'audit corrente; questi valori sono citazioni della documentazione
 esistente, non una conferma indipendente. L'assert SQL della CI verifica il seed
 presente nel repository.
+
+## Setup locale
+
+Usare PostgreSQL 18+ compatibile, `psql` e un database vuoto e isolato con
+credenziali autorizzate configurate nell'ambiente. Schema e seed sono script,
+non una migrazione versionata; lo schema applicativo usa Hibernate `validate`,
+non `ddl-auto=update`.
+
+```powershell
+psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/01_schema.sql
+psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/02_seed.sql
+psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/03_verifiche.sql
+psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/04_assert_baseline.sql
+```
+
+Non modificare manualmente fixture per far passare l'assertion. Il risultato del
+setup è completo solo quando tutti gli script e le verifiche terminano con
+successo; consultare [TEST_EVIDENCE.md](../quality/TEST_EVIDENCE.md). Il job CI
+usa PostgreSQL effimero e non prova l'accesso al database locale.

@@ -9,7 +9,7 @@ Gestire ingresso richieste chatbot e messaggi di stato. Il backend scrive gli
 eventi `MISSION_ACCEPTED` e `MISSION_COMPLETED` in `notifications_outbox` nella
 stessa transazione delle transizioni. Il bot in `chatbot/` riceve richieste
 Telegram e invia notifiche supportate (**IMPLEMENTATO**, vedi
-[D-009](../DECISION_LOG.md)); WhatsApp e webhook in ingresso sono **PIANIFICATI**.
+[D-009](../management/DECISION_LOG.md)); WhatsApp e webhook in ingresso sono **PIANIFICATI**.
 La CI verifica il software, non il provider Telegram dal vivo.
 
 ## Provider e funzioni
@@ -49,5 +49,5 @@ autorizzazione e numeri di test.
 **Dipendenze:** M1 outbox/eventi/autorizzazione; M3 dialogo e backend HTTP; provider
 approvato. **Acceptance:** consegna idempotente osservabile, retry limitato, errori
 tracciabili, segreti non versionati. **Risultato Sprint successivo:** adapter fake,
-contratto webhook e spike provider. **Riferimenti:** [sicurezza](../06_SICUREZZA.md),
-[API](../04_API_REST.md).
+contratto webhook e spike provider. **Riferimenti:** [sicurezza](../architecture/SECURITY_DESIGN.md),
+[API](../architecture/API_SPECIFICATION.md).

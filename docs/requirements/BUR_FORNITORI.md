@@ -59,9 +59,9 @@ backup; funzionalità AI/Gemini. La loro obbligatorietà è **DA CONFERMARE**.
 | BR-008 | Consultare aggregati centrale e guadagni limitati all'autista autenticato | Da convalidare | IMPLEMENTATO | API dashboard e viste autista rispettano i confini di ruolo |
 | BR-009 | Creare richiesta guidata cliente tramite chatbot senza accesso diretto al DB | Da convalidare | IMPLEMENTATO | Bot usa backend fake o API chat; test dialoghi separati |
 | BR-010 | Inviare in Telegram notifica di presa in carico/completamento per richieste supportate | Da convalidare | PARZIALE | Outbox/backend e dispatcher sono presenti; provider reale non è certificato dalla CI |
-| BR-011 | Mostrare mappe/itinerari e chilometraggio stimato | Da confermare | PIANIFICATO | Nessun acceptance di runtime finché il provider non esiste |
+| BR-011 | Mostrare mappe/itinerari e chilometraggio stimato | Da confermare | API IMPLEMENTATA; mappa browser non integrata | Test CI; visualizzazione UI e provider live NOT RUN |
 | BR-012 | Usare WhatsApp come canale cliente | Da confermare | PIANIFICATO | Endpoint provider non implementato; test non disponibili |
-| BR-013 | Fornire UI web centrale/autista | Da confermare | PIANIFICATO | Nessun frontend nel repository; non fingere schermate |
+| BR-013 | Fornire UI web centrale/autista | Da confermare | UI PRESENTE NEL CODICE; verifica browser NOT RUN | Verificare flussi, permessi, UX e acceptance in ambiente isolato |
 
 ## Requisiti non funzionali e vincoli
 
@@ -82,15 +82,15 @@ La CI verde non prova la UI o un provider esterno dal vivo.
 Dipendenze: specifiche e dataset del docente; credenziali autorizzate per locale;
 eventuali provider di mappe/WhatsApp; completamento delle guide consumer.
 Rischi: requisiti non disponibili; targa non prova titolarità; conversazioni del bot
-sono in RAM; UI e mappe mancanti; uso produzione non validato. Vedi
+sono in RAM; UI non collaudata e mappa visuale non integrata; uso produzione non validato. Vedi
 [registro rischi](../management/RISK_REGISTER.md).
 
 ## Criteri di successo e acceptance
 
 Ogni BR accettato deve collegarsi a user story, componente, API e caso di test in
-[matrice di tracciabilità](../quality/REQUIREMENTS_TRACEABILITY.md). Un PASS richiede
+[matrice di tracciabilità](./REQUIREMENTS_TRACEABILITY.md). Un PASS richiede
 un'esecuzione identificata; gli elementi PIANIFICATI non passano acceptance.
-La baseline tecnica corrente passa i job CI latest `41651140562`; l'accettazione
+La baseline tecnica corrente passa i job CI latest `41656606659`; l'accettazione
 del project work resta DA CONFERMARE con le fonti primarie e il docente.
 
 ## Glossario

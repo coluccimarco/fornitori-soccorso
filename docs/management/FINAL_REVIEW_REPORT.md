@@ -1,152 +1,110 @@
-# Report conclusivo — reengineering documentazione FORNITORI
+# Report conclusivo — documentazione FORNITORI
 
-**Codice:** FOR-REV-001 · **Versione:** 1.0 · **Data:** 03/11/2026
-**Branch:** `documentazione` · **Baseline applicativa:** `main` / `25c613b`
+**Codice:** FOR-REV-001 · **Versione:** 2.0 · **Data:** 03/11/2026
+**Branch di lavoro:** `documentazione` · **Baseline applicativa:** `f763d53`
+**Merge commit locale:** `6dbd5aa`
 
-## A. Executive summary
+## Sintesi
 
-È stato riorganizzato l'archivio documentale per aree, riallineato lo stato al codice
-presente in `main`, aggiunto un audit con registro delle discrepanze, creati BUR/FUD/
-TAD e manuali canonici. La pipeline locale genera 9 DOCX modificabili, un workbook
-Excel e le figure Mermaid SVG/PNG. La CI dell'applicazione è verde su
-`25c613b`. Fonti primarie del corso e verifica visiva Word restano bloccate/non eseguite;
-la consegna complessiva non è dichiarata approvata o completa.
+La revisione integra nella documentazione lo stato più recente del repository,
+con backend, client statico, chatbot/Telegram e API mappe. Le fonti documentali
+sono state consolidate senza eliminare i report Sprint e le evidenze storiche
+utili. Il PDF/Excel originali del docente non sono nel checkout: il BUR e le
+regole di business restano quindi da confermare.
 
-## B. Audit iniziale e correzioni
+La CI Java/OpenAPI e PostgreSQL 18 del run `41656606659` sul commit `f763d53` è
+verde. Le verifiche locali hanno esito BUILD SUCCESS e 64 test Python pass; i
+29 test Maven saltati, il browser non eseguito e i provider live non sono
+presentati come PASS. L'API mappe è implementata ma non invocata dal client;
+WhatsApp/webhook non sono implementati.
 
-L'audit ricorsivo ha coperto README, docs (`reference`, `team`, `agile`, `diagrams`,
-`test`), API, database, POM, sorgenti/test, Git, PR #3 e workflow CI.
+## Integrazione e correzione di stato
 
-Discrepanze principali:
+Il branch `documentazione` è stato aggiornato da `origin/main` a `f763d53`.
+Il merge non-fast-forward è completato nel commit `6dbd5aa`; i conflitti in
+`README.md` e `docs/team/MEMBRO_2_FRONTEND.md` sono risolti. La baseline integrata
+non introduce conflitti applicativi.
 
-1. Sprint 2 descritto come pianificato nonostante PR #3 e backend integrato.
-2. Chatbot/API chat e dispatcher Telegram ancora descritti come pianificati in
-   alcuni documenti; notifiche Telegram distinte da WhatsApp futuro.
-3. Riepilogo OpenAPI legacy; count ricalcolato: 34 (29 implementate, 5 progettate).
-4. README e guide si riferivano a branch feature già integrati.
-5. Doppio registro decisioni e duplicazione di BUR/FUD/TAD.
-6. Documenti del docente e record Scrum non disponibili/non attestati.
+Conteggio OpenAPI ricalcolato: 34 operation, 30 `implemented` e 4 `designed`
+(gestione utenti e webhook in ingresso). La CI verifica backend/API/PostgreSQL,
+non l'esperienza browser o la disponibilità live di Telegram, Nominatim e OSRM.
 
-Le evidenze dettagliate, fonti e decisioni aperte sono in
-[DOCUMENTATION_AUDIT.md](./DOCUMENTATION_AUDIT.md). I report Sprint storici non sono
-stati retrodatati; sono stati aggiunti addendum datati.
+## Riorganizzazione documentale
 
-## C. Struttura documentale corrente
+Gli entry point sono `docs/README.md` e `docs/00_INDICE_GENERALE.md`. Le fonti
+autorevoli sono state uniformate in management, requirements, architecture,
+team, agile, quality, manuals, diagrams, templates e word.
 
-```text
-docs/
-├── README.md, 00_INDICE_GENERALE.md
-├── management/   audit, charter, PMP, scope, RACI, rischi, decisioni, changelog, report
-├── requirements/ BUR, FUD, use cases, business rules, traceability
-├── architecture/ TAD, database, dizionario, API, sicurezza, integrazioni
-├── team/         overview, guide M1–M5, contratti
-├── agile/        backlog, schede Sprint, template, registro stato
-├── quality/      test plan, evidence index, traceability, registri.xlsx
-├── manuals/      manuale utente e tecnico
-├── diagrams/     13 sorgenti .mmd, 26 output SVG/PNG
-├── templates/    stile Word, modello, registro
-└── word/         9 documenti DOCX generati
-tools/            build_docs.py, build_registers.py, build_diagrams.ps1, validate_docs.py
-```
+Sono stati rimossi 27 rimandi o duplicati dopo aver trasferito i contenuti unici:
+guide root nella overview/team canonica; setup e dizionario nel disegno DB;
+requisiti webhook nella pagina security; log decisionali divergenti nel registro
+management; test case/evidence nella quality; tre template Scrum in
+`agile/TEMPLATES.md`. BUR/FUD/TAD canonici, report Sprint e runbook sono conservati.
+La dashboard HTML statica è stata riallineata e continua a dichiararsi non live.
 
-I percorsi storici rimangono disponibili dove esistenti; quelli diventati rimandi
-puntano ai nuovi documenti autorevoli. I report storici e le evidenze non vengono
-presentati come stato corrente.
+Inventario verificato sotto `docs/`: 50 Markdown, 1 dashboard HTML, 13 sorgenti
+Mermaid, 26 asset PNG/SVG, 1 workbook e 9 documenti Word generati. Per i nomi
+precisi rimossi e la tracciabilità delle correzioni consultare
+[l'audit documentale](./DOCUMENTATION_AUDIT.md).
 
-## D. Documenti Word e fogli di calcolo
+## Deliverable Word e workbook
 
-| DOCX | Sorgente | Contenuto | Controllo |
-|---|---|---|---|
-| `docs/word/00_INDICE_DOCUMENTAZIONE.docx` | `docs/00_INDICE_GENERALE.md` | Registro e navigazione | Struttura valida; indice da aggiornare in Word |
-| `BUR_FORNITORI.docx` | `requirements/BUR_FORNITORI.md` | Requisiti business, vincoli e accettazione | Struttura valida; approvazione docente assente |
-| `FUD_FORNITORI.docx` | `requirements/FUD_FORNITORI.md` | 12 use case con flussi, eccezioni, API e test | Struttura valida |
-| `TAD_FORNITORI.docx` | `architecture/TAD_FORNITORI.md` | Stack, componenti, sicurezza, DB, CI e limiti | Struttura valida, 3 figure incorporate |
-| `PROJECT_MANAGEMENT_PLAN.docx` | `management/PROJECT_MANAGEMENT_PLAN.md` | Governance e quattro Sprint | Struttura valida |
-| `GUIDA_TEAM.docx` | `team/README.md` | Ruoli, confini e checklist PR | Struttura valida |
-| `MANUALE_UTENTE.docx` | `manuals/MANUALE_UTENTE.md` | Bot Telegram; limiti UI centrale/autista | Struttura valida |
-| `MANUALE_TECNICO.docx` | `manuals/MANUALE_TECNICO.md` | Setup, build, DB, test, chatbot, troubleshooting | Struttura valida |
-| `REGISTRO_TEST_E_COLLAUDI.docx` | `quality/TEST_PLAN.md` | Test, release gate e comandi | Struttura valida |
-
-Sono stati creati 9 DOCX validi, 11 tabelle e 3 figure inserite nel TAD. Pagine
-totali, impaginazione visiva e aggiornamento indice non sono verificati: Word è
-installato, ma l'esportazione automatica in PDF non è terminata in questo ambiente.
-Il campo TOC è presente e aggiornabile.
-`docs/quality/registri.xlsx` contiene fogli per requisiti, traceability, backlog,
-API, test, rischi, RACI e modifiche.
-
-## E. Requisiti e tracciabilità
-
-I requisiti `BR-*` e le story `ST-*` sono identificativi locali creati per rendere
-tracciabile la baseline; non sono attribuiti alla specifica docente. PDF e Excel
-non erano presenti nel checkout. Il BUR è quindi una bozza da convalidare; criteri
-di priorità e alcuni valori della tariffa sono DA CONFERMARE. La matrice collega
-requisito, story, componente, API, test ed evidenza disponibile.
-
-## F. Architettura e diagrammi
-
-TAD verificato contro POM, controller/service, `SecurityConfig`, database SQL,
-OpenAPI e workflow. Java 25/Spring Boot 4.1.2/PostgreSQL 18 sono effettivi nel
-repository/CI. Bot e API chat sono presenti; UI, routing, webhooks e WhatsApp sono
-separati come futuri. Sono stati mantenuti/aggiornati ER e stato missione e aggiunti
-contesto, container, package, sequenze creazione, assegnazione, scadenza,
-completamento e chatbot/notifiche.
-
-Mermaid CLI 11.4.2 ha validato 13 sorgenti e generato 26 asset PNG/SVG. Nessuna
-figura dei modelli esterni è stata copiata.
-
-## G. Scrum
-
-Le schede conservano la pianificazione; un registro separato riassume gli avanzamenti
-dedotti da Git/CI. PR #3 ha integrato workflow missioni; i componenti chatbot e
-Telegram sono presenti nella baseline attuale. Date/verbali di daily, Sprint Review
-e retrospettive non sono stati trovati. UI e mappe restano mancanti; completamento
-dello Sprint 4 non dichiarato.
-
-## H. Test ed evidenze
-
-- CI GitHub run `41651140562`, commit `25c613b`: entrambi i job Java/OpenAPI e
-  PostgreSQL 18 in success.
-- Locale Temurin 25.0.5: `mvnw clean verify` BUILD SUCCESS, 38 test, 0 failure/error,
-  21 pass, 17 skip per configurazione DB locale/context non disponibile.
-- Chatbot: `python -m unittest discover` da `chatbot/`: 64 test pass, 0 failure.
-- CI corrente non esegue la suite Python; prova Telegram reale è riportata nel
-  README del modulo ma non è stata ripetuta durante la revisione.
-
-## I. Quality assurance documentale
-
-| Controllo | Stato | Evidenza |
+| Output | Sorgente | Contenuto |
 |---|---|---|
-| Link relativi Markdown | PASS | 76 file controllati |
-| OpenAPI status/role e conteggio | PASS | 34 operation, 29 implemented, 5 designed |
-| Diagrammi | PASS | 13 sorgenti, 26 asset |
-| DOCX validi | PASS | 9 file; stile Word, campi TOC/pagina, tabelle/figure |
-| Workbook registri | PASS | 8 fogli |
-| Test backend locale | PASS con skip | 21 pass, 17 skip espliciti |
-| Test chatbot locale | PASS | 64 test |
-| Ispezione visuale DOCX e pagine | NOT RUN | Word installato; esportazione PDF automatica non completata |
-| Specifiche PDF/Excel originali | BLOCKED | Da fornire |
-| Approvazione docente | DA CONFERMARE | Nessuna evidenza |
-| Verifica manuale live Telegram | NOT RUN | Solo evidenza dichiarata nel README del modulo |
+| `00_INDICE_DOCUMENTAZIONE.docx` | `00_INDICE_GENERALE.md` | Catalogo e navigazione |
+| `BUR_FORNITORI.docx` | `requirements/BUR_FORNITORI.md` | Requisiti provvisori e acceptance |
+| `FUD_FORNITORI.docx` | `requirements/FUD_FORNITORI.md` | Flussi e stati |
+| `TAD_FORNITORI.docx` | `architecture/TAD_FORNITORI.md` | Architettura e limiti |
+| `PROJECT_MANAGEMENT_PLAN.docx` | `management/PROJECT_MANAGEMENT_PLAN.md` | Governance e Sprint |
+| `GUIDA_TEAM.docx` | `team/README.md` | Ruoli e convenzioni |
+| `MANUALE_UTENTE.docx` | `manuals/MANUALE_UTENTE.md` | Uso delle superfici presenti |
+| `MANUALE_TECNICO.docx` | `manuals/MANUALE_TECNICO.md` | Setup, build e diagnosi |
+| `REGISTRO_TEST_E_COLLAUDI.docx` | `quality/TEST_PLAN.md` | Strategia e gate |
 
-Comando strutturale: `python tools/validate_docs.py`. Rigenerazione:
-`python tools/build_docs.py`; diagrammi: `powershell -ExecutionPolicy Bypass -File tools/build_diagrams.ps1`.
+`docs/quality/registri.xlsx` è generato da requisiti, traceability, backlog, API,
+test, rischi, RACI e change log. Il controllo strutturale ha trovato 12 tabelle e
+2 immagini nei DOCX e 8 fogli nel workbook. L'indice TOC Word è un campo
+aggiornabile; generazione strutturale non equivale a revisione di impaginazione.
 
-## J. Git e consegna
+## Verifiche
 
-Branch creato secondo richiesta: `documentazione`, dopo switch su `main` e
-fast-forward a `origin/main` (`25c613b`). L'altro branch `feature/backend` non è
-stato modificato. Nessun commit, push o merge è stato eseguito. Prima della consegna
-eseguire `git diff --check`, rigenerare gli output e rivedere il diff.
+| Controllo | Evidenza | Esito |
+|---|---|---|
+| CI applicativa | GitHub Actions run `41656606659`, commit `f763d53`; job Java/OpenAPI e PostgreSQL 18 `success` | PASS |
+| Maven locale | `.\mvnw.cmd --batch-mode --no-transfer-progress clean verify`, Temurin 25.0.5+8, `BUILD SUCCESS` | PASS |
+| Test Maven | 60 contabilizzati: 31 pass, 0 failure/error, 29 skip principalmente DB/context senza datasource autorizzato | PASS per eseguiti; skip espliciti |
+| Chatbot | `python -m unittest discover` da `chatbot/`: 64 test, exit 0 | PASS locale; non in CI |
+| JavaScript statico | `node --check src/main/resources/static/app.js` | PASS |
+| Documentazione | `python tools/validate_docs.py`: 51 Markdown, OpenAPI, DOCX, workbook e Mermaid validati | PASS |
+| Browser E2E | Non eseguito; account/DB per prova autorizzata non disponibili | NOT RUN |
+| PostgreSQL locale | Porta 5432 raggiungibile, credenziali applicative assenti per questa verifica | BLOCKED |
+| Docker PostgreSQL locale | Docker Desktop Engine HTTP 500; nessun container/database creato | BLOCKED |
+| Provider live / WhatsApp | Provider mappe non verificati live; WhatsApp/webhook non implementati | NOT RUN |
+| Word visuale | Non è stato prodotto un rendering verificabile in Word | NOT RUN |
+| PDF/Excel docente | Non presenti nella working tree verificata | BLOCKED |
 
-## K. Residui e ordine suggerito per il docente
+`python tools/build_docs.py` ha rigenerato i 9 DOCX e `registri.xlsx`;
+`tools/build_diagrams.ps1` ha rigenerato i 26 asset PNG/SVG da 13 sorgenti.
+La revisione visuale Word resta NOT RUN. Per il dettaglio per comando e le
+evidenze non eseguite consultare
+[`quality/TEST_EVIDENCE.md`](../quality/TEST_EVIDENCE.md).
 
-1. Fornire le specifiche PDF/Excel originali e confermare la matrice requisiti.
-2. Presentare BUR (dopo convalida), FUD e TAD; allegare i diagrammi renderizzati.
-3. Presentare PMP/Scrum con nota esplicita sui verbali non reperiti.
-4. Presentare piano/evidenze test distinguendo CI, test locale e canale live.
-5. Presentare manuale utente come demo limitata Telegram e manuale tecnico.
-6. Aggiornare in Word il TOC, controllare paginazione/figure/tabelle e indicare
-   nell'indice le versioni approvate.
+## Stato Git e pubblicazione
 
-Prima di un uso operativo reale sono prioritari verifica dell'identità cliente,
-scelta del perimetro UI/mappe/WhatsApp, policy privacy e disponibilità del provider.
+Il merge commit `6dbd5aa` è locale sul branch `documentazione`. Le modifiche
+documentali di questa revisione sono in attesa di commit e della verifica finale
+del diff. Push e Pull Request non vengono dichiarati finché non completati.
+Nessun segreto o credenziale locale è stato modificato o inserito.
+
+## Azioni residue per la consegna didattica
+
+1. Acquisire le specifiche originali e far approvare BUR, regole tariffarie,
+   priorità e acceptance.
+2. Eseguire browser E2E in un ambiente con accesso autorizzato; decidere se la
+   vista mappa e i flussi mancanti rientrano nello scope.
+3. Decidere scope e provider di WhatsApp/webhook e le policy privacy per chatbot
+   e geocoding esterno.
+4. Aprire i DOCX in Microsoft Word, aggiornare i TOC e verificare pagine,
+   figure, tabelle e numerazione.
+5. Pubblicare il branch e aprire la PR solo dopo la validazione locale e un nuovo
+   controllo che `origin/main` non sia avanzato.

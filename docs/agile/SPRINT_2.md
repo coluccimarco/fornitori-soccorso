@@ -36,12 +36,12 @@ unit/MVC e CI PostgreSQL passati. La verifica locale resta bloccata dall'assenza
 di credenziali; le operazioni OpenAPI sono state promosse a `implemented`.
 
 **Dipendenze:** decisioni, DB funzionante, Java25 CI, API approvate.
-**Riferimenti:** [business rules](../05_BUSINESS_RULES.md),
+**Riferimenti:** [business rules](../requirements/BUSINESS_RULES.md),
 [states](../diagrams/mission_states.mmd), [report Sprint 2](../SPRINT_2_REPORT.md).
 
 ### Nota di riconciliazione — 03/11/2026
 
 La scheda è uno snapshot di Sprint e non è stata riscritta retroattivamente.
 Nel `main` integrato la funzionalità è arrivata con PR #3; il run CI
-`41651140562` sul commit `25c613b` ha entrambi i job Java/OpenAPI e PostgreSQL 18
+`41656606659` sul commit `f763d53` ha entrambi i job Java/OpenAPI e PostgreSQL 18
 in success. Questa evidenza non certifica una Sprint Review o una demo UI.

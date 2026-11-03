@@ -12,11 +12,13 @@
 | PostgreSQL integration | schema, missioni, chat, concorrenza e query | `MissionPostgresIntegrationTests`, `ChatPostgresIntegrationTests`; servizio PostgreSQL 18 CI | CI PASS nel run latest; non eseguito localmente |
 | Bot Python | dialogo, backend HTTP, notifiche e Telegram channel | `python -m unittest discover` in `chatbot/` | PASS: 64 test locali il 03/11/2026; non incluso nel workflow CI |
 | Contract/static | YAML, metadati status/role, package, Java target | step workflow `Backend CI` | CI PASS |
-| UI/browser | UX, accessibilità, browser | Nessuna UI nel repository | NOT RUN / non disponibile |
-| Mappe/provider WhatsApp | adapter e provider | Non implementati | NOT RUN |
+| UI/browser | UX, accessibilità, browser | UI statica presente; nessun runner browser nel workflow | NOT RUN |
+| Mappe | `MapProviderClientsTests`, `MapPostgresIntegrationTests` | API mappe testata in CI; provider live e mappa browser non inclusi | PASS automatico; live/UI NOT RUN |
+| WhatsApp/webhook | adapter e provider | Non implementati | NOT RUN |
 
-Un test saltato è distinto da PASS. L'esito del workflow `41651140562` su `25c613b`
-è prova per i job configurati (Java/OpenAPI e PostgreSQL 18), non per parti assenti.
+Un test saltato è distinto da PASS. L'esito del workflow `41656606659` su `f763d53`
+è prova per i job configurati (Java/OpenAPI e PostgreSQL 18), non per browser o
+provider esterni reali.
 La verifica di integrazione locale PostgreSQL resta separata dai job CI.
 
 ## Comandi
@@ -32,11 +34,9 @@ Eseguire `python -m unittest discover` dalla directory `chatbot`. La suite ha re
 esegue la suite Python; aggiungerla è un possibile follow-up di processo, non parte
 di questa revisione docs.
 
-Su Temurin 25.0.5 `.\mvnw.cmd --batch-mode --no-transfer-progress clean verify`
-ha restituito BUILD SUCCESS, 38 test contabilizzati, 0 failure/error, 21 pass e
-17 skip (13 chat PostgreSQL, 3 missioni PostgreSQL e 1 application-context in
-assenza della configurazione DB locale). Il run CI remoto con PostgreSQL 18 è
-separato e risulta PASS.
+Il risultato locale per la baseline integrata e i conteggi sono riportati in
+[`TEST_EVIDENCE.md`](./TEST_EVIDENCE.md); il run CI remoto con PostgreSQL 18 è
+separato.
 
 ## Gate di release didattica
 
@@ -55,6 +55,4 @@ separato e risulta PASS.
   `MissionServiceTests`, `PricingServiceTests`, `ChatSupportTests`.
 - Python: `test_dialogs.py`, `test_http_backend.py`, `test_notifications.py`,
   `test_telegram_channel.py`.
-- Piano e casi storici: [`docs/test/TEST_PLAN.md`](../test/TEST_PLAN.md),
-  [`docs/test/TEST_CASES.md`](../test/TEST_CASES.md),
-  [`TEST_EVIDENCE.md`](../TEST_EVIDENCE.md).
+- Casi: [`TEST_CASES.md`](./TEST_CASES.md); evidenze: [`TEST_EVIDENCE.md`](./TEST_EVIDENCE.md).

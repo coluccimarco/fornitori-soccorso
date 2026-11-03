@@ -7,7 +7,7 @@
 
 Flusso deterministico guidato da parole chiave, senza dipendenza obbligatoria da AI.
 Dialogo in [`chatbot/`](../../chatbot/README.md) e API `chat/*` **IMPLEMENTATI**,
-allineati al foglio `DialoghiChatbot` del docente ([D-007](../DECISION_LOG.md)).
+allineati al foglio `DialoghiChatbot` del docente ([H-007](../management/DECISION_LOG.md)).
 
 ## Dialogo
 
@@ -33,5 +33,5 @@ I dialoghi 1-9 del foglio sono test automatici in `chatbot/tests/test_dialogs.py
 
 **Dipendenze:** M1 auth/lookup/mission create; M5 provider e webhook; dataset dialoghi
 del corso. **Acceptance:** dialoghi del docente superati, test macchina a stati e
-handoff idempotente. **Riferimenti:** [regole privacy](../06_SICUREZZA.md),
+handoff idempotente. **Riferimenti:** [regole privacy](../architecture/SECURITY_DESIGN.md),
 [integration contracts](./INTEGRATION_CONTRACTS.md).

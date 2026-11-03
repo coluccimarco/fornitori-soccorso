@@ -61,6 +61,6 @@ Nessun merge in `main` era stato eseguito alla data di questo report.
 
 Il report rimane la fotografia del branch e del run indicati al momento della sua
 stesura. Successivamente PR #3 è stata integrata in `main`; il run più recente
-verificato dall'audit è `41651140562` sul commit `25c613b`, con entrambi i job CI
+verificato dall'audit è `41656606659` sul commit `f763d53`, con entrambi i job CI
 in success. Non interpretare la frase storica “Nessun merge in `main`” come stato
 attuale. Nessun verbale Sprint o demo UI viene dedotto dal merge.

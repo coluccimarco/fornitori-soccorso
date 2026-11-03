@@ -1,170 +1,165 @@
 # Technical Architecture Document — FORNITORI
 
-**Codice:** FOR-TAD-001 · **Versione:** 1.0 · **Data:** 03/11/2026
-**Repository baseline:** `main` / `25c613b` · **Responsabile:** M1 tecnico; approvazione architetturale da confermare
-**Stato:** architettura descrittiva della baseline implementata e delle estensioni future
+**Codice:** FOR-TAD-001 · **Versione:** 1.1 · **Data:** 03/11/2026
+**Repository baseline:** `main` / `f763d53` · **Responsabile:** M1 tecnico; approvazione architetturale da confermare
 
-## 1. Sintesi tecnica
+## 1. Sintesi
 
-FORNITORI è un'applicazione backend Java con API REST, persistenza PostgreSQL e
-client chatbot Python. Il backend copre autenticazione operatori, anagrafiche,
-missioni, pricing, audit e API stateless protette da token per chatbot/outbox. Il
-bot usa backend fake o HTTP; Telegram usa long polling. CI verifica Java 25,
-OpenAPI, schema/seed e test PostgreSQL 18.
+FORNITORI comprende backend Java/Spring con API REST e PostgreSQL, client web
+statico servito da Spring Boot e chatbot Python/Telegram. Il backend copre
+autenticazione operatore, anagrafiche, missioni, tariffazione, audit, chat e API
+di geocodifica/routing. Il client offre pagina pubblica, login, centrale e area
+autista; non integra ancora la vista cartografica né tutti i flussi missione.
+Telegram usa long polling. La CI verifica Java 25, OpenAPI, schema/seed e test
+PostgreSQL 18; l'ultimo run verificato è `41656606659` su `f763d53`.
 
-Non esiste un frontend web nel repository. Calcolo itinerari, webhook in ingresso,
-WhatsApp e deployment di produzione non sono runtime implementati. Un disegno
-architetturale deve quindi mostrare separatamente blocchi presenti e proposti.
+Questa descrizione separa la presenza del codice dalla verifica runtime/browser,
+dall'integrazione esterna e dall'approvazione dei requisiti. Non certifica la
+conformità ai documenti del docente né l'idoneità alla produzione.
 
-## 2. Fonti e stack
+## 2. Stack e stato
 
-| Tecnologia | Versione/prova | Stato |
+| Tecnologia | Evidenza | Stato |
 |---|---|---|
-| Java | 25 in `pom.xml` e workflow Temurin | Implementato; job CI PASS |
-| Spring Boot | Parent `4.1.2` in `pom.xml` | Implementato |
-| Maven | Wrapper distribuito 3.9.9 secondo README | Build `clean verify` in CI |
-| Spring Security / JPA / Validation / WebMVC | Starter del POM | Implementati |
-| PostgreSQL | 18 nel servizio del workflow | Schema/seed/assert e test in CI PASS |
-| Python | chatbot dichiara Python >=3.10 e stdlib | Modulo e test presenti |
-| OpenAPI | 3.0.3 in `api/openapi.yaml` | 34 operazioni: 29 implementate, 5 progettate; la description iniziale è obsoleta |
-| Frontend | Nessun package frontend nella working tree | Non implementato |
-| Mappe | API `maps/route` marcata `designed` | Pianificato |
-| Messaging | Telegram long polling; notifiche via dispatcher | Presente, test unitari; prova reale è documentata nel README chatbot |
-| WhatsApp | Webhook nello YAML, `designed` | Pianificato |
+| Java 25 / Spring Boot 4.1.2 | `pom.xml`, workflow Temurin | Implementato; CI PASS |
+| Maven Wrapper 3.9.9 | wrapper del repository | Build CI PASS |
+| Spring Security / JPA / Validation / WebMVC | starter e configurazione | Implementati |
+| PostgreSQL 18 | servizio del workflow | Schema, seed, assertion e test CI PASS |
+| Chatbot Python >=3.10 | `chatbot/`, dipendenze stdlib | Codice e test presenti; suite locale PASS, Telegram live non verificato qui |
+| OpenAPI 3.0.3 | `api/openapi.yaml` | 34 operation: 30 implementate, 4 progettate |
+| Client web | HTML/CSS/JavaScript, Bootstrap 5.3 in `src/main/resources/static/` | Presente; browser E2E non eseguito |
+| Mappe | `MapController`, `MapService`, client Nominatim/OSRM | API implementata e testata in CI; non integrata nella UI; provider live non verificato |
+| WhatsApp e webhook in ingresso | operazioni OpenAPI `designed` | Non implementati |
 
-## 3. Obiettivi e vincoli
+## 3. Contesto e container
 
-- Separare HTTP, use case, accesso dati e modello persistente.
-- Distinguere le fixture storiche dalle missioni operative.
-- Enforce lato server ruoli, proprietà della missione, deadline e vincoli concorrenti.
-- Evitare che chatbot/notifiche accedano direttamente alle tabelle.
-- Rendere verificabili costi, deadline e webhook tramite clock/test deterministici.
-- Non esporre credenziali o password/hash nelle API.
-
-## 4. Contesto e container
-
-Il diagramma di contesto e quello container in
-[`diagrams/`](../diagrams/) separano utenti, REST backend, database, chatbot e
-provider effettivo. Il bot si collega alle API `/api/v1/chat/*` con Bearer token;
-lo schema non è un'interfaccia d'integrazione dei client.
+Utenti responsabile/autista accedono alla pagina pubblica e al client web servito
+dallo stesso backend. Il browser invia richieste same-origin con cookie di sessione
+e token CSRF. Il backend accede a PostgreSQL; il bot Python usa le API
+`/api/v1/chat/*` con `FORNITORI_CHAT_TOKEN` e Telegram long polling. Solo la richiesta
+di route invoca Nominatim/OSRM; il client web non chiama l'API mappe.
 
 ![Diagramma System Context](../diagrams/rendered/system_context.png)
 
 ![Diagramma dei container](../diagrams/rendered/container.png)
 
-## 5. Componenti e dipendenze
+## 4. Componenti e flussi
 
 ```text
-REST controller -> DTO/validazione -> service transazionale -> repository JPA -> PostgreSQL
-                                             |                    |
-                                             +-> pricing/clock    +-> outbox
-Python bot -> Backend interface -> HTTP backend -> /api/v1/chat/* -> service backend
+Browser statico -> sessione + CSRF -> REST controller -> DTO/validazione
+                                      -> service transazionale -> repository JPA -> PostgreSQL
+                                      -> MapService -> Nominatim / OSRM
+Python bot -> Fake/HTTP backend -> /api/v1/chat/* -> service backend -> outbox
 Telegram long polling -> dialog engine -> outbound notification dispatcher -> Telegram
 ```
 
-![Componenti e package del backend](../diagrams/rendered/component_packages.png)
-
 | Componente | Responsabilità | Stato/evidenza |
 |---|---|---|
-| `controller/` | Auth, Registry, Mission, Chat; mapping HTTP e DTO | Implementato |
-| `dto/` | Payload distinti dalle entità persistenti | Implementato |
-| `service/` | Auth, anagrafiche, missioni, pricing, expiry, chat | Implementato |
-| `repository/` | Query e lock pessimistici JPA | Implementato |
-| `entity/`, `enums/` | Mapping e stati/ruoli | Implementato |
-| `config/` | Security filter chain, clock, configurazione | Implementato |
-| `common/` | Errori di dominio/API | Implementato |
-| `database/` | Schema, seed, verifiche e baseline più migrazioni additive chat | Implementato |
-| `chatbot/fornitori_chatbot/` | Conversazione, fake/HTTP backend, Telegram, notifiche | Implementato; limiti nel suo README |
-| UI web | Dashboard browser centrale/autista | Pianificato, assente |
-| Map adapter | Geocoding/routing | Pianificato; solo API `designed` |
-| Webhook provider | Ingresso Telegram/WhatsApp al backend | `designed`, distinto dal bot Telegram a long polling |
-| WhatsApp | Invio/ricezione provider | Pianificato |
+| `controller/`, `dto/` | REST, permessi, validazione e payload | Implementati |
+| `service/`, `repository/` | Logica applicativa, query e lock pessimistici | Implementati |
+| `entity/`, `enums/` | Persistenza, stati e ruoli | Implementati |
+| `config/`, `common/` | Security filter chain e errori API | Implementati |
+| `database/` | Schema, seed, verifiche e migrazioni additive chatbot | Implementati |
+| `chatbot/fornitori_chatbot/` | Dialogo, fake/HTTP backend, Telegram e notifiche | Implementati; limiti documentati nel README del modulo |
+| `src/main/resources/static/` | Pagina pubblica, login, dashboard centrale, anagrafiche, missioni e area autista | Presente; test browser assenti |
+| `MapController` / `MapService` | Geocodifica origine, route base-sinistro-officina e km stimati | API presente; non invocata dal client |
+| `NominatimGeocodingClient` / `OsrmRoutingClient` | Geocodifica e routing esterni | Implementati; soggetti a limiti e disponibilità del provider |
 
-## 6. Backend e workflow
+## 5. Client web
 
-### Sicurezza
+La pagina `index.html` contiene la vista pubblica, login e area riservata. `app.js`
+carica identità e token CSRF, interroga le API same-origin e gestisce gli errori
+HTTP. Il client offre dashboard e registri, ricerca/creazione cliente, creazione
+missione, proposta ad autisti, azioni autista (accettazione/rifiuto/completamento),
+note e storico. Il layout è responsive.
 
-La chain `/api/v1/chat/**` è stateless e token-based (`FORNITORI_CHAT_TOKEN`),
-senza CSRF di sessione. Le API operatori usano sessione HTTP, password BCrypt e
-CSRF repository HTTP session; i controlli centrali/autista sono server-side. Il
-servizio deve anche controllare l'associazione missione-driver, non soltanto il
-ruolo. Cookie: HttpOnly e SameSite Lax; flag Secure configurabile.
+Non risultano chiamate browser a `/api/v1/maps/route`, rendering di una mappa,
+rettifica costo/intervento o test automatizzati di browser. La presenza dei file
+statici non dimostra che il flusso sia stato provato con un account e database
+configurati; screenshot e prova UX restano NOT RUN.
 
-### Transazioni, locking e stato
+## 6. Backend, sicurezza e workflow
 
-`MissionService` racchiude mutazioni in transazioni; i repository usano lock
-pessimistici in operazioni critiche; indici parziali PostgreSQL limitano
-assegnazioni/proposte LIVE. Un clock iniettato supporta deadline deterministiche.
-`MissionExpiryScheduler` opera sulle righe live. Diagramma stati aggiornato:
+Le API operatore usano sessione HTTP, password BCrypt e protezione CSRF sulle
+mutazioni. I ruoli RESPONSABILE/AUTISTA e l'associazione missione-driver sono
+verificati lato server; il cookie è HttpOnly/SameSite Lax e l'opzione Secure è
+configurabile. `/api/v1/chat/**` è stateless e richiede `FORNITORI_CHAT_TOKEN`.
+Il client non accede direttamente al database.
+
+`MissionService` gestisce mutazioni transazionali; repository e vincoli parziali
+PostgreSQL proteggono concorrenza/assegnazioni live. Un clock iniettato consente
+test deterministici. `MissionExpiryScheduler` opera sulle righe live; le fixture
+`is_fixture=TRUE` restano distinte. Stati, proposte e transizioni sono descritti in
 [`mission_states.mmd`](../diagrams/mission_states.mmd).
-
-Gli stati persistiti nello schema includono `nuova`, `proposta`, `accettata`,
-`eseguita`, `non_accettata`, `scaduta`. Riproposizione crea una nuova proposta
-senza cancellare lo storico. Le fixture `is_fixture=TRUE` non sono work items live.
-
-### Prezzi e outbox
 
 La configurazione del seed è €50 di uscita, €1,20/km, supplemento 0,25 e fascia
 20:00–08:00; il servizio usa `Europe/Rome` e `HALF_UP`. Il timestamp applicato va
 confermato col docente: il foglio e i log descrivono l'accettazione, il PDF non è
-disponibile. Gli eventi di completamento/accettazione sono registrati con outbox
-nella transazione. La presenza di outbox non equivale a consegna garantita:
-il dispatcher Telegram processa i canali supportati; WhatsApp non è implementato.
+disponibile. L'outbox scrive eventi nella transazione di dominio; il dispatcher
+Telegram non garantisce exactly-once. WhatsApp non è implementato.
 
-## 7. Database e integrità
+## 7. Database
 
-Schema relazionale in `database/01_schema.sql`, seed in `02_seed.sql`, verifiche
-`03_verifiche.sql`/`04_assert_baseline.sql`; `05_chat_requests.sql` e
-`06_chat_recipient.sql` aggiungono schema chatbot. Il POM usa Hibernate `validate`,
-non auto-update. Tabelle: app_users, vehicles, drivers, insurance_companies,
-customers, workshops, pricing_config, missions, mission_proposals, mission_notes,
-mission_events, chat_sessions, notifications_outbox.
+Schema in `database/01_schema.sql`, seed in `02_seed.sql`, verifiche in
+`03_verifiche.sql` e `04_assert_baseline.sql`; `05_chat_requests.sql` e
+`06_chat_recipient.sql` aggiungono schema chatbot. Hibernate usa `validate`, non
+auto-update. Le tabelle comprendono utenti, mezzi/autisti, clienti/compagnie,
+officine, missioni, proposte, note, eventi, pricing, sessioni chat e outbox.
 
-Importi `NUMERIC`; istanti `TIMESTAMPTZ`; coordinate validate; FK e vincoli di
-stato/proposta; `targa_norm` univoca; eventi con dettagli JSONB. Dizionario e diagramma
-ER: [`DATABASE_DESIGN.md`](./DATABASE_DESIGN.md),
-[`DATA_DICTIONARY.md`](./DATA_DICTIONARY.md) e
-[`database_er.mmd`](../diagrams/database_er.mmd).
+Importi e distanze usano `NUMERIC`; istanti `TIMESTAMPTZ`; i vincoli comprendono
+FK, stati e coordinate, targa normalizzata univoca e protezioni su assegnazioni.
+Il servizio mappe può salvare coordinate geocodificate e chilometri stimati,
+distinti da quelli effettivi inseriti alla chiusura. Vedi
+[`DATABASE_DESIGN.md`](./DATABASE_DESIGN.md), che include il dizionario.
 
 ## 8. API e integrazioni
 
-`api/openapi.yaml` è il contratto dettagliato. Gli operatori usano sessione cookie
-e CSRF per mutazioni. Il bot usa token Bearer e endpoint `/api/v1/chat/*`; il canale
-Telegram usa long polling senza webhook backend. Route mappe e webhook in ingresso
-sono marcati `designed`; non vanno chiamati come runtime disponibile. Riferimenti:
-[`API_SPECIFICATION.md`](./API_SPECIFICATION.md) e
-[`INTEGRATION_DESIGN.md`](./INTEGRATION_DESIGN.md).
+`api/openapi.yaml` è il contratto dettagliato. Contiene 34 operation: 30
+`implemented` e 4 `designed` (gestione utenti e webhook in ingresso). L'operation
+`GET /api/v1/maps/route` è implementata: riceve missione e, facoltativamente,
+autista; controlla autorizzazioni e ownership, geocodifica l'origine se necessario,
+calcola il percorso OSRM attraverso base, sinistro e, per traino, officina, quindi
+persiste i km stimati.
+
+Nominatim richiede User-Agent e limita il ritmo delle richieste; entrambi i provider
+sono servizi pubblici con timeout e disponibilità non garantita. L'indirizzo viene
+trasmesso al geocoder esterno. Il workflow CI testa il codice con test automatici,
+ma non verifica disponibilità provider live. La UI non consuma l'endpoint e non
+mostra una mappa. Webhook Telegram/WhatsApp e gestione utenti restano progettati.
+Vedi [`API_SPECIFICATION.md`](./API_SPECIFICATION.md) e
+i [contratti d'integrazione](../team/INTEGRATION_CONTRACTS.md).
 
 ## 9. Errori, configurazione e logging
 
-Errori applicativi sono tradotti in status HTTP strutturati; sicurezza emette JSON
-`401/403`. Configurazione da environment, fra cui datasource e token chatbot; non
-registrare password, bearer token, messaggi privati o dati cliente non necessari.
-La configurazione locale usa `application.properties`; configurazioni production,
-centralizzazione log, metriche, tracing e retention non risultano presenti.
+Le API restituiscono errori HTTP strutturati, inclusi `401/403` per autenticazione
+e autorizzazione. Le credenziali datasource e il token chatbot sono configurati
+tramite environment; non registrare password, bearer token o PII non necessarie.
+La configurazione locale usa `application.properties`. Centralizzazione log,
+metriche, tracing, retention e configurazione production non risultano dimostrati.
 
 ## 10. Build, test, CI e deployment
 
-La CI `.github/workflows/backend-ci.yml` ha due job: Java 25 build/test, layout
-package e validazione YAML; PostgreSQL 18, esecuzione script, assertion baseline e
-test d'integrazione. Sul commit `25c613b` il run `41651140562` è verde in entrambi
-i job. Non certifica UI, routing, WhatsApp o messa in produzione.
-Non sono presenti in questa baseline manifest cloud/container/deployment.
+La CI `.github/workflows/backend-ci.yml` ha job Java 25 build/test, package layout
+e validazione YAML, più job PostgreSQL 18 con script, assertion baseline e test di
+integrazione. Il run `41656606659` sul commit `f763d53` è verde in entrambi i job,
+inclusi i test mappa aggiunti. Non certifica browser E2E, provider esterni,
+WhatsApp o messa in produzione.
 
-## 11. Decisioni aperte e debito tecnico
+## 11. Limiti e decisioni aperte
 
-- Mancano specifica originale e consenso/acceptance docente.
-- La verifica chat tramite targa non è autenticazione del titolare.
-- Stato conversazione volatile in RAM; riavvio perde le sessioni.
-- Frontend e mappe non implementati; nessuna schermata reale da documentare.
-- WhatsApp e Webhook API disegnate ma non realizzate.
-- Descrizione `info.description` OpenAPI è vecchia, benché i metadati per singola
-  operazione siano aggiornati; aggiornamento affidato al contract owner.
-- Deployment, backup/restore, osservabilità e policy segreti production non definiti.
+- PDF/Excel originali e approvazione docente non disponibili per verifica.
+- La lookup chatbot tramite targa non prova la titolarità; la conversazione può
+  perdere stato volatile al riavvio.
+- UI e workflow browser presenti nel codice, ma non collaudati; rettifica
+  intervento/costo e vista cartografica non sono esposti dal client attuale.
+- Nominatim/OSRM sono provider pubblici; privacy, rate limit e availability vanno
+  valutati prima di un uso reale.
+- WhatsApp, webhook ingressi, deployment, backup/restore e osservabilità production
+  non risultano implementati o definiti.
 
-## 12. Evoluzioni future
+## 12. Evoluzioni
 
-Priorità: acquisire fonti docente e convalidare l'identità; stabilire UI/provider
-richiesti; aggiornare contratto e test in modo coordinato; solo poi pianificare
-routing, WhatsApp, persistenza conversazioni e infrastruttura. Le alternative non
-sono decisioni approvate. Questo documento non dichiara conformità a standard.
+Acquisire fonti docente e convalidare l'identità; provare i flussi UI in ambiente
+isolato; decidere se integrare visualizzazione mappa, rettifica costo/intervento,
+WhatsApp, persistenza conversazioni e infrastruttura. Le alternative non sono
+decisioni approvate. Questo documento non dichiara conformità a standard.

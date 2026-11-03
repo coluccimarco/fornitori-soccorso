@@ -6,7 +6,8 @@
 ## Sprint Goal
 
 Integrare chatbot, routing mappe e notifiche senza dipendere direttamente dalle
-tabelle o replicare regole backend. Tutto **PIANIFICATO**.
+tabelle o replicare regole backend. Questa sezione è il piano originale, non lo
+stato della baseline corrente; la riconciliazione è riportata in fondo.
 
 ## Attività pianificate
 
@@ -43,8 +44,9 @@ Passaggio a Sprint 4 con integrazioni ripetibili in ambiente di test.
 
 ### Nota di riconciliazione — 03/11/2026
 
-La scheda resta un piano storico, non un verbale. La baseline `main` successiva
-contiene il bot Python/Telegram, le API chat e il dispatcher Telegram; il README
-del modulo documenta una prova reale che non è parte dei job CI. Mappe/routing,
-UI e WhatsApp restano non implementati. Vedi
+La scheda resta un piano storico, non un verbale. La baseline `main` successiva contiene il bot Python/Telegram, le API chat e il
+dispatcher Telegram; il README del modulo documenta una prova reale che non è
+parte dei job CI. Il frontend centrale/autista è presente; API mappe, Nominatim e
+OSRM sono implementati e inclusi nella CI. La mappa browser non è collegata,
+provider live non sono stati verificati e WhatsApp resta non implementato. Vedi
 [registro Scrum](./README.md) e [audit](../management/DOCUMENTATION_AUDIT.md).

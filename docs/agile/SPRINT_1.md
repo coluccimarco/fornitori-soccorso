@@ -41,4 +41,5 @@ gli script di baseline; non dichiarare l'assertion locale superata.
 
 **Rischi:** credenziali DB, decisione timestamp tariffario, status CI remote.
 **Passaggio a Sprint 2:** feedback regole di tariffa e prova dei quattro script DB.
-**Riferimenti:** [report](../SPRINT_1_REPORT.md), [evidenze](../TEST_EVIDENCE.md).
+**Riferimenti:** [report](../SPRINT_1_REPORT.md),
+[evidenze](../quality/TEST_EVIDENCE.md).

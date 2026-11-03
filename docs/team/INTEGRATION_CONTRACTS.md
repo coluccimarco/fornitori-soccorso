@@ -6,10 +6,9 @@
 ## Fonte normativa
 
 `api/openapi.yaml` definisce path, request/response e stati per operazione. La
-baseline integrata contiene auth, anagrafiche, missioni, dashboard e API chatbot;
-mappe e webhooks in ingresso restano **PIANIFICATI**. La description generale
-OpenAPI è nota come obsoleta; il conteggio rilevato è 34 operazioni (29 implemented,
-5 designed). La tabella di dettaglio è in
+baseline integrata contiene auth, anagrafiche, missioni, dashboard, API chatbot
+e API mappe; gestione utenti e webhooks in ingresso restano **DESIGNED**. OpenAPI
+contiene 34 operation (30 implemented, 4 designed). La tabella di dettaglio è in
 [API_SPECIFICATION.md](../architecture/API_SPECIFICATION.md).
 
 ## Dipendenze
@@ -17,11 +16,24 @@ OpenAPI è nota come obsoleta; il conteggio rilevato è 34 operazioni (29 implem
 | Da → a | Contratto/dato | Stato |
 |---|---|---|
 | M2 → M1 | Sessione cookie + CSRF; auth e GET anagrafiche | Implementato |
-| M2 → M1 | Mission create, proposal, driver view, dashboard | API implementate; UI non presente |
+| M2 → M1 | Mission create, proposal, driver view, dashboard | API e client statico presenti; browser E2E non eseguito |
 | M3 → M1 | Lookup targa e create mission via servizio | API chatbot implementate; la targa non prova identità |
 | M3 ↔ M5 | Conversazione, dispatcher Telegram e notifiche | Console/Telegram e notifiche presenti; webhook/WhatsApp pianificati |
-| M4 → M1/M2 | Coordinate veicolo/origine/officina, route e km suggeriti | Coordinate disponibili; routing pianificato |
+| M4 → M1/M2 | Coordinate veicolo/origine/officina, route e km suggeriti | API `/maps/route` implementata e testata in CI; nessuna vista mappa nel client |
 | M1 → M5 | Outbox + `MISSION_ACCEPTED` / `MISSION_COMPLETED` | Outbox backend e dispatcher bot presenti; consegna Telegram dichiarata in README bot |
+
+## Provider esterni
+
+| Provider | Flusso | Stato e limite |
+|---|---|---|
+| Telegram | Bot Python in long polling; notifiche via dispatcher | Implementato; la prova reale è documentata nel README del modulo ma non è coperta dalla CI e non è stata ripetuta in questa revisione |
+| Nominatim / OSRM | Backend geocodifica e calcola percorso su richiesta | Client e API implementati/testati; provider pubblici senza disponibilità o rate limit garantiti |
+| WhatsApp | Ingresso webhook e notifiche | Non implementato; due operation OpenAPI `designed` |
+| Fake backend bot | Dati sintetici per sviluppo/test | Implementato; non sostituisce API o dati runtime |
+
+Il frontend usa API operatori same-origin con sessione/CSRF, ma attualmente non
+chiama `/api/v1/maps/route`. Codice e stato OpenAPI non dimostrano un collaudo
+browser o una prova live del provider.
 
 ## Change process
 

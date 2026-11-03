@@ -64,7 +64,7 @@ da Adoptium e verificato tramite SHA-256. `.\mvnw.cmd clean verify` su JDK 25 ha
 esito BUILD SUCCESS: 6 test MVC passati, test context-load saltato senza
 `SPRING_DATASOURCE_PASSWORD`. La baseline DB locale non è stata eseguita; i job
 Java 25 e PostgreSQL di GitHub Actions sono passati. Vedi
-[TEST_EVIDENCE.md](./TEST_EVIDENCE.md).
+[TEST_EVIDENCE.md](./quality/TEST_EVIDENCE.md).
 
 ## F. Problemi e decisioni aperte
 

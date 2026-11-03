@@ -11,8 +11,10 @@ L'indice normativo e il catalogo aggiornato sono in
   [stato e audit](./management/DOCUMENTATION_AUDIT.md), [test](./quality/TEST_PLAN.md).
 - **Sviluppatori:** [manuale tecnico](./manuals/MANUALE_TECNICO.md),
   [guide dei membri](./team/), [specifica API](../api/openapi.yaml),
-  [Scrum](./agile/SPRINT_1.md).
+  [registro Scrum](./agile/README.md).
 - **Utenti e demo:** [manuale d'uso](./manuals/MANUALE_UTENTE.md).
+- **Qualità:** [piano test](./quality/TEST_PLAN.md),
+  [casi](./quality/TEST_CASES.md), [evidenze](./quality/TEST_EVIDENCE.md).
 - **Consegna editabile:** [documenti Word](./word/); rigenerazione con
   `python tools/build_docs.py`.
 
@@ -20,20 +22,20 @@ L'indice normativo e il catalogo aggiornato sono in
 
 | Area | Scopo |
 |---|---|
-| [management/](./management/) | Audit, governance, rischi, decisioni e registro documentale |
+| [management/](./management/) | Audit, report finale, governance, rischi e decisioni |
 | [requirements/](./requirements/) | Requisiti business, flussi e tracciabilità |
 | [architecture/](./architecture/) | Architettura, database, API e sicurezza |
 | [team/](./team/) | Responsabilità, onboarding e contratti d'integrazione |
-| [agile/](./agile/) | Backlog, schede Sprint e template |
-| [quality/](./quality/) | Piano test, evidenze e tracciabilità |
+| [agile/](./agile/) | Registro Scrum, backlog, schede Sprint e template consolidati |
+| [quality/](./quality/) | Piano, casi ed evidenze test, tracciabilità |
 | [manuals/](./manuals/) | Istruzioni utente e tecniche |
 | [diagrams/](./diagrams/) | Sorgenti Mermaid; la cartella conserva anche i diagrammi storici |
 | [word/](./word/) | File `.docx` generati dai Markdown |
 | [templates/](./templates/) | Modelli e registro |
 
-I documenti numerati e i report Sprint nella radice di `docs/` sono conservati
-per compatibilità e come evidenze storiche. Quando un documento aggiornato esiste
-nelle aree sopra, prevale quello nuovo; la documentazione API normativa resta
+I report Sprint e gli artefatti originali utili sono conservati come evidenza
+storica; le guide duplicate e i rimandi superati sono stati consolidati nelle
+aree sopra. La documentazione API normativa resta
 [api/openapi.yaml](../api/openapi.yaml) e lo schema resta in
 [database/](../database/).
 

@@ -6,7 +6,8 @@
 ## Sprint Goal
 
 Validare una build integrata, correggere i difetti e preparare una demo onesta,
-ripetibile e documentata. **PIANIFICATO**.
+ripetibile e documentata. Questo è un obiettivo di piano, non evidenza che il
+collaudo o la demo siano stati eseguiti.
 
 ## Attività
 
@@ -33,4 +34,10 @@ notifica, dashboard e casi 401/403/timeout. Rischi: stabilità rete, dati sensib
 dipendenze provider. Preparare fallback registrato senza fingere live integration.
 
 **Dipendenze:** Sprint 1–3 e ambiente integrato. **Passaggio:** review finale e
-sign-off DoD. **Riferimenti:** [QA](../09_TESTING_QA.md), [deployment](../10_DEPLOYMENT.md).
+sign-off DoD. **Riferimenti:** [QA](../quality/TEST_PLAN.md), [deployment](../10_DEPLOYMENT.md).
+
+### Nota di riconciliazione — 03/11/2026
+
+La baseline `main` contiene ora il client web e l'API di routing con test CI;
+questo non sostituisce browser E2E, provider live, verifica visiva né sign-off
+docente. Il piano di Sprint 4 resta un piano storico, non un verbale.

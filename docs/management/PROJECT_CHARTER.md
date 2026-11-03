@@ -7,8 +7,9 @@
 
 FORNITORI è un project work del percorso ITS Developer 4.0 per realizzare un
 sistema dimostrativo di coordinamento del soccorso stradale. Il repository integra
-un backend Java/Spring e PostgreSQL e un chatbot Python su Telegram; l'interfaccia
-web, le mappe e WhatsApp non sono presenti nella baseline verificata.
+backend Java/Spring e PostgreSQL, client web HTML/CSS/JavaScript, API mappe e
+chatbot Python su Telegram; visualizzazione cartografica, WhatsApp e webhook in
+ingresso non sono presenti nella baseline verificata.
 
 ## Scopo e obiettivi
 
@@ -25,12 +26,14 @@ non un'approvazione della specifica del docente.
 
 ## Ambito e consegne
 
-**Presente:** API di autenticazione/anagrafiche/missioni/chat, persistenza JPA,
-schema SQL, dispatcher Telegram nel chatbot, contratti OpenAPI, test e CI.
+**Presente:** API di autenticazione/anagrafiche/missioni/chat/mappe, client web
+statico per responsabile e autista, persistenza JPA, schema SQL, dispatcher
+Telegram nel chatbot, contratti OpenAPI, test e CI.
 
-**Non presente nella baseline:** frontend web; calcolo/rendering cartografico;
-WhatsApp; infrastruttura cloud/produzione. La disponibilità in OpenAPI di un
-endpoint `designed` non è una consegna implementata.
+**Non presente nella baseline:** mappa visuale collegata al browser; alcune azioni
+centrali (rettifica intervento/costo); WhatsApp; infrastruttura cloud/produzione.
+La UI non ha browser E2E verificati. La disponibilità in OpenAPI di un endpoint
+`designed` non è una consegna implementata.
 
 **Deliverable documentali:** Markdown canonico, DOCX modificabili generati,
 workbook dei registri, diagrammi Mermaid e audit delle fonti.
@@ -40,9 +43,9 @@ workbook dei registri, diagrammi Mermaid e audit delle fonti.
 | Ruolo repository | Ambito primario | Approvazioni necessarie |
 |---|---|---|
 | M1 | Backend, database, contratti e coordinamento tecnico | Modifiche a schema/API condivisi |
-| M2 | Frontend (pianificato) | UX e integrazione delle API |
+| M2 | Frontend statico centrale/autista | UX, integrazione API e verifica browser |
 | M3 | Chatbot Python/Telegram | Conversazione, canale e privacy |
-| M4 | Mappe/routing (pianificato) | Provider, licenza, fallback e coordinate |
+| M4 | API mappe/routing | Provider, licenza, fallback e coordinamento vista browser |
 | M5 | Adapter canale/notifiche | Provider esterni, segreti e policy di retry |
 | Docente/team | Requisiti e decisioni didattiche | Fonte primaria non disponibile in questa baseline |
 
@@ -53,9 +56,9 @@ persona; i nomi degli studenti non sono registrati nel repository esaminato.
 
 JDK 25; Spring Boot 4.1.2; Maven Wrapper 3.9.9; PostgreSQL 18 o compatibile;
 OpenAPI come contratto. Nessuna credenziale va committata. CI latest sulla baseline
-`25c613b` ha entrambi i job in success. Il successo complessivo del progetto non
-si dichiara finché i requisiti originali non sono disponibili e le parti UI/mappe
-che il docente riterrà obbligatorie non sono state valutate.
+`f763d53` (run `41656606659`) ha entrambi i job in success. Il successo complessivo
+del progetto non si dichiara finché i requisiti originali non sono disponibili e
+le funzioni UI/mappe che il docente riterrà obbligatorie non sono state valutate.
 
 ## Rischi, ipotesi e gate
 

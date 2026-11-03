@@ -141,7 +141,7 @@ def main() -> int:
     print(f"DOCX: PASS ({docx_count} valid files, {table_count} tables, {picture_count} pictures)")
     print(f"Workbook: PASS ({len(sheets)} sheets: {', '.join(sheets)})")
     print(f"Mermaid: PASS ({diagram_sources} sources, {diagram_outputs} SVG/PNG outputs)")
-    print("Visual Word rendering/page count: NOT RUN (Microsoft Word/renderer unavailable)")
+    print("Visual Word rendering/page count: NOT RUN (not verified with a reliable renderer)")
     return 0
 
 

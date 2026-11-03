@@ -12,7 +12,8 @@
 - [Functional Design (FUD)](./requirements/FUD_FORNITORI.md)
 - [Technical Architecture (TAD)](./architecture/TAD_FORNITORI.md)
 - [Piano Scrum e stato degli Sprint](./agile/README.md)
-- [Piano test e matrice di tracciabilità](./quality/TEST_PLAN.md)
+- [Piano e casi test](./quality/TEST_PLAN.md) · [evidenze](./quality/TEST_EVIDENCE.md)
+- [Matrice di tracciabilità](./requirements/REQUIREMENTS_TRACEABILITY.md)
 - [Manuale utente](./manuals/MANUALE_UTENTE.md) · [Manuale tecnico](./manuals/MANUALE_TECNICO.md)
 - [Guide del team](./team/) · [Word modificabili](./word/)
 
@@ -31,9 +32,10 @@ Il codice owner M1–M5 designa il ruolo del team, non una persona nominativa.
 | FOR-TAD-001 | Technical Architecture | Architettura | `docs/architecture/TAD_FORNITORI.md` | `docs/word/TAD_FORNITORI.docx` | Baseline tecnica / M1 | Codice, DB, CI |
 | FOR-PMP-001 | Piano gestione progetto | Management | `docs/management/PROJECT_MANAGEMENT_PLAN.md` | `docs/word/PROJECT_MANAGEMENT_PLAN.docx` | Baseline, verbali da confermare / team | Backlog, commit |
 | FOR-TEAM-001 | Guide del team | Operativo | `docs/team/` | `docs/word/GUIDA_TEAM.docx` | Ruoli M1–M5 / membri | OpenAPI, struttura repo |
-| FOR-USER-001 | Manuale utente | Manuale | `docs/manuals/MANUALE_UTENTE.md` | `docs/word/MANUALE_UTENTE.docx` | Bot Telegram parziale; UI non disponibile / M2–M3 | Codice chatbot |
+| FOR-USER-001 | Manuale utente | Manuale | `docs/manuals/MANUALE_UTENTE.md` | `docs/word/MANUALE_UTENTE.docx` | Bot e UI presenti; browser E2E non eseguito / M2–M3 | Frontend e chatbot |
 | FOR-TECH-001 | Manuale tecnico | Manuale | `docs/manuals/MANUALE_TECNICO.md` | `docs/word/MANUALE_TECNICO.docx` | Baseline / M1 | POM, SQL, chatbot, CI |
-| FOR-TEST-001 | Piano test e tracciabilità | Qualità | `docs/quality/TEST_PLAN.md` | `docs/word/REGISTRO_TEST_E_COLLAUDI.docx` | CI PASS; UI non testabile / M1–M5 | Report CI, suite |
+| FOR-TEST-001 | Piano test e collaudi | Qualità | `docs/quality/TEST_PLAN.md`, `docs/quality/TEST_CASES.md`, `docs/quality/TEST_EVIDENCE.md` | `docs/word/REGISTRO_TEST_E_COLLAUDI.docx` | CI Java/OpenAPI e PostgreSQL PASS; browser NOT RUN / M1–M5 | Report CI, suite |
+| FOR-TRACE-001 | Matrice requisiti/API/test | Tracciabilità | `docs/requirements/REQUIREMENTS_TRACEABILITY.md` | — | Requisiti locali, approvazione docente assente | BUR, OpenAPI, casi/evidenze |
 | FOR-RSK-001 | Registro rischi | Management | `docs/management/RISK_REGISTER.md` | — | Aperto e aggiornabile / team | Dipendenze e fonti |
 | FOR-DEC-001 | Registro decisioni | Management | `docs/management/DECISION_LOG.md` | — | Baseline / team-docente | Decisioni storiche |
 | FOR-CHG-001 | Registro modifiche documentali | Management | `docs/management/CHANGE_LOG.md` | — | Attivo / M1 | Revisioni Git |

@@ -36,10 +36,10 @@ sono stati ricostruiti dai soli commit. Per lo stato verificabile vedi
 | Gate | Condizione minima | Stato alla baseline |
 |---|---|---|
 | Specifica | PDF/Excel acquisiti e requisiti confermati | BLOCKED |
-| Backend | Maven verify, CI e assert PostgreSQL | CI PASS a `25c613b` |
-| Contratto | Status e ruoli OpenAPI coerenti coi controller/test | 34 operazioni; 29 implemented, 5 designed; descrizione introduttiva da riallineare |
+| Backend | Maven verify, CI e assert PostgreSQL | CI PASS a `f763d53`, run `41656606659` |
+| Contratto | Status e ruoli OpenAPI coerenti coi controller/test | 34 operation; 30 implemented, 4 designed; description aggiornata |
 | Chatbot | Test automatizzati e canale dichiarato | Test presenti; CI verde; Telegram è dichiarato provato nei documenti modulo |
-| UI e mappe | Prodotto presente e testabile | NOT IMPLEMENTED |
+| UI e mappe | Prodotto presente e testabile | Client e API mappe presenti; browser E2E, provider live e mappa visuale NOT RUN |
 | Rilascio didattico | Acceptance docente e demo ripetibile | DA CONFERMARE |
 
 Non si dichiarano velocity, burndown, percentuali di completamento o story point

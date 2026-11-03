@@ -3,9 +3,10 @@ info:
   title: FORNITORI REST API
   version: 1.0.0
   description: >
-    Contratto condiviso per FORNITORI. Auth e anagrafiche sono implementate;
-    missioni, utenti, chatbot, dashboard, mappe e webhook sono progettati e non
-    devono essere chiamati finché non implementati.
+    Contratto condiviso per FORNITORI. Auth, anagrafiche, missioni, dashboard,
+    chatbot e API di geocodifica/percorso sono implementati; gestione utenti e
+    webhook in ingresso restano progettati. Lo stato di ogni operation è indicato
+    da x-implementation-status e non certifica da solo una verifica end-to-end.
 servers:
   - url: /
 tags:

@@ -1,26 +1,32 @@
-%% Container view: solid lines are present in the repository; dotted lines future.
+%% Container view: solid lines are present in code; dotted lines are not integrated.
 flowchart TB
     subgraph Client["Client"]
-        Ops["Responsabile<br/>UI non presente"]
-        Driver["Autista<br/>UI non presente"]
+        Ops["Responsabile"]
+        Driver["Autista"]
         Customer["Cliente"]
+        Web["Browser client<br/>HTML / CSS / JavaScript"]
         Bot["Chatbot Python<br/>engine + HTTP backend"]
         Telegram["Canale Telegram<br/>long polling"]
     end
     subgraph App["Applicazione FORNITORI"]
-        Web["REST API<br/>Spring Boot / Java 25"]
-        Service["Application services<br/>auth / mission / chat / pricing"]
+        Static["Static resources<br/>Spring Boot"]
+        API["REST API<br/>Spring Boot / Java 25"]
+        Service["Application services<br/>auth / mission / chat / maps / pricing"]
         Persistence["Spring Data JPA"]
     end
     DB[("PostgreSQL 18")]
-    Map["Routing provider futuro"]
-    WhatsApp["WhatsApp futuro"]
-    Ops -->|"cookie sessione + CSRF"| Web
-    Driver -->|"cookie sessione + CSRF"| Web
+    Geocoder["Nominatim"]
+    Router["OSRM"]
+    WhatsApp["WhatsApp<br/>non implementato"]
+    Ops --> Web
+    Driver --> Web
+    Web -->|"same-origin session + CSRF"| Static
+    Static --> API
     Customer --> Telegram
     Telegram --> Bot
-    Bot -->|"Bearer token"| Web
-    Web --> Service --> Persistence --> DB
-    Bot -. "outbox API / polling" .-> Web
-    Web -.-> Map
+    Bot -->|"service token"| API
+    API --> Service --> Persistence --> DB
+    Service -->|"geocoding"| Geocoder
+    Service -->|"routing"| Router
+    Bot -. "outbox API / polling" .-> API
     Bot -.-> WhatsApp

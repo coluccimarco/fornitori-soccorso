@@ -13,6 +13,9 @@ Questa descrive controlli sorgente, non è un penetration test né certificazion
 - Segreto passato da `FORNITORI_CHAT_TOKEN`; non mantenerlo nei file del repository.
 - I bot usano service API; accesso diretto alle tabelle è vietato per architettura.
 - Cookie HttpOnly, SameSite Lax; `SESSION_COOKIE_SECURE` configurabile.
+- La chain chat usa autenticazione stateless con token di servizio; non usa CSRF
+  di sessione. Il client statico non sostituisce le verifiche di ruolo o proprietà
+  eseguite dal server.
 
 ## Limiti, privacy e minacce
 
@@ -23,6 +26,11 @@ autorizzazione production. Webhook e provider WhatsApp non sono implementati.
 Logging/retention, DPIA, consenso, gestione incidenti, secret rotation e policy di
 produzione non risultano documentati/approvati. Prima di uso reale serve review
 privacy e sicurezza specifica.
+
+Per eventuali webhook: verificare firma sul payload grezzo, timestamp/anti-replay
+e idempotency key; limitare dimensione e frequenza, minimizzare i log e conservare
+i segreti solo in secret manager o ambiente protetto. Retry deve essere idempotente.
+Questi controlli sono requisiti futuri, non funzionalità già implementate.
 
 ## Verifiche
 

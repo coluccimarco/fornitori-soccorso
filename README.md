@@ -4,8 +4,8 @@ Project work ITS Developer 4.0 per coordinare richieste di soccorso stradale,
 centrale operativa, autisti e integrazioni esterne. La baseline `main` integrata
 fino a `f763d53` comprende backend Java/Spring, client web statico, workflow
 missioni, chatbot Telegram e API di geocodifica/percorso. La UI non visualizza
-ancora mappe e WhatsApp resta pianificato. Le verifiche CI precedenti sono
-riferite ai rispettivi commit; i controlli sulla baseline integrata sono in corso.
+ancora mappe e WhatsApp resta pianificato. CI e controlli locali sulla baseline
+integrata sono completati; i limiti browser/provider sono esplicitati nei report.
 
 Apri la [documentazione aggiornata](./docs/README.md) o l'[indice generale](./docs/00_INDICE_GENERALE.md)
 per audit, BUR/FUD/TAD, guide, test e Word modificabili. Il PDF e l'Excel originali
@@ -25,9 +25,9 @@ riassume evidenze, deliverable e attività ancora bloccate.
 | Missioni, timeout, pricing, note, dashboard e storico autista | **IMPLEMENTATO** in `main`; PostgreSQL CI **PASS** |
 | Chatbot (`chatbot/`) e API `chat/*` | **IMPLEMENTATO**; prova Telegram dichiarata nel README del modulo |
 | Notifiche al cliente | Outbox/backend e dispatcher Telegram presenti; prova reale dichiarata nel README del modulo; WhatsApp **PIANIFICATO** |
-| UI web | **PRESENTE** in `src/main/resources/static/`: pagina pubblica, login, centrale e area autista; esito runtime da verificare |
+| UI web | **PRESENTE** in `src/main/resources/static/`: pagina pubblica, login, centrale e area autista; browser E2E **NOT RUN** |
 | API mappe | **PRESENTE** per geocodifica, percorso e distanza stimata; la UI non mostra ancora la mappa |
-| CI Java 25 | Build, test, OpenAPI e PostgreSQL baseline/integration **PASS** (run `41651140562`, commit `25c613b`) |
+| CI Java 25 | Build, test, OpenAPI e PostgreSQL baseline/integration **PASS** (run `41656606659`, commit `f763d53`) |
 
 ## Requisiti locali
 
@@ -205,14 +205,14 @@ dashboard collegata a Jira.
 | Notifiche | Membro 5 | [Guida notifiche](./docs/team/MEMBRO_5_NOTIFICATIONS.md) |
 
 - Inizia da [indice generale](./docs/00_INDICE_GENERALE.md) e
-  [guida generale del team](./docs/01_GUIDA_GENERALE_TEAM.md).
+  [guide del team](./docs/team/README.md).
 - Architettura, database, API e regole: [documentazione per area](./docs/README.md).
-- Piano Scrum: [docs/08_AGILE_SCRUM.md](./docs/08_AGILE_SCRUM.md) e [backlog](./docs/agile/PRODUCT_BACKLOG.md).
+- Piano Scrum: [registro](./docs/agile/README.md) e [backlog](./docs/agile/PRODUCT_BACKLOG.md).
 - Processo branch/PR: [docs/07_GIT_WORKFLOW.md](./docs/07_GIT_WORKFLOW.md).
 
 - Report Sprint 1: [docs/SPRINT_1_REPORT.md](./docs/SPRINT_1_REPORT.md)
-- Evidenze effettive: [docs/TEST_EVIDENCE.md](./docs/TEST_EVIDENCE.md)
-- Dizionario dati: [docs/DATABASE_DICTIONARY.md](./docs/DATABASE_DICTIONARY.md)
+- Evidenze effettive: [docs/quality/TEST_EVIDENCE.md](./docs/quality/TEST_EVIDENCE.md)
+- Database e dizionario: [docs/architecture/DATABASE_DESIGN.md](./docs/architecture/DATABASE_DESIGN.md)
 - Contratto API normativo: [api/openapi.yaml](./api/openapi.yaml)
 - Manuale tecnico: [docs/manuals/MANUALE_TECNICO.md](./docs/manuals/MANUALE_TECNICO.md)
 - Manuale utente: [docs/manuals/MANUALE_UTENTE.md](./docs/manuals/MANUALE_UTENTE.md)
