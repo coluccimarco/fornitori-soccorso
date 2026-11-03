@@ -117,6 +117,15 @@ public class Mission {
         this.fixture = false;
     }
 
+    public void setOriginCoordinates(BigDecimal lat, BigDecimal lng) {
+        this.origineLat = lat;
+        this.origineLng = lng;
+    }
+
+    public void setEstimatedKm(BigDecimal km) {
+        this.kmStimati = km;
+    }
+
     public void changeIntervention(String tipoIntervento, Long workshopId) {
         this.tipoIntervento = tipoIntervento;
         this.workshopId = workshopId;

@@ -17,7 +17,8 @@ vengono configurate credenziali autorizzate.
 | Missioni, timeout, pricing, note, dashboard e storico autista | **IMPLEMENTATO** in `feature/backend`; PostgreSQL CI **PASS** |
 | Chatbot (`chatbot/`) e API `chat/*` | **IMPLEMENTATO**; provato da Telegram con backend e PostgreSQL locali |
 | Notifiche al cliente | **IMPLEMENTATO** e provato su Telegram per le missioni da chat; WhatsApp **PIANIFICATO** |
-| UI e mappe | **PIANIFICATO**; guide e contratti in `docs/` |
+| Mappe | **IMPLEMENTATO**: geocodifica, percorso, km stimati e pagina provvisoria `/mappa.html` |
+| UI | **PIANIFICATO**; guide e contratti in `docs/` |
 | CI Java 25 | Build, test, OpenAPI e PostgreSQL baseline/integration **PASS** |
 
 ## Requisiti locali
@@ -132,6 +133,7 @@ il token ottenuto da `GET /api/v1/auth/csrf` nell'header `X-CSRF-TOKEN`.
 | GET/POST | `/api/v1/missioni/{id}/notes` | Implementato nel branch Sprint 2 |
 | GET | `/api/v1/dashboard`, `/api/v1/autista/missioni`, `/api/v1/autista/storico` | Implementato nel branch Sprint 2 |
 | PATCH | `/api/v1/missioni/{id}/intervento` | Implementato; centrale |
+| GET | `/api/v1/maps/route` | Implementato; centrale e autista, usa Nominatim e OSRM |
 | POST | `/api/v1/chat/lookup-targa`, `/api/v1/chat/missioni` | Implementato; token di servizio del chatbot |
 | GET | `/api/v1/chat/missioni/{id}/stato` | Implementato; token di servizio del chatbot |
 | GET | `/api/v1/chat/notifiche` | Implementato; token di servizio del chatbot |
@@ -143,7 +145,7 @@ Vedi [chatbot/README.md](./chatbot/README.md).
 
 Il contratto completo è in [api/openapi.yaml](./api/openapi.yaml). Le 13 operazioni
 backend Sprint 2 sono marcate `implemented` dopo la verifica PostgreSQL CI;
-route e webhook restano progettati.
+i webhook restano progettati.
 
 ## Struttura Spring Boot
 

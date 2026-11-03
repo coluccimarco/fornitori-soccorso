@@ -13,6 +13,7 @@ import it.exprivia.fornitori.dto.ChatDtos;
 import it.exprivia.fornitori.service.AuthService;
 import it.exprivia.fornitori.service.ChatService;
 import it.exprivia.fornitori.service.DatabaseUserDetailsService;
+import it.exprivia.fornitori.service.MapService;
 import it.exprivia.fornitori.service.MissionService;
 import it.exprivia.fornitori.service.RegistryService;
 import org.junit.jupiter.api.Nested;
@@ -52,6 +53,9 @@ class ChatApiSecurityTests {
 
         @MockitoBean
         ChatService chatService;
+
+        @MockitoBean
+        MapService mapService;
     }
 
     @Nested

@@ -24,7 +24,7 @@ CSRF con header `X-CSRF-TOKEN`.
 | `/api/v1/missioni`, `/api/v1/missioni/{id}*` | Centrale/autista secondo operazione | Creazione, proposta, accept/reject, chiusura, rettifica e note | Implementato; CI PostgreSQL PASS |
 | `GET /api/v1/dashboard` | RESPONSABILE | Riepilogo storico o live | Implementato; CI PostgreSQL PASS |
 | `GET /api/v1/autista/{missioni,storico}` | AUTISTA autenticato | Solo dati dell'autista autenticato | Implementato; CI PostgreSQL PASS |
-| `GET /api/v1/maps/route` | Centrale/autista autorizzato | Coordinate, percorso e km stimati | Progettato |
+| `GET /api/v1/maps/route` | Centrale/autista autorizzato | Geocodifica, percorso e km stimati | Implementato |
 | `POST /api/v1/webhooks/{telegram,whatsapp}` | Firma/secret del provider | Evento verificato | Progettato |
 | `PATCH /api/v1/missioni/{id}/intervento` | RESPONSABILE + CSRF | Corregge tipo e officina prima della proposta | Implementato |
 | `POST /api/v1/chat/lookup-targa` | SERVICE_CHATBOT | Riconosce il cliente dalla targa: nome e compagnia | Implementato |
@@ -33,8 +33,8 @@ CSRF con header `X-CSRF-TOKEN`.
 | `GET /api/v1/chat/notifiche`, `POST /api/v1/chat/notifiche/{id}/esito` | SERVICE_CHATBOT | Notifiche da inviare ed esito dell'invio | Implementato |
 
 Per tutte le operazioni protette: `401` indica sessione assente/non valida, `403`
-ruolo insufficiente, `400` input non valido, `409` conflitto. I dettagli delle 29
-operazioni implementate sono definiti in OpenAPI; mappe e webhook restano
+ruolo insufficiente, `400` input non valido, `409` conflitto. I dettagli delle 30
+operazioni implementate sono definiti in OpenAPI; i webhook restano
 progettati e non devono essere chiamati come funzionalità disponibili.
 
 ## Dipendenze tra membri
@@ -44,8 +44,8 @@ progettati e non devono essere chiamati come funzionalità disponibili.
 - **Membro 3 — Chatbot:** lookup targa, creazione missione e stato sono implementati
   e autenticati con `FORNITORI_CHAT_TOKEN`; il cliente si riconosce dalla sola targa
   ([D-007](./DECISION_LOG.md)).
-- **Membro 4 — Mappe:** basi mezzi, coordinate officine e campi coordinate missione
-  sono nel modello; route esterno e distanze non sono ancora implementati.
+- **Membro 4 — Mappe:** `GET /api/v1/maps/route` converte l'indirizzo in coordinate e
+  restituisce percorso e km; `/mappa.html` è la pagina Leaflet da integrare nella UI.
 - **Membro 5 — Notifiche:** gli eventi `MISSION_ACCEPTED` e `MISSION_COMPLETED`
   vengono scritti nell'outbox in modo transazionale; il dispatcher/provider restano da implementare.
 

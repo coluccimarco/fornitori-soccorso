@@ -15,6 +15,7 @@ import it.exprivia.fornitori.dto.RegistryDtos;
 import it.exprivia.fornitori.service.AuthService;
 import it.exprivia.fornitori.service.ChatService;
 import it.exprivia.fornitori.service.DatabaseUserDetailsService;
+import it.exprivia.fornitori.service.MapService;
 import it.exprivia.fornitori.service.MissionService;
 import it.exprivia.fornitori.service.RegistryService;
 import org.junit.jupiter.api.Test;
@@ -54,6 +55,27 @@ class ApiSecurityTests {
 
     @MockitoBean
     private ChatService chatService;
+
+    @MockitoBean
+    private MapService mapService;
+
+    @Test
+    void routeRequiresLogin() throws Exception {
+        mockMvc.perform(get("/api/v1/maps/route").param("missionId", "1"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(roles = "AUTISTA")
+    void driverCanRequestRoute() throws Exception {
+        mockMvc.perform(get("/api/v1/maps/route").param("missionId", "1"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void mapPageIsPublicAndCarriesNoData() throws Exception {
+        mockMvc.perform(get("/mappa.html")).andExpect(status().isOk());
+    }
 
     @Test
     void unauthenticatedRegistryRequestReturnsUnauthorized() throws Exception {

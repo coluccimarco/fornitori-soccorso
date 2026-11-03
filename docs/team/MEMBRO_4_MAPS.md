@@ -5,9 +5,9 @@
 
 ## Scopo e stato
 
-Preparare visualizzazione percorso e distanza. Backend fornisce coordinate base
-mezzi e officine nelle anagrafiche; integrazione Leaflet/OSM/OSRM è **PIANIFICATA**,
-non presente.
+Visualizzazione percorso e distanza. **IMPLEMENTATI**: `GET /api/v1/maps/route` con
+geocodifica Nominatim e percorso OSRM, e la pagina Leaflet `/mappa.html` ([D-010](../DECISION_LOG.md)).
+Da fare: integrare la mappa nel pannello e nell'area autisti e proporre i km alla chiusura.
 
 ## Tecnologie proposte
 
@@ -28,10 +28,8 @@ provider. Geocoding non è geolocalizzazione live: distinguere indirizzo e coord
 
 ## Contratto proposto
 
-`GET /api/v1/maps/route` è **PIANIFICATO**, non implementato. OpenAPI definisce
-input coordinate e route; M4 concorda se backend fa proxy (preferito per chiavi e
-coerenza) o browser chiama servizio pubblico. Il client può inviare km suggeriti
-come dato non autorevole; backend valida km confermati e tariffa.
+Il backend fa da tramite verso i servizi pubblici: i dettagli sono in OpenAPI. I km
+suggeriti restano in `kmStimati` della missione; backend valida km confermati e tariffa.
 
 ## Test e acceptance
 
