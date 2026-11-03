@@ -13,6 +13,7 @@ import it.exprivia.fornitori.config.SecurityConfig;
 import it.exprivia.fornitori.dto.AuthDtos;
 import it.exprivia.fornitori.dto.RegistryDtos;
 import it.exprivia.fornitori.service.AuthService;
+import it.exprivia.fornitori.service.ChatService;
 import it.exprivia.fornitori.service.DatabaseUserDetailsService;
 import it.exprivia.fornitori.service.MissionService;
 import it.exprivia.fornitori.service.RegistryService;
@@ -50,6 +51,9 @@ class ApiSecurityTests {
 
     @MockitoBean
     private MissionService missionService;
+
+    @MockitoBean
+    private ChatService chatService;
 
     @Test
     void unauthenticatedRegistryRequestReturnsUnauthorized() throws Exception {

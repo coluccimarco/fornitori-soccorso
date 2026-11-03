@@ -49,6 +49,8 @@ class FakeBackend:
 
     def create_mission(self, request: MissionRequest) -> MissionCreated:
         self.create_calls += 1
+        if self._tokens.get(request.verification_token) != request.cliente_id:
+            raise Unauthorized()
         existing = self._by_request.get(request.request_id)
         if existing is not None:
             return existing

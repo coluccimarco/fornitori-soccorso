@@ -54,3 +54,23 @@
   non invia messaggi Telegram o WhatsApp.
 - **Stato:** applicata nel backend Sprint 2; dispatcher e contratto provider
   restano fuori perimetro.
+
+## D-007 — Autenticazione e verifica del chatbot
+
+- **Decisione:** il chatbot si autentica con un token di servizio fisso
+  (`FORNITORI_CHAT_TOKEN`); senza token configurato le API chat rifiutano tutto.
+  Il cliente si verifica con targa e numero di polizza in corso di validità e riceve
+  un token firmato, legato al cliente e valido 60 minuti.
+- **Motivo:** è sufficiente per il perimetro didattico e non richiede un server JWT.
+  Il token nasce prima della missione, quindi non può esservi legato.
+- **Conseguenza:** il limite dei tentativi per targa resta in memoria e si azzera al
+  riavvio. Lo stato si consulta solo conoscendo l'id missione, cioè dalla chat che
+  l'ha creata.
+- **Stato:** applicata; la challenge è **DA CONFERMARE** con docente e gruppo.
+
+## D-008 — Traino sulle missioni da chatbot
+
+- **Decisione:** il chatbot crea sempre `riparazione_sul_posto`; la centrale imposta
+  traino e officina con `PATCH /api/v1/missioni/{id}/intervento` prima della proposta.
+- **Motivo:** il cliente in panne non sceglie l'officina convenzionata.
+- **Stato:** API applicata; manca il comando nell'interfaccia della centrale (M2).

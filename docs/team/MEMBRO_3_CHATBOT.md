@@ -6,9 +6,8 @@
 ## Scopo e maturità
 
 Implementare un flusso deterministico a menu, senza dipendenza obbligatoria da AI.
-Dialogo in [`chatbot/`](../../chatbot/README.md) provato con backend finto
-(**DA VALIDARE** sul backend reale); accesso chatbot a mission create/status è
-**DA PROGETTARE/APPROVARE** prima del collegamento.
+Dialogo in [`chatbot/`](../../chatbot/README.md) e API `chat/*` **IMPLEMENTATI**;
+challenge di verifica **DA CONFERMARE** ([D-007](../DECISION_LOG.md)).
 
 ## Dialogo
 

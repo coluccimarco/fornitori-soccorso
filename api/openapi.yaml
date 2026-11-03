@@ -229,6 +229,30 @@ paths:
         '401': {$ref: '#/components/responses/Unauthorized'}
         '403': {$ref: '#/components/responses/Forbidden'}
         '404': {$ref: '#/components/responses/NotFound'}
+  /api/v1/missioni/{id}/intervento:
+    parameters:
+      - {$ref: '#/components/parameters/MissionId'}
+    patch:
+      tags: [Missioni]
+      summary: Corregge tipo di intervento e officina prima della proposta
+      description: Consentito per missioni nuove, non accettate o scadute. Serve anche a impostare il traino sulle missioni create dal chatbot.
+      x-implementation-status: implemented
+      x-required-role: RESPONSABILE
+      security:
+        - sessionCookie: []
+          csrfHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/UpdateIntervention'}
+      responses:
+        '200': {description: Missione aggiornata, content: {application/json: {schema: {$ref: '#/components/schemas/Mission'}}}}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
   /api/v1/missioni/{id}/proposte:
     parameters:
       - {$ref: '#/components/parameters/MissionId'}
@@ -447,8 +471,8 @@ paths:
     post:
       tags: [Chat]
       summary: Lookup limitato cliente per chatbot dopo verifica identità
-      description: Progettato; il meccanismo challenge deve essere approvato. Vietata l'enumerazione clienti.
-      x-implementation-status: designed
+      description: La challenge è il numero di polizza, che deve essere in corso di validità. Targa ignota, polizza errata o scaduta danno la stessa risposta con verificato false. Dopo 5 errori per targa in 15 minuti risponde 429.
+      x-implementation-status: implemented
       x-required-role: SERVICE_CHATBOT
       security:
         - serviceBearer: []
@@ -461,24 +485,25 @@ paths:
         '200': {description: Esito lookup minimizzato, content: {application/json: {schema: {$ref: '#/components/schemas/ChatVehicleLookupResult'}}}}
         '400': {$ref: '#/components/responses/BadRequest'}
         '401': {$ref: '#/components/responses/Unauthorized'}
-        '403': {$ref: '#/components/responses/Forbidden'}
-        '404': {$ref: '#/components/responses/NotFound'}
         '429': {description: Limite richieste superato}
   /api/v1/chat/missioni:
     post:
       tags: [Chat]
       summary: Crea richiesta missione da conversazione verificata
-      x-implementation-status: designed
+      description: Il token di verifica deve appartenere a clienteId. Lo stesso requestId restituisce la missione già creata.
+      x-implementation-status: implemented
       x-required-role: SERVICE_CHATBOT
       security:
         - serviceBearer: []
+      parameters:
+        - {name: X-Verification-Token, in: header, required: true, schema: {type: string}}
       requestBody:
         required: true
         content:
           application/json:
             schema: {$ref: '#/components/schemas/ChatMissionRequest'}
       responses:
-        '201': {description: Missione creata, content: {application/json: {schema: {$ref: '#/components/schemas/Mission'}}}}
+        '201': {description: Missione creata o già esistente per requestId, content: {application/json: {schema: {$ref: '#/components/schemas/ChatMissionCreated'}}}}
         '400': {$ref: '#/components/responses/BadRequest'}
         '401': {$ref: '#/components/responses/Unauthorized'}
         '403': {$ref: '#/components/responses/Forbidden'}
@@ -489,8 +514,8 @@ paths:
     get:
       tags: [Chat]
       summary: Stato missione dopo verifica cliente
-      description: Il token di verifica è legato alla sessione e alla missione, ha scadenza breve e non consente enumerazione.
-      x-implementation-status: designed
+      description: Il token di verifica è legato al cliente e scade dopo 60 minuti. Missioni di altri clienti e storiche rispondono 404. autistaNome è valorizzato solo per missioni accettate o eseguite.
+      x-implementation-status: implemented
       x-required-role: SERVICE_CHATBOT
       security:
         - serviceBearer: []
@@ -658,6 +683,19 @@ components:
         officinaId: {type: integer, format: int64, nullable: true}
         kmStimati: {type: number, minimum: 0, nullable: true, description: Distanza stimata dalla mappa, non utilizzata come distanza effettiva}
         canaleOrigine: {type: string, enum: [centrale, whatsapp, telegram]}
+    UpdateIntervention:
+      description: Il traino richiede officinaId.
+      type: object
+      required: [tipoIntervento]
+      properties:
+        tipoIntervento: {type: string, enum: [traino, riparazione_sul_posto]}
+        officinaId: {type: integer, format: int64, minimum: 1, nullable: true}
+    ChatMissionCreated:
+      type: object
+      properties:
+        id: {type: integer, format: int64}
+        codice: {type: string}
+        stato: {type: string, enum: [nuova, proposta, accettata, eseguita, non_accettata, scaduta]}
     ProposeMission:
       type: object
       required: [autistaId]

@@ -25,6 +25,11 @@ public final class MissionDtos {
             @NotBlank @Size(max = 20) String canaleOrigine) {
     }
 
+    public record UpdateInterventionRequest(
+            @NotBlank @Size(max = 40) String tipoIntervento,
+            @Positive Long officinaId) {
+    }
+
     public record ProposeMissionRequest(@NotNull @Positive Long autistaId) {
     }
 

@@ -70,6 +70,7 @@ class HttpBackendTests(unittest.TestCase):
         return MissionRequest(
             session_id="s" * 32,
             request_id="r" * 32,
+            verification_token="token-verifica",
             cliente_id=7,
             tipo_intervento="riparazione_sul_posto",
             descrizione_problema="Motore in panne",
@@ -108,6 +109,8 @@ class HttpBackendTests(unittest.TestCase):
         created = self.backend.create_mission(self.mission_request())
         sent = self.stub.requests[0]
         self.assertEqual(sent["path"], "/api/v1/chat/missioni")
+        self.assertEqual(sent["headers"]["X-Verification-Token"], "token-verifica")
+        self.assertNotIn("verificationToken", sent["json"])
         self.assertEqual(sent["json"]["requestId"], "r" * 32)
         self.assertEqual(sent["json"]["clienteId"], 7)
         self.assertEqual(sent["json"]["canaleOrigine"], "telegram")

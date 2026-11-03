@@ -1,0 +1,52 @@
+package it.exprivia.fornitori.dto;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
+import java.math.BigDecimal;
+import java.time.OffsetDateTime;
+
+public final class ChatDtos {
+    private ChatDtos() {
+    }
+
+    public record VehicleLookupRequest(
+            @NotBlank @Size(min = 16, max = 64) String sessionId,
+            @NotBlank @Size(min = 5, max = 20) String targa,
+            @NotBlank @Size(max = 100) String verificationChallenge) {
+    }
+
+    public record VehicleLookupResponse(
+            boolean verificato,
+            Long clienteId,
+            String nomeMascherato,
+            String verificationToken) {
+        public static VehicleLookupResponse notVerified() {
+            return new VehicleLookupResponse(false, null, null, null);
+        }
+    }
+
+    public record CreateMissionRequest(
+            @NotBlank @Size(min = 16, max = 64) String sessionId,
+            @NotBlank @Size(min = 16, max = 64) String requestId,
+            @NotNull @Positive Long clienteId,
+            @NotBlank @Size(max = 40) String tipoIntervento,
+            @NotBlank @Size(max = 2000) String descrizioneProblema,
+            @NotBlank @Size(max = 500) String origineIndirizzo,
+            BigDecimal origineLat,
+            BigDecimal origineLng,
+            Long officinaId,
+            @NotBlank @Size(max = 20) String canaleOrigine) {
+    }
+
+    public record MissionCreatedResponse(Long id, String codice, String stato) {
+    }
+
+    public record MissionStatusResponse(
+            String codice,
+            String stato,
+            String autistaNome,
+            OffsetDateTime aggiornataIl) {
+    }
+}

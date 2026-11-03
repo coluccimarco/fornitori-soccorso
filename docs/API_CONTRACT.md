@@ -26,23 +26,23 @@ CSRF con header `X-CSRF-TOKEN`.
 | `GET /api/v1/autista/{missioni,storico}` | AUTISTA autenticato | Solo dati dell'autista autenticato | Implementato; CI PostgreSQL PASS |
 | `GET /api/v1/maps/route` | Centrale/autista autorizzato | Coordinate, percorso e km stimati | Progettato |
 | `POST /api/v1/webhooks/{telegram,whatsapp}` | Firma/secret del provider | Evento verificato | Progettato |
-| `/api/v1/chat/lookup-targa`, `/api/v1/chat/missioni` | SERVICE_CHATBOT + challenge | Lookup minimizzato e creazione idempotente | Progettato |
-| `GET /api/v1/chat/missioni/{id}/stato` | SERVICE_CHATBOT + token verifica | Stato minimizzato, no accesso cross-customer | Progettato |
+| `PATCH /api/v1/missioni/{id}/intervento` | RESPONSABILE + CSRF | Corregge tipo e officina prima della proposta | Implementato |
+| `POST /api/v1/chat/lookup-targa` | SERVICE_CHATBOT | Verifica targa e polizza, esito minimizzato e token di verifica | Implementato |
+| `POST /api/v1/chat/missioni` | SERVICE_CHATBOT + token verifica | Creazione idempotente per `requestId` | Implementato |
+| `GET /api/v1/chat/missioni/{id}/stato` | SERVICE_CHATBOT + token verifica | Stato minimizzato, no accesso cross-customer | Implementato |
 
 Per tutte le operazioni protette: `401` indica sessione assente/non valida, `403`
-ruolo insufficiente, `400` input non valido, `409` conflitto. I dettagli delle 23
-operazioni implementate sono definiti in OpenAPI; mappe, webhook e chat restano
+ruolo insufficiente, `400` input non valido, `409` conflitto. I dettagli delle 27
+operazioni implementate sono definiti in OpenAPI; mappe e webhook restano
 progettati e non devono essere chiamati come funzionalità disponibili.
 
 ## Dipendenze tra membri
 
 - **Membro 2 — Frontend:** login JSON (prima recuperare CSRF), sessione/cookie,
   GET anagrafiche, filtro clienti e gestione di `401`/`403`/`409`.
-- **Membro 3 — Chatbot:** lookup targa e stato hanno route progettate, non
-  funzionanti; la creazione missione centrale è implementata ma non sostituisce
-  l'endpoint chatbot. Il contratto chatbot usa token service e challenge; il metodo challenge
-  richiede approvazione prima della delivery per prevenire enumerazione e accessi
-  cross-customer.
+- **Membro 3 — Chatbot:** lookup targa, creazione missione e stato sono implementati
+  e autenticati con `FORNITORI_CHAT_TOKEN`. La challenge è provvisoriamente il numero
+  di polizza ([D-007](./DECISION_LOG.md)).
 - **Membro 4 — Mappe:** basi mezzi, coordinate officine e campi coordinate missione
   sono nel modello; route esterno e distanze non sono ancora implementati.
 - **Membro 5 — Notifiche:** gli eventi `MISSION_ACCEPTED` e `MISSION_COMPLETED`

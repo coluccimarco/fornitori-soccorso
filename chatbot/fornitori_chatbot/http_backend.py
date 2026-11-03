@@ -55,7 +55,12 @@ class HttpBackend:
             "officinaId": request.officina_id,
             "canaleOrigine": request.canale_origine,
         }
-        body = self._call("POST", "/api/v1/chat/missioni", payload)
+        body = self._call(
+            "POST",
+            "/api/v1/chat/missioni",
+            payload,
+            headers={"X-Verification-Token": request.verification_token},
+        )
         try:
             return MissionCreated(body["id"], body["codice"], body["stato"])
         except KeyError as exc:

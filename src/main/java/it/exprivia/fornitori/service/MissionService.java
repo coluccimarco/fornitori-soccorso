@@ -99,13 +99,20 @@ public class MissionService {
     public MissionDtos.MissionResponse create(
             String email, MissionDtos.CreateMissionRequest request) {
         requireRole(email, RESPONSABILE);
+        return createMission(request, userId(email));
+    }
+
+    /** Il chatbot non ha un utente: l'identità del cliente è già verificata da ChatService. */
+    @Transactional
+    public MissionDtos.MissionResponse createFromChat(MissionDtos.CreateMissionRequest request) {
+        return createMission(request, null);
+    }
+
+    private MissionDtos.MissionResponse createMission(MissionDtos.CreateMissionRequest request, Long actorId) {
         if (!customers.existsById(request.clienteId())) {
             throw badRequest("Cliente inesistente");
         }
-        String intervention = normalize(request.tipoIntervento());
-        if (!List.of("traino", "riparazione_sul_posto").contains(intervention)) {
-            throw badRequest("Tipo intervento non valido");
-        }
+        String intervention = validIntervention(request.tipoIntervento());
         String channel = normalize(request.canaleOrigine());
         if (!List.of("centrale", "whatsapp", "telegram").contains(channel)) {
             throw badRequest("Canale di origine non valido");
@@ -116,12 +123,7 @@ public class MissionService {
         validateCoordinate(request.origineLat(), BigDecimal.valueOf(-90), BigDecimal.valueOf(90));
         validateCoordinate(request.origineLng(), BigDecimal.valueOf(-180), BigDecimal.valueOf(180));
         validateNonNegative(request.kmStimati(), "kmStimati");
-        if ("traino".equals(intervention) && request.officinaId() == null) {
-            throw badRequest("L'officina è obbligatoria per il traino");
-        }
-        if (request.officinaId() != null && !workshops.existsById(request.officinaId())) {
-            throw badRequest("Officina inesistente");
-        }
+        validateWorkshop(intervention, request.officinaId());
 
         OffsetDateTime now = now();
         Mission mission = new Mission(
@@ -137,9 +139,30 @@ public class MissionService {
                 request.kmStimati(),
                 now);
         Mission saved = missions.save(mission);
-        events.save(new MissionEvent(saved.getId(), userId(email), "MISSION_CREATED",
+        events.save(new MissionEvent(saved.getId(), actorId, "MISSION_CREATED",
                 Map.of("codice", saved.getCodice(), "stato", NUOVA)));
         return toResponse(saved);
+    }
+
+    @Transactional
+    public MissionDtos.MissionResponse updateIntervention(
+            String email, Long missionId, MissionDtos.UpdateInterventionRequest request) {
+        AppUser actor = requireRole(email, RESPONSABILE);
+        Mission mission = lockLiveMission(missionId);
+        if (!List.of(NUOVA, NON_ACCETTATA, SCADUTA).contains(mission.getStato())) {
+            throw conflict("L'intervento non è modificabile nello stato corrente");
+        }
+        String intervention = validIntervention(request.tipoIntervento());
+        validateWorkshop(intervention, request.officinaId());
+        mission.changeIntervention(intervention, request.officinaId());
+        missions.save(mission);
+        Map<String, Object> detail = new HashMap<>();
+        detail.put("tipoIntervento", intervention);
+        if (request.officinaId() != null) {
+            detail.put("officinaId", request.officinaId());
+        }
+        events.save(new MissionEvent(missionId, actor.getId(), "MISSION_INTERVENTION_UPDATED", detail));
+        return toResponse(mission);
     }
 
     @Transactional
@@ -471,6 +494,23 @@ public class MissionService {
             return false;
         }
         throw badRequest("Modalità dashboard non valida");
+    }
+
+    private String validIntervention(String value) {
+        String intervention = normalize(value);
+        if (!List.of("traino", "riparazione_sul_posto").contains(intervention)) {
+            throw badRequest("Tipo intervento non valido");
+        }
+        return intervention;
+    }
+
+    private void validateWorkshop(String intervention, Long workshopId) {
+        if ("traino".equals(intervention) && workshopId == null) {
+            throw badRequest("L'officina è obbligatoria per il traino");
+        }
+        if (workshopId != null && !workshops.existsById(workshopId)) {
+            throw badRequest("Officina inesistente");
+        }
     }
 
     private void validateCoordinate(BigDecimal value, BigDecimal minimum, BigDecimal maximum) {

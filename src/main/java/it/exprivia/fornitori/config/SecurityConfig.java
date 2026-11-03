@@ -3,8 +3,10 @@ package it.exprivia.fornitori.config;
 import it.exprivia.fornitori.enums.UserRole;
 import it.exprivia.fornitori.service.DatabaseUserDetailsService;
 import java.io.IOException;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -17,6 +19,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository;
@@ -56,6 +59,30 @@ public class SecurityConfig {
     }
 
     @Bean
+    @Order(1)
+    SecurityFilterChain chatSecurityFilterChain(
+            HttpSecurity http,
+            @Value("${fornitori.chat.service-token:}") String chatServiceToken) throws Exception {
+        http
+                .securityMatcher("/api/v1/chat/**")
+                .csrf(csrf -> csrf.disable())
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .addFilterBefore(new ChatServiceTokenFilter(chatServiceToken), UsernamePasswordAuthenticationFilter.class)
+                .authorizeHttpRequests(authorize -> authorize.anyRequest().hasRole(ChatServiceTokenFilter.ROLE))
+                .exceptionHandling(exceptions -> exceptions
+                        .authenticationEntryPoint((request, response, exception) ->
+                                writeError(response, 401, "unauthorized"))
+                        .accessDeniedHandler((request, response, exception) ->
+                                writeError(response, 403, "forbidden")))
+                .requestCache(cache -> cache.disable())
+                .formLogin(form -> form.disable())
+                .httpBasic(basic -> basic.disable())
+                .logout(logout -> logout.disable());
+        return http.build();
+    }
+
+    @Bean
+    @Order(2)
     SecurityFilterChain securityFilterChain(
             HttpSecurity http,
             AuthenticationProvider authenticationProvider,

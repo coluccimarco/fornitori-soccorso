@@ -114,7 +114,7 @@ jobs:
         env:
           PGPASSWORD: ci-only-password
         run: |
-          for script in database/01_schema.sql database/02_seed.sql database/03_verifiche.sql database/04_assert_baseline.sql; do
+          for script in database/01_schema.sql database/02_seed.sql database/03_verifiche.sql database/04_assert_baseline.sql database/05_chat_requests.sql; do
             psql --host localhost --username fornitori_app --dbname fornitori --set ON_ERROR_STOP=1 --file "$script"
           done
       - name: Verify application and tests against PostgreSQL

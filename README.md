@@ -15,7 +15,8 @@ vengono configurate credenziali autorizzate.
 | Backend Spring Boot: sessione, CSRF, ruoli, anagrafiche e rotte missioni | **IMPLEMENTATO**; 11 test MVC passati |
 | Schema, seed e baseline PostgreSQL | Script **IMPLEMENTATI**; baseline PostgreSQL CI **PASS**; servizio locale attivo, ma accesso app locale da configurare con credenziali |
 | Missioni, timeout, pricing, note, dashboard e storico autista | **IMPLEMENTATO** in `feature/backend`; PostgreSQL CI **PASS** |
-| UI, chatbot, mappe e notifiche | **PIANIFICATO**; guide e contratti in `docs/` |
+| Chatbot (`chatbot/`) e API `chat/*` | **IMPLEMENTATO**; provato con backend e PostgreSQL locali, conversazione da Telegram da validare |
+| UI, mappe e notifiche | **PIANIFICATO**; guide e contratti in `docs/` |
 | CI Java 25 | Build, test, OpenAPI e PostgreSQL baseline/integration **PASS** |
 
 ## Requisiti locali
@@ -73,7 +74,11 @@ psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/01_schema.sql
 psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/02_seed.sql
 psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/03_verifiche.sql
 psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/04_assert_baseline.sql
+psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/05_chat_requests.sql
 ```
+
+Chi ha già un database deve eseguire solo `05_chat_requests.sql`, altrimenti
+l'applicazione non si avvia.
 
 Gli script non cancellano dati. Lo schema usa `IF NOT EXISTS`; il seed usa conflitti
 per chiave primaria come no-op e riallinea le sequenze identity. Applicare le future
@@ -124,10 +129,17 @@ il token ottenuto da `GET /api/v1/auth/csrf` nell'header `X-CSRF-TOKEN`.
 | PATCH | `/api/v1/missioni/{id}/cost` | Implementato nel branch Sprint 2 |
 | GET/POST | `/api/v1/missioni/{id}/notes` | Implementato nel branch Sprint 2 |
 | GET | `/api/v1/dashboard`, `/api/v1/autista/missioni`, `/api/v1/autista/storico` | Implementato nel branch Sprint 2 |
+| PATCH | `/api/v1/missioni/{id}/intervento` | Implementato; centrale |
+| POST | `/api/v1/chat/lookup-targa`, `/api/v1/chat/missioni` | Implementato; token di servizio del chatbot |
+| GET | `/api/v1/chat/missioni/{id}/stato` | Implementato; token di servizio del chatbot |
+
+Le API `chat/*` usano `Authorization: Bearer` con il valore di `FORNITORI_CHAT_TOKEN`,
+da impostare uguale sul backend e sul chatbot. Se manca, rispondono sempre `401`.
+Vedi [chatbot/README.md](./chatbot/README.md).
 
 Il contratto completo è in [api/openapi.yaml](./api/openapi.yaml). Le 13 operazioni
 backend Sprint 2 sono marcate `implemented` dopo la verifica PostgreSQL CI;
-route, chatbot e webhook restano progettati.
+route e webhook restano progettati.
 
 ## Struttura Spring Boot
 

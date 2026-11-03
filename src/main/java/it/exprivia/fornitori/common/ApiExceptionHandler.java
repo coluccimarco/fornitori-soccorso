@@ -44,9 +44,11 @@ public class ApiExceptionHandler {
         int status = exception.getStatusCode().value();
         String error = switch (status) {
             case 400 -> "invalid_request";
+            case 401 -> "unauthorized";
             case 403 -> "forbidden";
             case 404 -> "not_found";
             case 409 -> "conflict";
+            case 429 -> "rate_limited";
             default -> "internal_error";
         };
         return ResponseEntity.status(exception.getStatusCode()).body(new ApiError(status, error));

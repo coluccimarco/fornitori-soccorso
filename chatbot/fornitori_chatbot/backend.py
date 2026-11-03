@@ -43,6 +43,7 @@ class LookupResult:
 class MissionRequest:
     session_id: str
     request_id: str
+    verification_token: str
     cliente_id: int
     tipo_intervento: str
     descrizione_problema: str

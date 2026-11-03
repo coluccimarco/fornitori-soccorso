@@ -4,9 +4,10 @@ Dialogo guidato a menu in Python, senza dipendenze esterne (solo libreria standa
 Python 3.10 o superiore). Non accede al database e non tocca il backend Java: parla
 con il backend solo tramite i tre endpoint `/api/v1/chat/*` di `api/openapi.yaml`.
 
-**Stato:** dialogo, backend finto, canale Telegram e test sono pronti. Il client HTTP è
-provato solo contro un server di prova, perché gli endpoint `chat/*` non esistono ancora
-nel backend. WhatsApp non è collegato.
+**Stato:** dialogo, canale Telegram e collegamento al backend reale sono pronti e provati
+da console con backend e PostgreSQL locali. La conversazione vera da Telegram è ancora da
+provare, WhatsApp non è collegato e le due notifiche automatiche al cliente non partono
+ancora.
 
 ## Provarlo
 
@@ -23,11 +24,25 @@ condivisa, `/esci` termina.
 python3 -m unittest discover
 ```
 
-Quando gli endpoint saranno disponibili:
+## Collegarlo al backend reale
+
+Backend e bot devono avere lo stesso `FORNITORI_CHAT_TOKEN`: generalo una volta con
+`openssl rand -hex 32` e non scriverlo in file del repo. Il database deve includere
+`database/05_chat_requests.sql`.
+
+Nel terminale del backend, dalla radice del repo:
 
 ```bash
-FORNITORI_API_URL=http://localhost:8080 FORNITORI_CHAT_TOKEN=... python3 -m fornitori_chatbot --http
+./mvnw spring-boot:run
 ```
+
+In quello del bot, dalla cartella `chatbot/`:
+
+```bash
+FORNITORI_API_URL=http://localhost:8080 python3 -m fornitori_chatbot --http
+```
+
+Con il backend reale valgono le targhe e le polizze di `database/02_seed.sql`.
 
 ## Collegarlo a Telegram
 
@@ -91,15 +106,13 @@ risposte = engine.handle(InboundMessage(
 ))
 ```
 
-## Punti da concordare con Membro 1
+## Limiti noti
 
-1. **Verifica del titolare:** come `verificationChallenge` il bot chiede per ora il
-   numero di polizza. La guida chiede una verifica "non prevedibile": va confermata.
-2. **Traino:** `CreateMission` richiede `officinaId` per il traino, ma il bot non può
-   leggere le officine. Per ora invia sempre `riparazione_sul_posto`, e nel contratto
-   non c'è un endpoint con cui la centrale possa cambiare tipo o officina.
-3. **Stato dopo la chat:** nessun endpoint trova la missione di un cliente, quindi il
-   bot risponde sullo stato solo dalla chat che l'ha creata, entro 24 ore.
-4. **Token di verifica:** OpenAPI lo descrive legato anche alla missione, ma viene
-   emesso dal lookup, prima che la missione esista.
-5. **Credenziale di servizio:** come si ottiene `FORNITORI_CHAT_TOKEN`.
+1. **Verifica del titolare:** il bot chiede il numero di polizza. La guida chiede una
+   verifica "non prevedibile": va confermata (`docs/DECISION_LOG.md`, D-007).
+2. **Traino:** il bot crea sempre `riparazione_sul_posto`. La centrale imposta traino e
+   officina con `PATCH /api/v1/missioni/{id}/intervento`, ma serve il comando nell'interfaccia.
+3. **Stato dopo la chat:** il bot risponde sullo stato solo dalla chat che ha creato la
+   missione, entro 24 ore e finché non si riavvia. Dopo 60 minuti richiede la verifica.
+4. **Notifiche al cliente:** presa in carico e conclusione non vengono inviate: nel backend
+   gli eventi restano nell'outbox e il bot non è avvisato dei cambi di stato.

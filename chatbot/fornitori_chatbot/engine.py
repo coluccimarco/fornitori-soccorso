@@ -27,7 +27,7 @@ DIALOG_TTL_SECONDS = 30 * 60
 MISSION_TTL_SECONDS = 24 * 60 * 60
 MAX_REMEMBERED_MESSAGE_IDS = 50
 
-# Il bot non conosce le officine e il traino le richiede (vedi README, "Punti da concordare").
+# Il bot non conosce le officine: se serve il traino lo imposta la centrale dopo la creazione.
 DEFAULT_TIPO_INTERVENTO = "riparazione_sul_posto"
 
 CANCEL_WORDS = {"annulla", "cancel", "stop"}
@@ -296,6 +296,7 @@ class ChatEngine:
         request = MissionRequest(
             session_id=session.session_id,
             request_id=session.request_id,
+            verification_token=session.verification_token,
             cliente_id=session.customer_id,
             tipo_intervento=DEFAULT_TIPO_INTERVENTO,
             descrizione_problema=session.problem,

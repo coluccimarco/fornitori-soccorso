@@ -46,6 +46,14 @@ public class MissionController {
         return missions.get(authentication.getName(), id);
     }
 
+    @PatchMapping("/missioni/{id}/intervento")
+    public MissionDtos.MissionResponse updateIntervention(
+            Authentication authentication,
+            @PathVariable Long id,
+            @Valid @RequestBody MissionDtos.UpdateInterventionRequest request) {
+        return missions.updateIntervention(authentication.getName(), id, request);
+    }
+
     @PostMapping("/missioni/{id}/proposte")
     public MissionDtos.ProposalResponse propose(
             Authentication authentication,
