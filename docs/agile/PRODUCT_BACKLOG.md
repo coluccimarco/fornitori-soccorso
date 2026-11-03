@@ -12,11 +12,11 @@ retrodatato.
 | ID | Priorità | Epic / storia | Owner | Dipendenze | Stato |
 |---|---|---|---|---|---|
 | B-01 | P0 | Seed, schema, auth e anagrafiche Sprint 1 | M1 | Excel/spec | Implementato; baseline PostgreSQL CI PASS |
-| B-02 | P0 | Java 25, CI e contratti condivisi | M1 | JDK 25 | Implementato; CI Sprint 2 pendente |
+| B-02 | P0 | Java 25, CI e contratti condivisi | M1 | JDK 25 | Implementato; CI Java 25/PostgreSQL Sprint 2 PASS |
 | B-03 | P1 | Login e anagrafiche web | M2 | B-01, API | Pianificato |
-| B-04 | P0 | API backend missione e dettaglio centrale | M1 | B-01, requisiti | Codice implementato in `feature/backend-sprint2`; PostgreSQL CI pendente |
-| B-05 | P0 | Proposal/accept/reject con timeout e concorrenza | M1 | B-04, DB | Codice e test DB implementati; PostgreSQL CI pendente |
-| B-06 | P0 | Chiusura, pricing e dashboard backend | M1 | B-05, decisioni costo | Codice e test implementati; PostgreSQL CI pendente |
+| B-04 | P0 | API backend missione e dettaglio centrale | M1 | B-01, requisiti | Implementato e validato in `feature/backend` |
+| B-05 | P0 | Proposal/accept/reject con timeout e concorrenza | M1 | B-04, DB | Implementato e test PostgreSQL CI PASS |
+| B-06 | P0 | Chiusura, pricing e dashboard backend | M1 | B-05, decisioni costo | Implementato e test PostgreSQL CI PASS |
 | B-07 | P1 | Chatbot menu guidato e creazione richiesta verificata | M3/M1 | B-04, auth machine | Pianificato |
 | B-08 | P1 | Mappe e route con km stimati/effettivi distinti | M4/M1/M2 | B-04, provider | Pianificato |
 | B-09 | P1 | Eventi, outbox, webhook e notifiche idempotenti | M5/M1/M3 | B-05/B-06 | Pianificato |

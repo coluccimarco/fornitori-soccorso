@@ -11,8 +11,8 @@
   già aperte alla data del 28/10/2026.
 - **Conseguenza:** le due assegnazioni aperte dell'autista 3 restano intatte; la
   verifica di disponibilità live non si basa sullo stato seed.
-- **Stato:** adottata nel modello e nel seed; flusso live implementato in Sprint 2,
-  verifica PostgreSQL CI pendente.
+- **Stato:** adottata nel modello e nel seed; flusso live implementato in Sprint 2
+  e verificato in PostgreSQL CI.
 
 ## D-002 — Fascia tariffaria notturna
 

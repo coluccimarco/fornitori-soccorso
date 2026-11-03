@@ -19,16 +19,16 @@ frontend web e componenti chatbot, mappe e notifiche.
 
 - **IMPLEMENTATO:** Java 25, backend Spring Boot per sessioni, CSRF, ruoli e
   anagrafiche, script PostgreSQL e contratto OpenAPI.
-- **BRANCH `feature/backend-sprint2`:** workflow missioni, proposte, scadenze,
-  pricing, note, rettifiche, dashboard e storico autista implementati nel backend.
-  La verifica PostgreSQL CI del branch è ancora da eseguire.
+- **BRANCH `feature/backend`:** workflow missioni, proposte, scadenze, pricing,
+  note, rettifiche, dashboard e storico autista implementati nel backend;
+  la verifica PostgreSQL CI è **PASS**.
 - **DATABASE LOCALE:** PostgreSQL 18 è in esecuzione; l'accesso applicativo e
   l'import locale richiedono credenziali autorizzate. La baseline PostgreSQL
   effimera in CI è **PASS**.
 - **PIANIFICATO:** UI, chatbot, routing mappe e consegna notifiche.
-- **BLOCCATO:** test di integrazione PostgreSQL locale, perché la sessione non
-  dispone della password dell'utente applicativo; le API Sprint 2 non vengono
-  ancora promosse a `implemented` in OpenAPI prima della verifica CI.
+- **BLOCCATO SOLO IN LOCALE:** test di integrazione PostgreSQL, perché la sessione
+  non dispone della password dell'utente applicativo. La CI PostgreSQL è passata
+  e le API Sprint 2 sono marcate `implemented` in OpenAPI.
 
 ## 3. Prima configurazione
 
@@ -38,7 +38,7 @@ frontend web e componenti chatbot, mappe e notifiche.
    ```powershell
    git clone https://github.com/coluccimarco/fornitori-soccorso.git
    cd fornitori-soccorso
-   git switch feature/backend-sprint2
+   git switch feature/backend
    ```
 
 3. Configura `JAVA_HOME` a un JDK 25 e verifica `java -version`,

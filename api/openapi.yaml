@@ -178,7 +178,7 @@ paths:
       tags: [Missioni]
       summary: Missioni per stato e modalità riferimento/live
       description: RESPONSABILE consulta live per default; mode reference include solo fixture storiche.
-      x-implementation-status: designed
+      x-implementation-status: implemented
       x-required-role: RESPONSABILE
       parameters:
         - {name: stato, in: query, schema: {type: string}}
@@ -191,7 +191,7 @@ paths:
       tags: [Missioni]
       summary: Crea missione nuova da centrale
       description: Crea una missione live in stato nuova. Coordinate devono essere entrambe valorizzate o assenti; traino richiede officina.
-      x-implementation-status: designed
+      x-implementation-status: implemented
       x-required-role: RESPONSABILE
       security:
         - sessionCookie: []
@@ -222,7 +222,7 @@ paths:
       tags: [Missioni]
       summary: Dettaglio missione secondo ruolo
       description: RESPONSABILE può consultare tutte le missioni; AUTISTA solo missioni proprie, anche nello storico delle proposte.
-      x-implementation-status: designed
+      x-implementation-status: implemented
       x-required-role: [RESPONSABILE, ASSIGNED_AUTISTA]
       responses:
         '200': {description: Dettaglio missione, content: {application/json: {schema: {$ref: '#/components/schemas/Mission'}}}}
@@ -236,7 +236,7 @@ paths:
       tags: [Missioni]
       summary: Proponi o riproponi la missione a un autista libero (centrale)
       description: Il backend blocca missione e autista; timeout letto da pricing_config. I record storici delle proposte non vengono eliminati.
-      x-implementation-status: designed
+      x-implementation-status: implemented
       x-required-role: RESPONSABILE
       security:
         - sessionCookie: []
@@ -261,7 +261,7 @@ paths:
       tags: [Autisti]
       summary: Accetta proposta corrente (solo autista destinatario)
       description: L'identità viene ricavata dalla sessione. now deve essere strettamente precedente alla scadenza.
-      x-implementation-status: designed
+      x-implementation-status: implemented
       x-required-role: ASSIGNED_AUTISTA
       security:
         - sessionCookie: []
@@ -279,7 +279,7 @@ paths:
       tags: [Autisti]
       summary: Rifiuta proposta corrente
       description: Solo il destinatario della proposta. La risposta rimane nello storico e la missione può essere riproposta.
-      x-implementation-status: designed
+      x-implementation-status: implemented
       x-required-role: ASSIGNED_AUTISTA
       security:
         - sessionCookie: []
@@ -297,7 +297,7 @@ paths:
       tags: [Autisti]
       summary: Chiudi missione accettata con esito OK, km reali e costo calcolato
       description: Solo l'autista assegnato. Il prezzo viene calcolato dal backend usando il timestamp di accettazione in Europe/Rome.
-      x-implementation-status: designed
+      x-implementation-status: implemented
       x-required-role: ASSIGNED_AUTISTA
       security:
         - sessionCookie: []
@@ -322,7 +322,7 @@ paths:
       tags: [Missioni]
       summary: Rettifica motivata del costo (solo centrale)
       description: Conserva costo calcolato e motivazione; registra l'attore e i valori precedenti nello storico eventi.
-      x-implementation-status: designed
+      x-implementation-status: implemented
       x-required-role: RESPONSABILE
       security:
         - sessionCookie: []
@@ -347,7 +347,7 @@ paths:
       tags: [Missioni]
       summary: Note della missione
       description: RESPONSABILE o AUTISTA che ha ricevuto una proposta per la missione.
-      x-implementation-status: designed
+      x-implementation-status: implemented
       x-required-role: [RESPONSABILE, ASSIGNED_AUTISTA]
       responses:
         '200': {description: Elenco note, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/MissionNote'}}}}}
@@ -358,7 +358,7 @@ paths:
       tags: [Autisti]
       summary: Nota autorizzata sulla missione
       description: RESPONSABILE o AUTISTA che ha ricevuto una proposta per la missione.
-      x-implementation-status: designed
+      x-implementation-status: implemented
       x-required-role: [RESPONSABILE, ASSIGNED_AUTISTA]
       security:
         - sessionCookie: []
@@ -380,7 +380,7 @@ paths:
       tags: [Dashboard]
       summary: Riepilogo 4 viste e totali per autista
       description: reference restituisce la baseline fixture Excel; live esclude tutte le fixture.
-      x-implementation-status: designed
+      x-implementation-status: implemented
       x-required-role: RESPONSABILE
       parameters:
         - {name: mode, in: query, schema: {type: string, enum: [reference, live], default: live}}
@@ -405,7 +405,7 @@ paths:
       tags: [Autisti]
       summary: Missioni aperte del solo autista autenticato
       description: Restituisce proposte e missioni accettate live assegnate al principal.
-      x-implementation-status: designed
+      x-implementation-status: implemented
       x-required-role: AUTISTA
       responses:
         '200': {description: Missioni dell'autista, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/Mission'}}}}}
@@ -416,7 +416,7 @@ paths:
       tags: [Autisti]
       summary: Missioni eseguite e guadagno del solo autista autenticato
       description: Include solo missioni live eseguite dall'autista corrente.
-      x-implementation-status: designed
+      x-implementation-status: implemented
       x-required-role: AUTISTA
       responses:
         '200': {description: Storico e totale, content: {application/json: {schema: {$ref: '#/components/schemas/DriverHistory'}}}}

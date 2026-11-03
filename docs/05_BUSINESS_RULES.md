@@ -5,8 +5,8 @@
 
 ## Scopo e maturità
 
-Le regole sono implementate nel backend del branch `feature/backend-sprint2`;
-la verifica PostgreSQL CI è ancora necessaria prima della promozione del contratto.
+Le regole sono implementate nel backend del branch `feature/backend` e verificate
+dal job PostgreSQL CI.
 Le fixture storiche Sprint 1 restano immutabili. Diagramma:
 [`diagrams/mission_states.mmd`](./diagrams/mission_states.mmd).
 
@@ -51,5 +51,5 @@ La verifica è server-side, non solo UI. Requisiti endpoint sono in OpenAPI e
 **Dipendenze:** D-002 e D-003 nel [decision log](./DECISION_LOG.md), lock PostgreSQL,
 `Clock` iniettato per test temporali. **Criterio:** testare transizioni valide e
 invalide, deadline, concorrenza, rounding, isolamento fixture e permessi. I test
-unit/MVC sono passati; i test PostgreSQL aggiunti non sono ancora stati eseguiti
-localmente e dipendono dal job CI.
+unit/MVC e PostgreSQL CI sono passati; la verifica PostgreSQL locale resta bloccata
+dall'assenza di credenziali in questa sessione.

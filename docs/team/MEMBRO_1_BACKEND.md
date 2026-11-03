@@ -21,7 +21,7 @@ Login JSON, CSRF, logout, profilo, sessione HttpOnly, ruoli e API anagrafiche:
 autisti, mezzi, compagnie, clienti (ricerca e inserimento), officine. Configura
 PostgreSQL da environment; applica script `database/01...04` in ordine.
 
-## Sprint 2 — IMPLEMENTATO NEL BRANCH `feature/backend-sprint2`
+## Sprint 2 — IMPLEMENTATO NEL BRANCH `feature/backend`
 
 - Missioni, proposte e storico proposte; transizioni transazionali.
 - Timeout da `pricing_config`, scheduler live-only e guard al momento dell'accept.
@@ -30,8 +30,8 @@ PostgreSQL da environment; applica script `database/01...04` in ordine.
 - Dashboard reference/live, totale e subtotali per autista; fixture escluse dal live.
 - `Clock` iniettato per deadline; timezone tariffaria Europe/Rome.
 - Note e API autista con verifica dell'identità lato server.
-- Test unitari/MVC passati. Test PostgreSQL end-to-end/concorrenza aggiunti ma
-  bloccati localmente dall'assenza di credenziali; attesa verifica CI.
+- Test unitari/MVC e test PostgreSQL end-to-end/concorrenza passati in CI;
+  la verifica PostgreSQL locale resta bloccata dall'assenza di credenziali.
 
 ## Logging, test e Definition of Done
 
@@ -40,7 +40,7 @@ se introdotto, messaggi API generici. Prima di ogni PR: JDK25
 `.\mvnw.cmd clean verify`, test PostgreSQL, diff check e OpenAPI.
 
 **Dipendenze:** PostgreSQL, feedback tariffario, consumer M2–M5.
-**Completamento backend:** attendere il test PostgreSQL CI e promuovere le 13
-operazioni OpenAPI a `implemented` solo dopo esito positivo. **Riferimenti:**
+**Completamento backend:** test PostgreSQL CI PASS; 13 operazioni OpenAPI
+promosse a `implemented`. **Riferimenti:**
 [runbook](../BACKEND_SPRINT1_RUNBOOK.md),
 [regole](../05_BUSINESS_RULES.md).

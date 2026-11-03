@@ -22,10 +22,12 @@ I valori attesi Excel non sono prova di un'importazione PostgreSQL riuscita.
 | Test login, errore password, 401/403, CSRF, sessione, logout e route missioni | `ApiSecurityTests`: 11 superati, 0 falliti, 0 errori | PASS (JDK 25.0.5) |
 | Test di caricamento app con database locale | 1 test condizionato non eseguito senza `SPRING_DATASOURCE_PASSWORD`; il servizio è attivo ma l'accesso dell'app non è stato autenticato | BLOCKED |
 | Test mirati Sprint 2 (Java 25.0.5) | `MissionServiceTests`, `PricingServiceTests`, `ApiSecurityTests`: 13 superati; 0 falliti, 0 errori | PASS (unit/MVC) |
-| Copertura integrazione PostgreSQL Sprint 2 | Flusso missione, note, rettifica/dashboard/storico, reject/riproposizione/scadenza e concorrenza; i 3 test PostgreSQL sono saltati localmente e la CI sul branch non è ancora stata eseguita | BLOCKED |
+| Copertura integrazione PostgreSQL Sprint 2 | Flusso missione, note, rettifica/dashboard/storico, reject/riproposizione/scadenza e concorrenza: tutti i test PostgreSQL passati in CI; 3 saltati solo nell'esecuzione locale senza credenziali | PASS (CI); local BLOCKED |
 | Test dati PostgreSQL, filtri, FK e ripetibilità | Richiedono database autenticato; non eseguiti | BLOCKED |
 | Sicurezza password | 10 hash BCrypt validati in precedenza; nessun DTO include password/hash | PASS (verifica sorgente precedente) |
-| OpenAPI | YAML parsato; 31 operazioni con status/ruolo validi. 10 Sprint 1 implementate, 13 Sprint 2 ancora `designed` fino alla verifica CI, 8 pianificate | PASS (metadata); runtime Sprint 2 NOT RUN |
+| CI Java 25 e OpenAPI sul branch `feature/backend` | Job di build/test, package layout e contratto OpenAPI conclusi con successo | PASS |
+| CI PostgreSQL 18 sul branch `feature/backend` | Schema, seed, assertion baseline e tutti i test PostgreSQL d'integrazione conclusi con successo | PASS |
+| OpenAPI | YAML parsato; 31 operazioni con status/ruolo validi. 23 implementate (10 Sprint 1, 13 Sprint 2), 8 ancora progettate | PASS (metadata e CI) |
 | Java package layout | Confrontati package dichiarati e directory sorgente; target Java 25 corretto | PASS |
 | Git diff whitespace | `git diff --check` | PASS |
 

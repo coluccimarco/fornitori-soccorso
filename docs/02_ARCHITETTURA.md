@@ -6,8 +6,8 @@
 ## Scopo e stato
 
 Descrive l'architettura condivisa. Il backend Sprint 1 è **IMPLEMENTATO**; il
-workflow missioni è implementato nel branch `feature/backend-sprint2`, in attesa
-di validazione PostgreSQL CI. Frontend, mappe, chatbot e consegna notifiche sono
+workflow missioni è implementato nel branch `feature/backend` e validato con
+PostgreSQL CI. Frontend, mappe, chatbot e consegna notifiche sono
 **PIANIFICATI**. Diagramma
 dettagliato: [`docs/TAD_FORNITORI.md`](./TAD_FORNITORI.md) e
 [`diagrams/architecture.mmd`](./diagrams/architecture.mmd).

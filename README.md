@@ -2,10 +2,10 @@
 
 Project work ITS Developer 4.0 per coordinare richieste di soccorso stradale,
 centrale operativa, autisti e integrazioni esterne. Il repository è la baseline
-condivisa dei cinque componenti; il branch `feature/backend-sprint2` implementa
-il workflow backend delle missioni sopra la baseline Sprint 1. La verifica
-PostgreSQL CI del nuovo branch è in attesa; l'accesso al PostgreSQL locale è
-bloccato finché non vengono configurate credenziali autorizzate.
+condivisa dei cinque componenti; il branch `feature/backend` implementa il
+workflow backend delle missioni sopra la baseline Sprint 1. La verifica
+PostgreSQL CI è **PASS**; l'accesso al PostgreSQL locale è bloccato finché non
+vengono configurate credenziali autorizzate.
 
 ## Stato della baseline
 
@@ -14,9 +14,9 @@ bloccato finché non vengono configurate credenziali autorizzate.
 | Java 25 LTS / Maven | **IMPLEMENTATO**; verificato con Temurin 25.0.5 |
 | Backend Spring Boot: sessione, CSRF, ruoli, anagrafiche e rotte missioni | **IMPLEMENTATO**; 11 test MVC passati |
 | Schema, seed e baseline PostgreSQL | Script **IMPLEMENTATI**; baseline PostgreSQL CI **PASS**; servizio locale attivo, ma accesso app locale da configurare con credenziali |
-| Missioni, timeout, pricing, note, dashboard e storico autista | **IMPLEMENTATO nel branch Sprint 2**; test PostgreSQL CI da eseguire |
+| Missioni, timeout, pricing, note, dashboard e storico autista | **IMPLEMENTATO** in `feature/backend`; PostgreSQL CI **PASS** |
 | UI, chatbot, mappe e notifiche | **PIANIFICATO**; guide e contratti in `docs/` |
-| CI Java 25 | Baseline Sprint 1 **PASS**; esecuzione per Sprint 2 in attesa |
+| CI Java 25 | Build, test, OpenAPI e PostgreSQL baseline/integration **PASS** |
 
 ## Requisiti locali
 
@@ -125,9 +125,9 @@ il token ottenuto da `GET /api/v1/auth/csrf` nell'header `X-CSRF-TOKEN`.
 | GET/POST | `/api/v1/missioni/{id}/notes` | Implementato nel branch Sprint 2 |
 | GET | `/api/v1/dashboard`, `/api/v1/autista/missioni`, `/api/v1/autista/storico` | Implementato nel branch Sprint 2 |
 
-Il contratto completo è in [api/openapi.yaml](./api/openapi.yaml). Le operazioni
-Sprint 2 restano marcate `designed` finché i test PostgreSQL e la revisione CI del
-branch non sono completati.
+Il contratto completo è in [api/openapi.yaml](./api/openapi.yaml). Le 13 operazioni
+backend Sprint 2 sono marcate `implemented` dopo la verifica PostgreSQL CI;
+route, chatbot e webhook restano progettati.
 
 ## Struttura Spring Boot
 

@@ -2,7 +2,7 @@ name: Backend CI
 
 on:
   push:
-    branches: [main, feature/backend, feature/backend-sprint2]
+    branches: [main, feature/backend]
   pull_request:
     branches: [main]
   workflow_dispatch:

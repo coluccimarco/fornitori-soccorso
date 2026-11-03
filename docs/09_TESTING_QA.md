@@ -10,10 +10,11 @@ la porta `localhost:5432` è raggiungibile; il test context con il DB locale res
 **BLOCKED** perché non sono configurate le credenziali dell'utente applicativo.
 Il workflow CI con DB effimero e assertion baseline è **PASS**. Nessun test
 UI/chat/mappe è ancora disponibile.
-`clean verify` sul branch Sprint 2 ha terminato con BUILD SUCCESS: 17 test totali,
+`clean verify` locale ha terminato con BUILD SUCCESS: 17 test totali,
 0 fallimenti, 0 errori, 4 saltati (i tre PostgreSQL e il test di caricamento
-contestuale). I test mirati risultano 13 totali, 11 eseguiti e 2 saltati per
-assenza della password; la nuova persistenza/concorrenza resta in attesa di CI.
+contestuale, per password assente). La CI sul branch `feature/backend` ha invece
+eseguito con successo sia la verifica Java/OpenAPI sia il job PostgreSQL 18 con
+schema, seed, baseline e test d'integrazione.
 
 ## Livelli
 

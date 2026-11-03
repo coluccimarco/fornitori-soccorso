@@ -1,6 +1,6 @@
 # Architecture Diagram
 
-Questa vista descrive i layer Spring effettivamente presenti nel repository e distingue il backend implementato nel branch Sprint 2 dalle integrazioni consumer ancora pianificate.
+Questa vista descrive i layer Spring effettivamente presenti nel repository e distingue il backend implementato nel branch `feature/backend` dalle integrazioni consumer ancora pianificate.
 
 ## Application Architecture
 

@@ -58,8 +58,8 @@ su righe live. Gli script SQL non alterano né cancellano dati già presenti.
 ## Stato e fuori perimetro
 
 Workflow missioni, timeout, pricing, rettifiche, dashboard, note e area missioni
-autista sono implementati sul branch `feature/backend-sprint2`, ma la validazione
-PostgreSQL CI è pendente. Routing mappe, chatbot, webhook e invio notifiche non
+autista sono implementati sul branch `feature/backend` e validati con PostgreSQL
+CI. Routing mappe, chatbot, webhook e invio notifiche non
 sono implementati; l'outbox non invia messaggi esterni.
 
 **Dipendenze:** PostgreSQL, Java 25, Maven Wrapper, OpenAPI condivisa.

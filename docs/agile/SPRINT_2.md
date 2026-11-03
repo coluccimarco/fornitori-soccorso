@@ -15,7 +15,7 @@ accept/reject, esecuzione, costi, note e dashboard.
 | Regole pricing e stati | M1 | D-002/D-003 | Implementato; timestamp accept e `HALF_UP`, conferma docente pendente |
 | Service/repository missione, lock e transizioni | M1 | schema/DB | Implementato nel branch |
 | Endpoint REST e security per ruoli | M1 | contratto | Implementato; promozione OpenAPI dopo CI PostgreSQL |
-| Test pricing, deadline, permessi e concorrenza PostgreSQL | M1 | PostgreSQL, `Clock` | Unit/MVC passati; test PostgreSQL aggiunti ma non eseguibili localmente senza password |
+| Test pricing, deadline, permessi e concorrenza PostgreSQL | M1 | PostgreSQL, `Clock` | Unit/MVC e PostgreSQL CI PASS; locale senza password |
 | UI centrale e autista | M2 | API | Fuori dal lavoro backend; da integrare |
 | Contratti mappe, chatbot e notifiche | M3/M4/M5 | APIs/eventi | Integrazione e provider ancora da completare |
 
@@ -31,10 +31,9 @@ accept/reject, esecuzione, costi, note e dashboard.
 ## Demo, DoD e rischi
 
 Demo prevista: creare chiamata, proporre, rifiutare/accettare, chiudere, mostrare
-costo rettificato e aggregato. Implementazione backend disponibile sul branch
-`feature/backend-sprint2`; test unit/MVC passati. L'integrazione PostgreSQL locale è
-bloccata dall'assenza di credenziali, quindi DoD e promozione OpenAPI restano
-subordinate al job CI PostgreSQL.
+costo rettificato e aggregato. Implementazione backend disponibile sul branch `feature/backend`, con test
+unit/MVC e CI PostgreSQL passati. La verifica locale resta bloccata dall'assenza
+di credenziali; le operazioni OpenAPI sono state promosse a `implemented`.
 
 **Dipendenze:** decisioni, DB funzionante, Java25 CI, API approvate.
 **Riferimenti:** [business rules](../05_BUSINESS_RULES.md),

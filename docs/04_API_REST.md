@@ -6,10 +6,9 @@
 ## Scopo e stato
 
 `api/openapi.yaml` è la sola fonte normativa di URL, DTO e stati. Sprint 1:
-10 operazioni **IMPLEMENTATE**; le 13 operazioni del backend missioni Sprint 2
-sono implementate nel branch `feature/backend-sprint2` ma restano marcate
-`designed` fino al passaggio dei test PostgreSQL CI. Le restanti 8 operazioni
-sono pianificate. Usa `x-implementation-status` per distinguere gli stati.
+10 operazioni **IMPLEMENTATE**; le 13 operazioni backend missioni Sprint 2 sono
+**IMPLEMENTATE** e validate con PostgreSQL CI. Le restanti 8 operazioni sono
+pianificate. Usa `x-implementation-status` per distinguere gli stati.
 
 ## Auth/sessione
 
@@ -29,9 +28,9 @@ Credenziali invalide: 401. Tutti i payload sono JSON, tranne `204` logout.
 | GET `/api/v1/clienti?search=...` | RESPONSABILE | IMPLEMENTATO |
 | POST `/api/v1/clienti` | RESPONSABILE + CSRF | IMPLEMENTATO |
 
-Le operazioni missioni, dashboard e storico autista sono implementate nel branch
-Sprint 2 ma non vanno considerate approvate per i consumer prima della verifica DB
-CI. Route, webhook e chat restano pianificati. Consultare lo YAML per request,
+Le operazioni missioni, dashboard e storico autista sono validate in CI e
+disponibili sul branch `feature/backend`. Route, webhook e chat restano pianificati.
+Consultare lo YAML per request,
 response, security e codici; non inventare alias o payload locali.
 
 ## Errori e criteri d'integrazione
