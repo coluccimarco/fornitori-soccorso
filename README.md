@@ -15,8 +15,8 @@ vengono configurate credenziali autorizzate.
 | Backend Spring Boot: sessione, CSRF, ruoli, anagrafiche e rotte missioni | **IMPLEMENTATO**; 11 test MVC passati |
 | Schema, seed e baseline PostgreSQL | Script **IMPLEMENTATI**; baseline PostgreSQL CI **PASS**; servizio locale attivo, ma accesso app locale da configurare con credenziali |
 | Missioni, timeout, pricing, note, dashboard e storico autista | **IMPLEMENTATO** in `feature/backend`; PostgreSQL CI **PASS** |
-| Chatbot (`chatbot/`) e API `chat/*` | **IMPLEMENTATO**; provato con backend e PostgreSQL locali, conversazione da Telegram da validare |
-| Notifiche al cliente | **IMPLEMENTATO** su Telegram per le missioni da chat; WhatsApp **PIANIFICATO** |
+| Chatbot (`chatbot/`) e API `chat/*` | **IMPLEMENTATO**; provato da Telegram con backend e PostgreSQL locali |
+| Notifiche al cliente | **IMPLEMENTATO** e provato su Telegram per le missioni da chat; WhatsApp **PIANIFICATO** |
 | UI e mappe | **PIANIFICATO**; guide e contratti in `docs/` |
 | CI Java 25 | Build, test, OpenAPI e PostgreSQL baseline/integration **PASS** |
 

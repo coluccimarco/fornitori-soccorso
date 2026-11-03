@@ -4,9 +4,8 @@ Dialogo guidato in Python, senza dipendenze esterne (solo libreria standard, Pyt
 o superiore), allineato ai dialoghi di test del docente. Non accede al database: parla
 con il backend solo tramite gli endpoint `/api/v1/chat/*` di `api/openapi.yaml`.
 
-**Stato:** dialogo, canale Telegram e collegamento al backend reale sono pronti e provati.
-L'invio delle notifiche è provato solo senza i server di Telegram, quindi il loro arrivo
-sul telefono è da verificare. WhatsApp non è collegato.
+**Stato:** dialogo, collegamento al backend reale e notifiche al cliente sono provati da
+Telegram su un telefono vero, con backend e PostgreSQL locali. WhatsApp non è collegato.
 
 ## Provarlo
 
