@@ -48,7 +48,9 @@ public class ApiExceptionHandler {
             case 403 -> "forbidden";
             case 404 -> "not_found";
             case 409 -> "conflict";
+            case 422 -> "address_not_found";
             case 429 -> "rate_limited";
+            case 503 -> "service_unavailable";
             default -> "internal_error";
         };
         return ResponseEntity.status(exception.getStatusCode()).body(new ApiError(status, error));

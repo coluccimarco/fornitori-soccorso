@@ -94,3 +94,15 @@
   messaggi: il cliente chiamato al telefono non ha una chat nota. La consegna è
   "almeno una volta": un crash del bot tra invio ed esito può ripetere il messaggio.
 - **Stato:** applicata per Telegram; WhatsApp resta da collegare (M5).
+
+## D-010 — Geocodifica e percorso
+
+- **Decisione:** il backend fa da tramite verso i servizi pubblici Nominatim e OSRM.
+  L'indirizzo si converte in coordinate alla prima richiesta di percorso, non alla
+  creazione, così un servizio lento non blocca chatbot e centrale.
+- **Motivo:** nessuna chiave o carta di credito, adatto al perimetro didattico.
+- **Conseguenza:** gli indirizzi dei clienti arrivano a servizi terzi. I server pubblici
+  hanno limiti d'uso e nessuna garanzia, quindi in produzione ne servirebbero di propri.
+  La precisione dipende da OpenStreetMap: un numero civico assente porta alla via.
+  Se i servizi non rispondono non si inventano km e la chiusura resta possibile.
+- **Stato:** API applicata; la visualizzazione sulla mappa è da fare nella UI (M2/M4).

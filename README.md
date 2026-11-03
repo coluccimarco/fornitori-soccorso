@@ -1,10 +1,11 @@
 # FORNITORI — gestione del soccorso stradale
 
 Project work ITS Developer 4.0 per coordinare richieste di soccorso stradale,
-centrale operativa, autisti e integrazioni esterne. La baseline integrata in
-`main` comprende il backend Java/Spring, workflow missioni, API chatbot e il bot
-Python con Telegram. La UI web, mappe/routing e WhatsApp non sono presenti.
-La CI Java/OpenAPI e PostgreSQL 18 sul commit `25c613b` è **PASS**.
+centrale operativa, autisti e integrazioni esterne. La baseline `main` integrata
+fino a `f763d53` comprende backend Java/Spring, client web statico, workflow
+missioni, chatbot Telegram e API di geocodifica/percorso. La UI non visualizza
+ancora mappe e WhatsApp resta pianificato. Le verifiche CI precedenti sono
+riferite ai rispettivi commit; i controlli sulla baseline integrata sono in corso.
 
 Apri la [documentazione aggiornata](./docs/README.md) o l'[indice generale](./docs/00_INDICE_GENERALE.md)
 per audit, BUR/FUD/TAD, guide, test e Word modificabili. Il PDF e l'Excel originali
@@ -24,7 +25,8 @@ riassume evidenze, deliverable e attività ancora bloccate.
 | Missioni, timeout, pricing, note, dashboard e storico autista | **IMPLEMENTATO** in `main`; PostgreSQL CI **PASS** |
 | Chatbot (`chatbot/`) e API `chat/*` | **IMPLEMENTATO**; prova Telegram dichiarata nel README del modulo |
 | Notifiche al cliente | Outbox/backend e dispatcher Telegram presenti; prova reale dichiarata nel README del modulo; WhatsApp **PIANIFICATO** |
-| UI e mappe | **PIANIFICATO**; guide e contratti in `docs/` |
+| UI web | **PRESENTE** in `src/main/resources/static/`: pagina pubblica, login, centrale e area autista; esito runtime da verificare |
+| API mappe | **PRESENTE** per geocodifica, percorso e distanza stimata; la UI non mostra ancora la mappa |
 | CI Java 25 | Build, test, OpenAPI e PostgreSQL baseline/integration **PASS** (run `41651140562`, commit `25c613b`) |
 
 ## Requisiti locali
@@ -41,7 +43,7 @@ riassume evidenze, deliverable e attività ancora bloccate.
 | Build | Maven Wrapper 3.9.9 |
 | Persistenza | PostgreSQL 18 o compatibile |
 | Contratto | REST/JSON, OpenAPI 3.0.3 |
-| Client previsti | Web HTML/CSS/JavaScript/Bootstrap; Leaflet/OSM per mappe |
+| Client | Web HTML/CSS/JavaScript/Bootstrap 5.3, servito da Spring Boot |
 | Provider previsti | Telegram e WhatsApp Business/Twilio, soggetti ad approvazione |
 
 ### Windows: installazione JDK 25
@@ -103,6 +105,10 @@ storico di riferimento al 28/10/2026. Non vanno modificate dallo scheduler opera
 .\mvnw.cmd spring-boot:run
 ```
 
+Con il backend avviato, aprire `http://localhost:8080/`. La pagina pubblica è
+accessibile senza login; l'area riservata usa la sessione e le API REST dello stesso
+server.
+
 Hibernate è configurato in `validate`: l'applicazione si avvia solo se il database
 esiste, gli script sono stati eseguiti e le variabili datasource sono corrette.
 Il test di caricamento del contesto richiede `SPRING_DATASOURCE_PASSWORD`; i test
@@ -139,6 +145,7 @@ il token ottenuto da `GET /api/v1/auth/csrf` nell'header `X-CSRF-TOKEN`.
 | GET/POST | `/api/v1/missioni/{id}/notes` | Implementato |
 | GET | `/api/v1/dashboard`, `/api/v1/autista/missioni`, `/api/v1/autista/storico` | Implementato |
 | PATCH | `/api/v1/missioni/{id}/intervento` | Implementato; centrale |
+| GET | `/api/v1/maps/route` | Implementato; centrale e autista, usa Nominatim e OSRM |
 | POST | `/api/v1/chat/lookup-targa`, `/api/v1/chat/missioni` | Implementato; token di servizio del chatbot |
 | POST | `/api/v1/chat/stato` | Implementato; token di servizio del chatbot |
 | GET | `/api/v1/chat/notifiche` | Implementato; token di servizio del chatbot |
@@ -148,11 +155,10 @@ Le API `chat/*` usano `Authorization: Bearer` con il valore di `FORNITORI_CHAT_T
 da impostare uguale sul backend e sul chatbot. Se manca, rispondono sempre `401`.
 Vedi [chatbot/README.md](./chatbot/README.md).
 
-Il contratto completo è in [api/openapi.yaml](./api/openapi.yaml). Al commit
-`25c613b` il documento contiene 34 operazioni: 29 `implemented` e 5 `designed`.
-Mappe, profili utente e webhook in ingresso restano progettati. La description
-iniziale del file OpenAPI non è ancora aggiornata: vedere
-[l'audit documentale](./docs/management/DOCUMENTATION_AUDIT.md).
+Il contratto completo è in [api/openapi.yaml](./api/openapi.yaml); gli stati
+`implemented` e `designed` vanno letti per singola operation e non attestano da
+soli la verifica end-to-end. Le nuove API mappe sono parte del backend integrato.
+La UI non invoca ancora il servizio mappe.
 
 ## Struttura Spring Boot
 

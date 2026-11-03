@@ -111,7 +111,8 @@ risposte = engine.handle(InboundMessage(
 2. **Traino:** il bot crea sempre `riparazione_sul_posto`. La centrale imposta traino e
    officina con `PATCH /api/v1/missioni/{id}/intervento`, ma serve il comando nell'interfaccia.
 3. **Stato:** `STATO` cerca per chat, non per numero di telefono, che Telegram non comunica.
-4. **Indirizzi:** un indirizzo scritto non diventa coordinate: la geocodifica è di Membro 4.
+4. **Indirizzi:** un indirizzo scritto diventa coordinate alla prima richiesta di percorso
+   sulla mappa, non alla creazione della missione.
 5. **Dialogo 10 del foglio:** la frase libera con Gemini è facoltativa e non implementata.
 6. **Consenso:** i dialoghi del docente non lo prevedono, quindi il bot non lo chiede.
 7. **Notifiche al cliente:** con `--telegram` il bot controlla ogni 5 secondi se ci sono

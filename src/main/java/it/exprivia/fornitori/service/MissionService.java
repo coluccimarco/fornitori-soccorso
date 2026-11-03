@@ -171,6 +171,22 @@ public class MissionService {
     }
 
     @Transactional
+    public void saveGeocodedOrigin(Long missionId, BigDecimal lat, BigDecimal lng) {
+        missions.lockLiveById(missionId)
+                .filter(mission -> mission.getOrigineLat() == null)
+                .ifPresent(mission -> mission.setOriginCoordinates(lat, lng));
+    }
+
+    /** I km proposti alla chiusura restano quelli dell'autista assegnato, non di chi è solo stato valutato. */
+    @Transactional
+    public void saveEstimatedKm(Long missionId, BigDecimal km, Long driverId) {
+        missions.lockLiveById(missionId)
+                .filter(mission -> !ESEGUITA.equals(mission.getStato()))
+                .filter(mission -> mission.getDriverId() == null || mission.getDriverId().equals(driverId))
+                .ifPresent(mission -> mission.setEstimatedKm(km));
+    }
+
+    @Transactional
     public MissionDtos.ProposalResponse propose(
             String email, Long missionId, MissionDtos.ProposeMissionRequest request) {
         AppUser actor = requireRole(email, RESPONSABILE);

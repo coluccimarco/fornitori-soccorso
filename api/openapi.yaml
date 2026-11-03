@@ -450,19 +450,21 @@ paths:
     get:
       tags: [Mappe]
       summary: Calcola base → sinistro → officina, se traino; solo base → sinistro se riparazione
-      description: Il server deve verificare che driverId corrisponda al principal AUTISTA; non fidarsi dell'id fornito dal client.
-      x-implementation-status: designed
+      description: Se la missione ha solo l'indirizzo, lo converte in coordinate con Nominatim e le salva. Salva i km stimati finché la missione non è eseguita e solo per l'autista assegnato, se presente. L'AUTISTA usa sempre il proprio mezzo; il RESPONSABILE sceglie driverId, altrimenti vale l'autista assegnato.
+      x-implementation-status: implemented
       x-required-role: [RESPONSABILE, ASSIGNED_AUTISTA]
       parameters:
         - {name: missionId, in: query, required: true, schema: {type: integer, format: int64}}
-        - {name: driverId, in: query, required: true, schema: {type: integer, format: int64}}
+        - {name: driverId, in: query, required: false, schema: {type: integer, format: int64}}
       responses:
         '200':
           description: Routing suggerito, non chilometri effettivi
           content:
             application/json:
               schema: {$ref: '#/components/schemas/Route'}
-              example: {kmStimati: 18.4, origine: osrm, geometria: {type: LineString, coordinates: [[16.5978,41.2003],[16.601,41.202],[16.605,41.205]]}}
+              example: {kmStimati: 18.4, origine: osrm, autistaId: 1, punti: [{tipo: base, descrizione: "Via Terlizzi 88, Molfetta", lat: 41.2003, lng: 16.5978}, {tipo: sinistro, descrizione: "Via Roma 10, Molfetta", lat: 41.205, lng: 16.605}], geometria: {type: LineString, coordinates: [[16.5978,41.2003],[16.601,41.202],[16.605,41.205]]}}
+        '400': {description: Nessun autista indicato o assegnato}
+        '422': {description: Indirizzo non trovato dal servizio di geocodifica}
         '503': {description: Servizio esterno non disponibile; client può correggere km effettivi}
         '401': {$ref: '#/components/responses/Unauthorized'}
         '403': {$ref: '#/components/responses/Forbidden'}
@@ -868,4 +870,14 @@ components:
       properties:
         kmStimati: {type: number}
         origine: {type: string}
-        geometria: {type: object}
+        autistaId: {type: integer, format: int64}
+        punti:
+          type: array
+          items:
+            type: object
+            properties:
+              tipo: {type: string, enum: [base, sinistro, officina]}
+              descrizione: {type: string}
+              lat: {type: number}
+              lng: {type: number}
+        geometria: {type: object, description: GeoJSON LineString}
