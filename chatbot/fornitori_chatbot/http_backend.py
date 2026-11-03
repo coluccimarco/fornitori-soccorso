@@ -2,7 +2,7 @@
 import json
 import urllib.error
 import urllib.request
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 from urllib.parse import quote
 
 from .backend import (
@@ -15,6 +15,7 @@ from .backend import (
     MissionRequest,
     MissionStatus,
     NotFound,
+    Notification,
     RateLimited,
     Unauthorized,
 )
@@ -54,6 +55,7 @@ class HttpBackend:
             "origineLng": request.origine_lng,
             "officinaId": request.officina_id,
             "canaleOrigine": request.canale_origine,
+            "destinatario": request.destinatario,
         }
         body = self._call(
             "POST",
@@ -79,6 +81,25 @@ class HttpBackend:
         except KeyError as exc:
             raise BackendUnavailable("risposta stato incompleta") from exc
 
+    def pending_notifications(self, channel: str) -> List[Notification]:
+        body = self._call("GET", f"/api/v1/chat/notifiche?canale={quote(channel, safe='')}")
+        try:
+            return [
+                Notification(
+                    item["id"], item["tipo"], item["destinatario"], item["codice"], item.get("autistaNome")
+                )
+                for item in body["notifiche"]
+            ]
+        except (KeyError, TypeError) as exc:
+            raise BackendUnavailable("risposta notifiche incompleta") from exc
+
+    def report_notification(self, notification_id: int, sent: bool, error: Optional[str] = None) -> None:
+        self._call(
+            "POST",
+            f"/api/v1/chat/notifiche/{quote(str(notification_id), safe='')}/esito",
+            {"inviata": sent, "errore": error},
+        )
+
     def _call(
         self,
         method: str,
@@ -103,6 +124,8 @@ class HttpBackend:
             raise _map_status(exc.code) from None
         except (urllib.error.URLError, TimeoutError, OSError) as exc:
             raise BackendUnavailable(type(exc).__name__) from None
+        if not raw:
+            return {}
         try:
             body = json.loads(raw)
         except ValueError:

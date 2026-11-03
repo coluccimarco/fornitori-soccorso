@@ -2,12 +2,12 @@
 
 Dialogo guidato a menu in Python, senza dipendenze esterne (solo libreria standard,
 Python 3.10 o superiore). Non accede al database e non tocca il backend Java: parla
-con il backend solo tramite i tre endpoint `/api/v1/chat/*` di `api/openapi.yaml`.
+con il backend solo tramite gli endpoint `/api/v1/chat/*` di `api/openapi.yaml`.
 
-**Stato:** dialogo, canale Telegram e collegamento al backend reale sono pronti e provati
-da console con backend e PostgreSQL locali. La conversazione vera da Telegram è ancora da
-provare, WhatsApp non è collegato e le due notifiche automatiche al cliente non partono
-ancora.
+**Stato:** dialogo, canale Telegram, collegamento al backend reale e notifiche al cliente
+sono pronti e provati con backend e PostgreSQL locali, ma senza passare dai server di
+Telegram: la conversazione e l'arrivo dei messaggi sul telefono sono ancora da provare.
+WhatsApp non è collegato.
 
 ## Provarlo
 
@@ -28,7 +28,7 @@ python3 -m unittest discover
 
 Backend e bot devono avere lo stesso `FORNITORI_CHAT_TOKEN`: generalo una volta con
 `openssl rand -hex 32` e non scriverlo in file del repo. Il database deve includere
-`database/05_chat_requests.sql`.
+`database/05_chat_requests.sql` e `database/06_chat_recipient.sql`.
 
 Nel terminale del backend, dalla radice del repo:
 
@@ -73,6 +73,7 @@ mai scritto in file del repo o in chat.
 | `fake_backend.py` | Backend finto per sviluppo e test |
 | `http_backend.py` | Backend reale via HTTP |
 | `telegram_channel.py` | Canale Telegram |
+| `notifications.py` | Invio al cliente delle notifiche accodate dal backend |
 | `__main__.py` | Avvio da console o Telegram |
 
 ## Dialogo
@@ -114,5 +115,7 @@ risposte = engine.handle(InboundMessage(
    officina con `PATCH /api/v1/missioni/{id}/intervento`, ma serve il comando nell'interfaccia.
 3. **Stato dopo la chat:** il bot risponde sullo stato solo dalla chat che ha creato la
    missione, entro 24 ore e finché non si riavvia. Dopo 60 minuti richiede la verifica.
-4. **Notifiche al cliente:** presa in carico e conclusione non vengono inviate: nel backend
-   gli eventi restano nell'outbox e il bot non è avvisato dei cambi di stato.
+4. **Notifiche al cliente:** con `--telegram` il bot controlla ogni 5 secondi se ci sono
+   messaggi di presa in carico e conclusione da inviare. Partono solo per le missioni create
+   dal bot: per quelle create dalla centrale la chat del cliente non è nota. Se il bot è
+   spento restano in coda e partono alla riaccensione.

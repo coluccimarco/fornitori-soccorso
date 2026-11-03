@@ -11,6 +11,7 @@ import com.jayway.jsonpath.JsonPath;
 import it.exprivia.fornitori.common.MissionConflictException;
 import it.exprivia.fornitori.dto.MissionDtos;
 import it.exprivia.fornitori.repository.MissionRepository;
+import it.exprivia.fornitori.repository.NotificationOutboxRepository;
 import it.exprivia.fornitori.service.MissionService;
 import java.math.BigDecimal;
 import java.util.Map;
@@ -50,6 +51,9 @@ class ChatPostgresIntegrationTests {
     private MissionRepository missionRepository;
 
     @Autowired
+    private NotificationOutboxRepository outbox;
+
+    @Autowired
     private JdbcTemplate jdbcTemplate;
 
     private MockHttpServletRequestBuilder asBot(MockHttpServletRequestBuilder request) {
@@ -79,8 +83,83 @@ class ChatPostgresIntegrationTests {
                         {"sessionId":"%s","requestId":"%s","clienteId":%d,
                          "tipoIntervento":"riparazione_sul_posto","descrizioneProblema":"Motore in panne",
                          "origineIndirizzo":"Via Roma 1, Molfetta","origineLat":41.2,"origineLng":16.6,
-                         "officinaId":null,"canaleOrigine":"telegram"}
+                         "officinaId":null,"canaleOrigine":"telegram","destinatario":"chat-di-prova"}
                         """.formatted(SESSION, requestId, customerId)));
+    }
+
+    private ResultActions pendingNotifications() throws Exception {
+        return mockMvc.perform(asBot(get("/api/v1/chat/notifiche")).param("canale", "telegram"));
+    }
+
+    private ResultActions report(long id, String body) throws Exception {
+        return mockMvc.perform(asBot(post("/api/v1/chat/notifiche/{id}/esito", id))
+                .contentType(MediaType.APPLICATION_JSON).content(body));
+    }
+
+    private long notificationIdFor(String eventKey) {
+        return outbox.findByEventKey(eventKey).orElseThrow().getId();
+    }
+
+    @Test
+    void acceptanceAndCompletionQueueNotificationsForTheChat() throws Exception {
+        long missionId = createdId(create(verify(PLATE, POLICY), "richiesta-di-prova-07", 1L));
+        missions.propose(RESPONSABILE, missionId, new MissionDtos.ProposeMissionRequest(1L));
+        pendingNotifications().andExpect(jsonPath("$.notifiche.length()").value(0));
+
+        missions.accept(AUTISTA, missionId);
+        pendingNotifications().andExpect(status().isOk())
+                .andExpect(jsonPath("$.notifiche.length()").value(1))
+                .andExpect(jsonPath("$.notifiche[0].tipo").value("MISSION_ACCEPTED"))
+                .andExpect(jsonPath("$.notifiche[0].destinatario").value("chat-di-prova"))
+                .andExpect(jsonPath("$.notifiche[0].autistaNome").value("Luca Bianchi"));
+
+        long acceptedId = notificationIdFor("MISSION_ACCEPTED:" + missionId);
+        report(acceptedId, "{\"inviata\":true}").andExpect(status().isNoContent());
+        pendingNotifications().andExpect(jsonPath("$.notifiche.length()").value(0));
+        assertEquals("SENT", outbox.findById(acceptedId).orElseThrow().getStato());
+
+        missions.complete(AUTISTA, missionId, new MissionDtos.CompleteMissionRequest(new BigDecimal("10.00")));
+        pendingNotifications().andExpect(jsonPath("$.notifiche.length()").value(1))
+                .andExpect(jsonPath("$.notifiche[0].tipo").value("MISSION_COMPLETED"));
+    }
+
+    @Test
+    void failedNotificationStopsAfterFiveAttempts() throws Exception {
+        long missionId = createdId(create(verify(PLATE, POLICY), "richiesta-di-prova-08", 1L));
+        missions.propose(RESPONSABILE, missionId, new MissionDtos.ProposeMissionRequest(1L));
+        missions.accept(AUTISTA, missionId);
+        long id = notificationIdFor("MISSION_ACCEPTED:" + missionId);
+
+        for (int attempt = 0; attempt < 4; attempt++) {
+            report(id, "{\"inviata\":false,\"errore\":\"HTTP 500\"}").andExpect(status().isNoContent());
+        }
+        pendingNotifications().andExpect(jsonPath("$.notifiche.length()").value(1));
+        report(id, "{\"inviata\":false,\"errore\":\"HTTP 500\"}").andExpect(status().isNoContent());
+        pendingNotifications().andExpect(jsonPath("$.notifiche.length()").value(0));
+        assertEquals("FAILED", outbox.findById(id).orElseThrow().getStato());
+
+        report(id, "{\"inviata\":true}").andExpect(status().isNoContent());
+        assertEquals("FAILED", outbox.findById(id).orElseThrow().getStato());
+    }
+
+    @Test
+    void missionsCreatedByTheCentreStayInternal() throws Exception {
+        MissionDtos.MissionResponse created = missions.create(RESPONSABILE, new MissionDtos.CreateMissionRequest(
+                1L, "riparazione_sul_posto", "Chiamata telefonica", "Via Roma 1, Molfetta",
+                null, null, null, null, "centrale"));
+        missions.propose(RESPONSABILE, created.id(), new MissionDtos.ProposeMissionRequest(1L));
+        missions.accept(AUTISTA, created.id());
+
+        pendingNotifications().andExpect(jsonPath("$.notifiche.length()").value(0));
+        long id = notificationIdFor("MISSION_ACCEPTED:" + created.id());
+        assertEquals("internal", outbox.findById(id).orElseThrow().getChannel());
+        report(id, "{\"inviata\":true}").andExpect(status().isNotFound());
+    }
+
+    @Test
+    void unknownChannelIsRejected() throws Exception {
+        mockMvc.perform(asBot(get("/api/v1/chat/notifiche")).param("canale", "internal"))
+                .andExpect(status().isBadRequest());
     }
 
     private long createdId(ResultActions result) throws Exception {

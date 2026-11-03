@@ -7,8 +7,9 @@
 
 Gestire ingresso richieste chatbot e messaggi di stato. Il backend Sprint 2
 scrive gli eventi `MISSION_ACCEPTED` e `MISSION_COMPLETED` in `notifications_outbox`
-nella stessa transazione delle transizioni; il dispatcher, i provider e i webhook
-sono **PIANIFICATI**, non implementati.
+nella stessa transazione delle transizioni. Il bot in `chatbot/` riceve i messaggi
+Telegram e invia le due notifiche (**IMPLEMENTATO**, vedi
+[D-009](../DECISION_LOG.md)); WhatsApp e webhook sono **PIANIFICATI**.
 
 ## Provider e funzioni
 
@@ -20,10 +21,10 @@ Implementare interfaccia adapter per non legare il dominio a un provider.
 ## Eventi e idempotenza
 
 Eventi outbox implementati: `MISSION_ACCEPTED`, `MISSION_COMPLETED`. Il payload
-identifica evento e missione; `channel` è attualmente `internal` e il destinatario
-è il telefono cliente. Non è ancora un invio WhatsApp/Telegram né un contratto di
-provider: concordare il mapping con M1 prima del dispatcher. Il worker consegna al provider,
-marca esito e pianifica retry con backoff; event key univoca impedisce duplicati.
+identifica evento, missione e autista. Per le missioni create da chat `channel` è il
+canale di origine e il destinatario è la chat; per quelle della centrale `channel` è
+`internal` e il destinatario è il telefono cliente. Il bot legge la coda, invia e
+registra l'esito con retry limitati; event key univoca impedisce duplicati.
 Payload limita PII e include id missione/canale/destinatario e template parametri.
 
 Esempio concettuale, non credenziale:

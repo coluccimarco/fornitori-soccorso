@@ -1,6 +1,6 @@
 """Contratto del chatbot verso il backend (api/openapi.yaml, tag Chat)."""
 from dataclasses import dataclass
-from typing import Optional, Protocol
+from typing import List, Optional, Protocol
 
 
 class BackendError(Exception):
@@ -49,6 +49,7 @@ class MissionRequest:
     descrizione_problema: str
     origine_indirizzo: str
     canale_origine: str
+    destinatario: str
     origine_lat: Optional[float] = None
     origine_lng: Optional[float] = None
     officina_id: Optional[int] = None
@@ -69,6 +70,15 @@ class MissionStatus:
     aggiornata_il: Optional[str] = None
 
 
+@dataclass(frozen=True)
+class Notification:
+    id: int
+    tipo: str
+    destinatario: str
+    codice: str
+    autista_nome: Optional[str] = None
+
+
 class BackendClient(Protocol):
     def lookup_targa(self, session_id: str, targa: str, challenge: str) -> LookupResult:
         ...
@@ -77,4 +87,10 @@ class BackendClient(Protocol):
         ...
 
     def get_status(self, mission_id: int, verification_token: str) -> MissionStatus:
+        ...
+
+    def pending_notifications(self, channel: str) -> List[Notification]:
+        ...
+
+    def report_notification(self, notification_id: int, sent: bool, error: Optional[str] = None) -> None:
         ...

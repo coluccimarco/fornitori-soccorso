@@ -12,6 +12,7 @@ import it.exprivia.fornitori.entity.Driver;
 import it.exprivia.fornitori.entity.Mission;
 import it.exprivia.fornitori.entity.MissionProposal;
 import it.exprivia.fornitori.repository.AppUserRepository;
+import it.exprivia.fornitori.repository.ChatMissionRequestRepository;
 import it.exprivia.fornitori.repository.CustomerRepository;
 import it.exprivia.fornitori.repository.DriverRepository;
 import it.exprivia.fornitori.repository.MissionEventRepository;
@@ -53,8 +54,8 @@ class MissionServiceTests {
         PricingService pricing = mock(PricingService.class);
 
         MissionService service = new MissionService(
-                missions, proposals, notes, events, outbox, pricingConfigs,
-                customers, workshops, drivers, users, pricing, clock);
+                missions, proposals, notes, events, outbox, mock(ChatMissionRequestRepository.class),
+                pricingConfigs, customers, workshops, drivers, users, pricing, clock);
         AppUser user = mock(AppUser.class);
         Driver driver = mock(Driver.class);
         when(user.getId()).thenReturn(3L);

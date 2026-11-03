@@ -7,6 +7,7 @@ import sys
 from .engine import ChatEngine, InboundMessage
 from .fake_backend import DEMO_CUSTOMERS, FakeBackend
 from .http_backend import HttpBackend
+from .notifications import NotificationDispatcher
 from .telegram_channel import InvalidToken, TelegramApi, TelegramBot
 
 
@@ -55,13 +56,15 @@ def run_console(engine: ChatEngine) -> None:
         print()
 
 
-def run_telegram(engine: ChatEngine) -> None:
+def run_telegram(engine: ChatEngine, backend) -> None:
     token = os.environ.get("TELEGRAM_BOT_TOKEN")
     if not token:
         sys.exit("Imposta TELEGRAM_BOT_TOKEN per usare Telegram.")
+    api = TelegramApi(token)
+    NotificationDispatcher(backend, "telegram", api.send_message).start()
     print("Bot Telegram attivo. Premi Ctrl+C per fermarlo.")
     try:
-        TelegramBot(TelegramApi(token), engine).run()
+        TelegramBot(api, engine).run()
     except InvalidToken:
         sys.exit("Telegram ha rifiutato il token: controlla TELEGRAM_BOT_TOKEN.")
     except KeyboardInterrupt:
@@ -75,9 +78,10 @@ def main() -> None:
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.WARNING, format="%(levelname)s %(name)s: %(message)s")
-    engine = ChatEngine(build_backend(args.http))
+    backend = build_backend(args.http)
+    engine = ChatEngine(backend)
     if args.telegram:
-        run_telegram(engine)
+        run_telegram(engine, backend)
     else:
         run_console(engine)
 

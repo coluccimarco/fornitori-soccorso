@@ -1,7 +1,7 @@
 """Backend finto per sviluppo e test: dati inventati, nessuna rete."""
 import secrets
 from dataclasses import dataclass
-from typing import Dict, Optional
+from typing import Dict, List, Optional, Tuple
 
 from .backend import (
     Conflict,
@@ -10,6 +10,7 @@ from .backend import (
     MissionRequest,
     MissionStatus,
     NotFound,
+    Notification,
     Unauthorized,
 )
 
@@ -35,6 +36,9 @@ class FakeBackend:
         self._by_request: Dict[str, MissionCreated] = {}
         self._tokens: Dict[str, int] = {}
         self._owners: Dict[int, int] = {}
+        self._recipients: Dict[int, str] = {}
+        self._notifications: Dict[int, Notification] = {}
+        self.notification_reports: List[Tuple[int, bool, Optional[str]]] = []
         self.create_calls = 0
 
     def lookup_targa(self, session_id: str, targa: str, challenge: str) -> LookupResult:
@@ -61,6 +65,7 @@ class FakeBackend:
         self._by_request[request.request_id] = created
         self._missions[mission_id] = MissionStatus(created.codice, "nuova")
         self._owners[mission_id] = request.cliente_id
+        self._recipients[mission_id] = request.destinatario
         return created
 
     def get_status(self, mission_id: int, verification_token: str) -> MissionStatus:
@@ -71,10 +76,24 @@ class FakeBackend:
             raise NotFound()
         return self._missions[mission_id]
 
+    def pending_notifications(self, channel: str) -> List[Notification]:
+        return list(self._notifications.values())
+
+    def report_notification(self, notification_id: int, sent: bool, error: Optional[str] = None) -> None:
+        self.notification_reports.append((notification_id, sent, error))
+        if sent:
+            self._notifications.pop(notification_id, None)
+
     def set_status(self, mission_id: int, stato: str, autista_nome: Optional[str] = None) -> None:
         """Simula l'avanzamento della missione da parte della centrale."""
         codice = self._missions[mission_id].codice
         self._missions[mission_id] = MissionStatus(codice, stato, autista_nome)
+        tipo = {"accettata": "MISSION_ACCEPTED", "eseguita": "MISSION_COMPLETED"}.get(stato)
+        if tipo:
+            notification_id = len(self.notification_reports) + len(self._notifications) + 1
+            self._notifications[notification_id] = Notification(
+                notification_id, tipo, self._recipients[mission_id], codice, autista_nome
+            )
 
     def revoke_tokens(self) -> None:
         """Simula la scadenza dei token di verifica."""

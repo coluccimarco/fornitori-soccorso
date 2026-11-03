@@ -62,6 +62,20 @@ public class NotificationOutbox {
         this.payload = Map.copyOf(payload);
     }
 
+    public void markSent(OffsetDateTime when) {
+        this.stato = "SENT";
+        this.sentAt = when;
+        this.ultimoErrore = null;
+    }
+
+    public void recordFailure(String error, int maxAttempts) {
+        this.tentativi++;
+        this.ultimoErrore = error;
+        if (this.tentativi >= maxAttempts) {
+            this.stato = "FAILED";
+        }
+    }
+
     public Long getId() { return id; }
     public String getEventKey() { return eventKey; }
     public Long getMissionId() { return missionId; }

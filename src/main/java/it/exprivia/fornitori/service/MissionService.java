@@ -5,6 +5,7 @@ import it.exprivia.fornitori.common.MissionConflictException;
 import it.exprivia.fornitori.common.MissionNotFoundException;
 import it.exprivia.fornitori.dto.MissionDtos;
 import it.exprivia.fornitori.entity.AppUser;
+import it.exprivia.fornitori.entity.ChatMissionRequest;
 import it.exprivia.fornitori.entity.Customer;
 import it.exprivia.fornitori.entity.Driver;
 import it.exprivia.fornitori.entity.Mission;
@@ -14,6 +15,7 @@ import it.exprivia.fornitori.entity.MissionProposal;
 import it.exprivia.fornitori.entity.NotificationOutbox;
 import it.exprivia.fornitori.enums.UserRole;
 import it.exprivia.fornitori.repository.AppUserRepository;
+import it.exprivia.fornitori.repository.ChatMissionRequestRepository;
 import it.exprivia.fornitori.repository.CustomerRepository;
 import it.exprivia.fornitori.repository.DriverRepository;
 import it.exprivia.fornitori.repository.MissionEventRepository;
@@ -60,6 +62,7 @@ public class MissionService {
     private final MissionNoteRepository notes;
     private final MissionEventRepository events;
     private final NotificationOutboxRepository outbox;
+    private final ChatMissionRequestRepository chatRequests;
     private final PricingConfigRepository pricingConfigs;
     private final CustomerRepository customers;
     private final WorkshopRepository workshops;
@@ -74,6 +77,7 @@ public class MissionService {
             MissionNoteRepository notes,
             MissionEventRepository events,
             NotificationOutboxRepository outbox,
+            ChatMissionRequestRepository chatRequests,
             PricingConfigRepository pricingConfigs,
             CustomerRepository customers,
             WorkshopRepository workshops,
@@ -86,6 +90,7 @@ public class MissionService {
         this.notes = notes;
         this.events = events;
         this.outbox = outbox;
+        this.chatRequests = chatRequests;
         this.pricingConfigs = pricingConfigs;
         this.customers = customers;
         this.workshops = workshops;
@@ -217,7 +222,7 @@ public class MissionService {
         proposals.save(proposal);
         events.save(new MissionEvent(missionId, actor.getId(), "MISSION_ACCEPTED",
                 Map.of("autistaId", driver.getId(), "accettataIl", acceptedAt.toString())));
-        addOutboxEvent(mission, "MISSION_ACCEPTED", actor.getId(), acceptedAt);
+        addOutboxEvent(mission, "MISSION_ACCEPTED", actor.getId(), driver.getNome(), acceptedAt);
         return toResponse(mission);
     }
 
@@ -267,7 +272,7 @@ public class MissionService {
         events.save(new MissionEvent(missionId, actor.getId(), "MISSION_COMPLETED",
                 Map.of("autistaId", driver.getId(), "kmEffettivi", request.kmEffettivi(),
                         "costoCalcolato", price.amount(), "notturno", price.night())));
-        addOutboxEvent(mission, "MISSION_COMPLETED", actor.getId(), closedAt);
+        addOutboxEvent(mission, "MISSION_COMPLETED", actor.getId(), driver.getNome(), closedAt);
         return toResponse(mission);
     }
 
@@ -427,7 +432,8 @@ public class MissionService {
                 Map.of("offertaId", proposal.getId(), "scadutaIl", when.toString())));
     }
 
-    private void addOutboxEvent(Mission mission, String eventType, Long actorId, OffsetDateTime occurredAt) {
+    private void addOutboxEvent(
+            Mission mission, String eventType, Long actorId, String driverName, OffsetDateTime occurredAt) {
         Customer customer = customers.findById(mission.getCustomerId())
                 .orElseThrow(() -> new IllegalStateException("Mission customer is missing"));
         Map<String, Object> payload = Map.of(
@@ -436,10 +442,16 @@ public class MissionService {
                 "codice", mission.getCodice(),
                 "stato", mission.getStato(),
                 "actorUserId", actorId,
+                "autistaNome", driverName,
                 "occurredAt", occurredAt.toString());
+        // Solo le missioni nate in chat hanno una chat a cui rispondere; le altre restano interne.
+        String chatRecipient = chatRequests.findByMissionId(mission.getId())
+                .map(ChatMissionRequest::getDestinatario)
+                .orElse(null);
         outbox.save(new NotificationOutbox(
-                eventType + ":" + mission.getId(), mission.getId(), INTERNAL_CHANNEL,
-                customer.getTelefono(), payload));
+                eventType + ":" + mission.getId(), mission.getId(),
+                chatRecipient != null ? mission.getCanaleOrigine() : INTERNAL_CHANNEL,
+                chatRecipient != null ? chatRecipient : customer.getTelefono(), payload));
     }
 
     private MissionProposal currentProposal(Long missionId, String expectedStatus) {

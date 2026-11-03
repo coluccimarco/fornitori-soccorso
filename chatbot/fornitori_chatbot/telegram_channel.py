@@ -38,7 +38,7 @@ class TelegramApi:
             raise TelegramError("risposta getUpdates inattesa")
         return result
 
-    def send_message(self, chat_id: int, text: str) -> None:
+    def send_message(self, chat_id, text: str) -> None:
         self._call("sendMessage", {"chat_id": chat_id, "text": text}, 10)
 
     def _call(self, method: str, payload: Dict[str, Any], timeout: float) -> Any:

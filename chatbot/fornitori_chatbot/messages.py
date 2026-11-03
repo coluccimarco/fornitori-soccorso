@@ -59,6 +59,9 @@ STATUS_TEXT = {
     "accettata": "La richiesta {codice} è stata presa in carico.",
     "eseguita": "L'intervento per la richiesta {codice} è concluso.",
 }
-STATUS_UNKNOWN = "La richiesta {codice} è in lavorazione."
+NOTIFY_ACCEPTED = "La tua richiesta {codice} è stata presa in carico. Autista: {autista}."
+NOTIFY_COMPLETED = "L'intervento per la richiesta {codice} è concluso. Grazie."
+
+STATUS_UNKNOWN ="La richiesta {codice} è in lavorazione."
 DRIVER_ASSIGNED = " Autista assegnato: {autista}."
 DRIVER_DONE = " Autista: {autista}."

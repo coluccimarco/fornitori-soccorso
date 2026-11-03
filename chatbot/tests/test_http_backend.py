@@ -76,6 +76,7 @@ class HttpBackendTests(unittest.TestCase):
             descrizione_problema="Motore in panne",
             origine_indirizzo="Via Roma 1",
             canale_origine="telegram",
+            destinatario="chat-1",
         )
 
     def test_lookup_payload_and_result(self):
@@ -124,6 +125,43 @@ class HttpBackendTests(unittest.TestCase):
         self.assertEqual((sent["method"], sent["path"]), ("GET", "/api/v1/chat/missioni/31/stato"))
         self.assertEqual(sent["headers"]["X-Verification-Token"], "abc")
         self.assertEqual(status.autista_nome, "Autista Prova")
+
+    def test_create_mission_sends_recipient(self):
+        self.reply(201, {"id": 31, "codice": "M-1", "stato": "nuova"})
+        self.backend.create_mission(self.mission_request())
+        self.assertEqual(self.stub.requests[0]["json"]["destinatario"], "chat-1")
+
+    def test_pending_notifications_are_parsed(self):
+        self.reply(
+            200,
+            {
+                "notifiche": [
+                    {
+                        "id": 5,
+                        "tipo": "MISSION_ACCEPTED",
+                        "destinatario": "chat-1",
+                        "codice": "M-1",
+                        "autistaNome": "Autista Prova",
+                    }
+                ]
+            },
+        )
+        notifications = self.backend.pending_notifications("telegram")
+        self.assertEqual(self.stub.requests[0]["path"], "/api/v1/chat/notifiche?canale=telegram")
+        self.assertEqual(notifications[0].id, 5)
+        self.assertEqual(notifications[0].autista_nome, "Autista Prova")
+
+    def test_incomplete_notifications_are_unavailable(self):
+        self.reply(200, {"notifiche": [{"id": 5}]})
+        with self.assertRaises(BackendUnavailable):
+            self.backend.pending_notifications("telegram")
+
+    def test_report_notification_accepts_empty_response(self):
+        self.reply(204, b"")
+        self.backend.report_notification(5, False, "HTTP 500")
+        sent = self.stub.requests[0]
+        self.assertEqual(sent["path"], "/api/v1/chat/notifiche/5/esito")
+        self.assertEqual(sent["json"], {"inviata": False, "errore": "HTTP 500"})
 
     def test_status_codes_are_mapped(self):
         for code, error in (

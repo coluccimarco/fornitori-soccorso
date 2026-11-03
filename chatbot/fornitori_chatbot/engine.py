@@ -80,6 +80,7 @@ class InboundMessage:
 class Session:
     session_id: str
     channel: str
+    chat_id: str
     last_activity: float
     state: State = State.START
     intent: Optional[Intent] = None
@@ -129,7 +130,7 @@ class ChatEngine:
             interrupted = self._expire_sessions(now)
             session = self._sessions.get(key)
             if session is None:
-                session = Session(uuid.uuid4().hex, message.channel, now)
+                session = Session(uuid.uuid4().hex, message.channel, message.chat_id, now)
                 self._sessions[key] = session
             if message.message_id is not None:
                 if message.message_id in session.seen_message_ids:
@@ -302,6 +303,7 @@ class ChatEngine:
             descrizione_problema=session.problem,
             origine_indirizzo=session.location,
             canale_origine=session.channel,
+            destinatario=session.chat_id,
             origine_lat=session.latitude,
             origine_lng=session.longitude,
         )

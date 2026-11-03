@@ -6,6 +6,7 @@ import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
+import java.util.List;
 
 public final class ChatDtos {
     private ChatDtos() {
@@ -37,7 +38,24 @@ public final class ChatDtos {
             BigDecimal origineLat,
             BigDecimal origineLng,
             Long officinaId,
-            @NotBlank @Size(max = 20) String canaleOrigine) {
+            @NotBlank @Size(max = 20) String canaleOrigine,
+            @NotBlank @Size(max = 120) String destinatario) {
+    }
+
+    public record NotificationResponse(
+            Long id,
+            String tipo,
+            String destinatario,
+            String codice,
+            String autistaNome) {
+    }
+
+    public record NotificationsResponse(List<NotificationResponse> notifiche) {
+    }
+
+    public record NotificationResultRequest(
+            @NotNull Boolean inviata,
+            @Size(max = 200) String errore) {
     }
 
     public record MissionCreatedResponse(Long id, String codice, String stato) {

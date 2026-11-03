@@ -74,3 +74,16 @@
   traino e officina con `PATCH /api/v1/missioni/{id}/intervento` prima della proposta.
 - **Motivo:** il cliente in panne non sceglie l'officina convenzionata.
 - **Stato:** API applicata; manca il comando nell'interfaccia della centrale (M2).
+
+## D-009 — Notifiche al cliente
+
+- **Decisione:** aggiorna D-006. Le missioni create da chat salvano la chat del
+  cliente e i loro eventi usano il canale di origine; il bot legge la coda da
+  `GET /api/v1/chat/notifiche`, invia e registra l'esito. Dopo 5 invii falliti la
+  notifica passa a `FAILED`.
+- **Motivo:** Telegram può scrivere solo a chi ha aperto una chat con il bot, e usa
+  long polling, quindi non serve un indirizzo pubblico.
+- **Conseguenza:** le missioni create dalla centrale restano `internal` e non inviano
+  messaggi: il cliente chiamato al telefono non ha una chat nota. La consegna è
+  "almeno una volta": un crash del bot tra invio ed esito può ripetere il messaggio.
+- **Stato:** applicata per Telegram; WhatsApp resta da collegare (M5).

@@ -9,10 +9,12 @@ import it.exprivia.fornitori.entity.ChatMissionRequest;
 import it.exprivia.fornitori.entity.Customer;
 import it.exprivia.fornitori.entity.Driver;
 import it.exprivia.fornitori.entity.Mission;
+import it.exprivia.fornitori.entity.NotificationOutbox;
 import it.exprivia.fornitori.repository.ChatMissionRequestRepository;
 import it.exprivia.fornitori.repository.CustomerRepository;
 import it.exprivia.fornitori.repository.DriverRepository;
 import it.exprivia.fornitori.repository.MissionRepository;
+import it.exprivia.fornitori.repository.NotificationOutboxRepository;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Clock;
@@ -23,6 +25,7 @@ import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -37,7 +40,9 @@ public class ChatService {
     private static final ZoneId BUSINESS_ZONE = ZoneId.of("Europe/Rome");
     private static final List<String> CHAT_CHANNELS = List.of("telegram", "whatsapp");
     private static final List<String> DRIVER_VISIBLE_STATES = List.of("accettata", "eseguita");
+    private static final int MAX_NOTIFICATION_ATTEMPTS = 5;
 
+    private final NotificationOutboxRepository outbox;
     private final CustomerRepository customers;
     private final MissionRepository missions;
     private final DriverRepository drivers;
@@ -48,6 +53,7 @@ public class ChatService {
     private final Clock clock;
 
     public ChatService(
+            NotificationOutboxRepository outbox,
             CustomerRepository customers,
             MissionRepository missions,
             DriverRepository drivers,
@@ -56,6 +62,7 @@ public class ChatService {
             ChatVerificationTokens tokens,
             ChatLookupLimiter limiter,
             Clock clock) {
+        this.outbox = outbox;
         this.customers = customers;
         this.missions = missions;
         this.drivers = drivers;
@@ -118,8 +125,48 @@ public class ChatService {
                 null,
                 channel));
         requests.save(new ChatMissionRequest(
-                request.requestId(), created.id(), request.sessionId(), OffsetDateTime.now(clock.withZone(ZoneOffset.UTC))));
+                request.requestId(), created.id(), request.sessionId(), request.destinatario().trim(), now()));
         return new ChatDtos.MissionCreatedResponse(created.id(), created.codice(), created.stato());
+    }
+
+    @Transactional(readOnly = true)
+    public ChatDtos.NotificationsResponse pendingNotifications(String channel) {
+        if (!CHAT_CHANNELS.contains(channel)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Canale non valido");
+        }
+        return new ChatDtos.NotificationsResponse(
+                outbox.findTop20ByChannelAndStatoOrderByIdAsc(channel, "PENDING").stream()
+                        .map(ChatService::toNotification)
+                        .toList());
+    }
+
+    @Transactional
+    public void reportNotification(Long id, ChatDtos.NotificationResultRequest result) {
+        NotificationOutbox notification = outbox.lockById(id)
+                .filter(candidate -> CHAT_CHANNELS.contains(candidate.getChannel()))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Notification not found"));
+        if (!"PENDING".equals(notification.getStato())) {
+            return;
+        }
+        if (result.inviata()) {
+            notification.markSent(now());
+        } else {
+            notification.recordFailure(result.errore(), MAX_NOTIFICATION_ATTEMPTS);
+        }
+    }
+
+    private static ChatDtos.NotificationResponse toNotification(NotificationOutbox notification) {
+        Map<String, Object> payload = notification.getPayload();
+        return new ChatDtos.NotificationResponse(
+                notification.getId(),
+                (String) payload.get("eventType"),
+                notification.getDestinatario(),
+                (String) payload.get("codice"),
+                (String) payload.get("autistaNome"));
+    }
+
+    private OffsetDateTime now() {
+        return OffsetDateTime.ofInstant(clock.instant(), ZoneOffset.UTC);
     }
 
     @Transactional(readOnly = true)

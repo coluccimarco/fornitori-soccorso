@@ -30,9 +30,10 @@ CSRF con header `X-CSRF-TOKEN`.
 | `POST /api/v1/chat/lookup-targa` | SERVICE_CHATBOT | Verifica targa e polizza, esito minimizzato e token di verifica | Implementato |
 | `POST /api/v1/chat/missioni` | SERVICE_CHATBOT + token verifica | Creazione idempotente per `requestId` | Implementato |
 | `GET /api/v1/chat/missioni/{id}/stato` | SERVICE_CHATBOT + token verifica | Stato minimizzato, no accesso cross-customer | Implementato |
+| `GET /api/v1/chat/notifiche`, `POST /api/v1/chat/notifiche/{id}/esito` | SERVICE_CHATBOT | Notifiche da inviare ed esito dell'invio | Implementato |
 
 Per tutte le operazioni protette: `401` indica sessione assente/non valida, `403`
-ruolo insufficiente, `400` input non valido, `409` conflitto. I dettagli delle 27
+ruolo insufficiente, `400` input non valido, `409` conflitto. I dettagli delle 29
 operazioni implementate sono definiti in OpenAPI; mappe e webhook restano
 progettati e non devono essere chiamati come funzionalità disponibili.
 
