@@ -1,8 +1,8 @@
 # Evidenze di test
 
-**Versione:** 1.1 · **Data:** 03/11/2026 · **Responsabile:** Membro 1 — Backend & Database Lead.<br>
+**Versione:** 1.2 · **Data:** 03/11/2026 · **Responsabile:** Membro 1 — Backend & Database Lead.<br>
 **Indice:** environment, dataset, build, database, contratto. Fonte dei dettagli:
-[report Sprint 1](./SPRINT_1_REPORT.md).
+[report Sprint 1](./SPRINT_1_REPORT.md) e [report Sprint 2](./SPRINT_2_REPORT.md).
 
 I valori attesi Excel non sono prova di un'importazione PostgreSQL riuscita.
 
@@ -18,13 +18,16 @@ I valori attesi Excel non sono prova di un'importazione PostgreSQL riuscita.
 | PostgreSQL effimero con Docker locale | Docker Desktop Engine risponde HTTP 500 sulla API; nessun container o database locale è stato creato | BLOCKED |
 | Esecuzione schema, seed e assertion in PostgreSQL | Richiede credenziali DB; non eseguita | BLOCKED |
 | JDK locale | Eclipse Temurin 25.0.5+8 LTS installato in `%USERPROFILE%\.jdks\temurin-25.0.5+8`; archivio ufficiale verificato con SHA-256 prima dell'estrazione | PASS |
-| Build e test Java 25 | `.\mvnw.cmd clean verify` con `JAVA_HOME` Temurin 25.0.5: BUILD SUCCESS | PASS |
-| Test login, errore password, 401/403, CSRF, sessione e logout | `ApiSecurityTests`: 6 superati, 0 falliti, 0 errori | PASS (JDK 25.0.5) |
+| Build e test Java 25 | `.\mvnw.cmd clean verify` con `JAVA_HOME` Temurin 25.0.5: BUILD SUCCESS; 17 test totali, 0 falliti, 0 errori, 4 saltati per DB non configurato | PASS (unit/MVC; DB BLOCKED) |
+| Test login, errore password, 401/403, CSRF, sessione, logout e route missioni | `ApiSecurityTests`: 11 superati, 0 falliti, 0 errori | PASS (JDK 25.0.5) |
 | Test di caricamento app con database locale | 1 test condizionato non eseguito senza `SPRING_DATASOURCE_PASSWORD`; il servizio è attivo ma l'accesso dell'app non è stato autenticato | BLOCKED |
+| Test mirati Sprint 2 (Java 25.0.5) | `MissionServiceTests`, `PricingServiceTests`, `ApiSecurityTests`: 13 superati; 0 falliti, 0 errori | PASS (unit/MVC) |
+| Copertura integrazione PostgreSQL Sprint 2 | Flusso missione, note, rettifica/dashboard/storico, reject/riproposizione/scadenza e concorrenza; i 3 test PostgreSQL sono saltati localmente e la CI sul branch non è ancora stata eseguita | BLOCKED |
 | Test dati PostgreSQL, filtri, FK e ripetibilità | Richiedono database autenticato; non eseguiti | BLOCKED |
 | Sicurezza password | 10 hash BCrypt validati in precedenza; nessun DTO include password/hash | PASS (verifica sorgente precedente) |
-| OpenAPI | File YAML parsato; 10 operazioni implementate e 21 progettate, tutte con status e ruolo | PASS (contratto; non test runtime per le progettate) |
-| Git diff whitespace | `git diff --check` | PASS (stato al controllo iniziale; ripetere prima del commit) |
+| OpenAPI | YAML parsato; 31 operazioni con status/ruolo validi. 10 Sprint 1 implementate, 13 Sprint 2 ancora `designed` fino alla verifica CI, 8 pianificate | PASS (metadata); runtime Sprint 2 NOT RUN |
+| Java package layout | Confrontati package dichiarati e directory sorgente; target Java 25 corretto | PASS |
+| Git diff whitespace | `git diff --check` | PASS |
 
 Comandi previsti:
 
@@ -33,5 +36,7 @@ Comandi previsti:
 psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/04_assert_baseline.sql
 ```
 
-Non dichiarare superata la baseline DB finché `04_assert_baseline.sql` non termina
-con successo su un database caricato.
+Non dichiarare superati i test DB Sprint 2 finché il job PostgreSQL CI e
+`04_assert_baseline.sql` non terminano con successo. La verifica di connessione
+locale senza password ha restituito `fe_sendauth: no password supplied`; non sono
+state modificate configurazione o dati del server.

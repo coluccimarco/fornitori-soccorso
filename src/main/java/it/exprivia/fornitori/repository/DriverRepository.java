@@ -2,9 +2,11 @@ package it.exprivia.fornitori.repository;
 
 import it.exprivia.fornitori.entity.Driver;
 
+import jakarta.persistence.LockModeType;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -23,6 +25,10 @@ public interface DriverRepository extends JpaRepository<Driver, Long> {
     List<DriverAvailabilityRow> findAllWithOperationalAvailability();
 
     Optional<Driver> findByUserId(Long userId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select d from Driver d where d.id = :id")
+    Optional<Driver> lockById(@Param("id") Long id);
 
     @Query("select d.id from Driver d where d.userId = :userId")
     Optional<Long> findIdByUserId(@Param("userId") Long userId);

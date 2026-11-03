@@ -19,12 +19,16 @@ frontend web e componenti chatbot, mappe e notifiche.
 
 - **IMPLEMENTATO:** Java 25, backend Spring Boot per sessioni, CSRF, ruoli e
   anagrafiche, script PostgreSQL e contratto OpenAPI.
-- **DA VALIDARE:** import e assertion baseline su PostgreSQL del team; la pipeline
-  CI include un database PostgreSQL effimero.
-- **PIANIFICATO:** missioni, timeout, pricing, dashboard, UI, chatbot, routing e
-  notifiche. Non sono endpoint o interfacce operative.
-- **BLOCCATO:** nessuna funzione di Sprint 2 può essere dichiarata conclusa finché
-  non è implementata e testata.
+- **BRANCH `feature/backend-sprint2`:** workflow missioni, proposte, scadenze,
+  pricing, note, rettifiche, dashboard e storico autista implementati nel backend.
+  La verifica PostgreSQL CI del branch è ancora da eseguire.
+- **DATABASE LOCALE:** PostgreSQL 18 è in esecuzione; l'accesso applicativo e
+  l'import locale richiedono credenziali autorizzate. La baseline PostgreSQL
+  effimera in CI è **PASS**.
+- **PIANIFICATO:** UI, chatbot, routing mappe e consegna notifiche.
+- **BLOCCATO:** test di integrazione PostgreSQL locale, perché la sessione non
+  dispone della password dell'utente applicativo; le API Sprint 2 non vengono
+  ancora promosse a `implemented` in OpenAPI prima della verifica CI.
 
 ## 3. Prima configurazione
 
@@ -34,7 +38,7 @@ frontend web e componenti chatbot, mappe e notifiche.
    ```powershell
    git clone https://github.com/coluccimarco/fornitori-soccorso.git
    cd fornitori-soccorso
-   git switch feature/backend
+   git switch feature/backend-sprint2
    ```
 
 3. Configura `JAVA_HOME` a un JDK 25 e verifica `java -version`,
@@ -72,13 +76,17 @@ un contratto consumato da un altro componente.
 
 ## 6. Documentazione
 
+Apri la [dashboard visuale Spring & Scrum](./SPRING_SCRUM_DASHBOARD.html) per
+vedere i layer Spring, il backlog filtrabile per Sprint e l'esportazione CSV per
+Jira. La dashboard è uno snapshot locale, non una sincronizzazione live con Jira.
+
 | Documento | Scopo |
 |---|---|
 | [01 Guida generale](./01_GUIDA_GENERALE_TEAM.md) | Stack condiviso, ruoli e rituali |
 | [02 Architettura](./02_ARCHITETTURA.md) | Layer Spring e componenti del sistema |
 | [03 Database](./03_DATABASE.md) | Modello, fixture e script |
 | [04 API REST](./04_API_REST.md) | Regole di consumo e OpenAPI |
-| [05 Regole di business](./05_BUSINESS_RULES.md) | Stati missione e pricing pianificati |
+| [05 Regole di business](./05_BUSINESS_RULES.md) | Stati missione e pricing |
 | [06 Sicurezza](./06_SICUREZZA.md) | Sessioni, CSRF, privacy e segreti |
 | [07 Git workflow](./07_GIT_WORKFLOW.md) | Branch, commit, PR e file condivisi |
 | [08 Agile Scrum](./08_AGILE_SCRUM.md) | Piano dei quattro Sprint |

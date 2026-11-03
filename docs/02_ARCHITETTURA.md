@@ -5,16 +5,19 @@
 
 ## Scopo e stato
 
-Descrive l'architettura condivisa. La parte backend Sprint 1 è **IMPLEMENTATA**;
-frontend, missioni, mappe, chatbot e notifiche sono **PIANIFICATI**. Diagramma
+Descrive l'architettura condivisa. Il backend Sprint 1 è **IMPLEMENTATO**; il
+workflow missioni è implementato nel branch `feature/backend-sprint2`, in attesa
+di validazione PostgreSQL CI. Frontend, mappe, chatbot e consegna notifiche sono
+**PIANIFICATI**. Diagramma
 dettagliato: [`docs/TAD_FORNITORI.md`](./TAD_FORNITORI.md) e
 [`diagrams/architecture.mmd`](./diagrams/architecture.mmd).
 
 ## Vista componenti
 
 Browser centrale/autista → API REST Spring → service → repository JPA → PostgreSQL.
-Spring Security protegge sessioni e ruoli. Chatbot, routing e provider di notifica
-sono adattatori esterni previsti e non sono collegati nel codice corrente.
+Spring Security protegge sessioni e ruoli; i service gestiscono missioni, pricing,
+scadenze e outbox. Chatbot, routing e provider di notifica sono adattatori esterni
+previsti e non sono collegati nel codice corrente.
 
 ## Struttura backend implementata
 

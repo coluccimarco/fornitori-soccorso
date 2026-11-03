@@ -5,11 +5,15 @@
 
 ## Scopo e stato
 
-Definisce verifiche riproducibili. Backend MVC: **PASS su Java 25** (6 test). PostgreSQL 18 locale è in esecuzione e
+Definisce verifiche riproducibili. Backend MVC: **PASS su Java 25** (11 test mirati). PostgreSQL 18 locale è in esecuzione e
 la porta `localhost:5432` è raggiungibile; il test context con il DB locale resta
 **BLOCKED** perché non sono configurate le credenziali dell'utente applicativo.
 Il workflow CI con DB effimero e assertion baseline è **PASS**. Nessun test
 UI/chat/mappe è ancora disponibile.
+`clean verify` sul branch Sprint 2 ha terminato con BUILD SUCCESS: 17 test totali,
+0 fallimenti, 0 errori, 4 saltati (i tre PostgreSQL e il test di caricamento
+contestuale). I test mirati risultano 13 totali, 11 eseguiti e 2 saltati per
+assenza della password; la nuova persistenza/concorrenza resta in attesa di CI.
 
 ## Livelli
 

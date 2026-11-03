@@ -5,8 +5,10 @@
 
 ## Scopo e stato
 
-Gestire ingresso richieste chatbot e messaggi di stato. Outbox DB predisposta;
-worker, provider e webhook sono **PIANIFICATI**, non implementati.
+Gestire ingresso richieste chatbot e messaggi di stato. Il backend Sprint 2
+scrive gli eventi `MISSION_ACCEPTED` e `MISSION_COMPLETED` in `notifications_outbox`
+nella stessa transazione delle transizioni; il dispatcher, i provider e i webhook
+sono **PIANIFICATI**, non implementati.
 
 ## Provider e funzioni
 
@@ -17,8 +19,10 @@ Implementare interfaccia adapter per non legare il dominio a un provider.
 
 ## Eventi e idempotenza
 
-Eventi proposti: `MISSION_ACCEPTED`, `MISSION_COMPLETED`. Il backend emette evento
-outbox nella stessa transazione del cambio stato. Worker consegna al provider,
+Eventi outbox implementati: `MISSION_ACCEPTED`, `MISSION_COMPLETED`. Il payload
+identifica evento e missione; `channel` è attualmente `internal` e il destinatario
+è il telefono cliente. Non è ancora un invio WhatsApp/Telegram né un contratto di
+provider: concordare il mapping con M1 prima del dispatcher. Il worker consegna al provider,
 marca esito e pianifica retry con backoff; event key univoca impedisce duplicati.
 Payload limita PII e include id missione/canale/destinatario e template parametri.
 

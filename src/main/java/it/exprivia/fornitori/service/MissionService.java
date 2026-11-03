@@ -1,0 +1,537 @@
+package it.exprivia.fornitori.service;
+
+import it.exprivia.fornitori.common.ForbiddenOperationException;
+import it.exprivia.fornitori.common.MissionConflictException;
+import it.exprivia.fornitori.common.MissionNotFoundException;
+import it.exprivia.fornitori.dto.MissionDtos;
+import it.exprivia.fornitori.entity.AppUser;
+import it.exprivia.fornitori.entity.Customer;
+import it.exprivia.fornitori.entity.Driver;
+import it.exprivia.fornitori.entity.Mission;
+import it.exprivia.fornitori.entity.MissionEvent;
+import it.exprivia.fornitori.entity.MissionNote;
+import it.exprivia.fornitori.entity.MissionProposal;
+import it.exprivia.fornitori.entity.NotificationOutbox;
+import it.exprivia.fornitori.enums.UserRole;
+import it.exprivia.fornitori.repository.AppUserRepository;
+import it.exprivia.fornitori.repository.CustomerRepository;
+import it.exprivia.fornitori.repository.DriverRepository;
+import it.exprivia.fornitori.repository.MissionEventRepository;
+import it.exprivia.fornitori.repository.MissionNoteRepository;
+import it.exprivia.fornitori.repository.MissionProposalRepository;
+import it.exprivia.fornitori.repository.MissionRepository;
+import it.exprivia.fornitori.repository.NotificationOutboxRepository;
+import it.exprivia.fornitori.repository.PricingConfigRepository;
+import it.exprivia.fornitori.repository.WorkshopRepository;
+import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+
+@Service
+public class MissionService {
+    private static final String RESPONSABILE = UserRole.RESPONSABILE.name().toLowerCase();
+    private static final String AUTISTA = UserRole.AUTISTA.name().toLowerCase();
+    private static final String NUOVA = "nuova";
+    private static final String PROPOSTA = "proposta";
+    private static final String ACCETTATA = "accettata";
+    private static final String ESEGUITA = "eseguita";
+    private static final String NON_ACCETTATA = "non_accettata";
+    private static final String SCADUTA = "scaduta";
+    private static final List<String> ACTIVE_STATES = List.of(PROPOSTA, ACCETTATA);
+    private static final List<String> ALL_STATES =
+            List.of(NUOVA, PROPOSTA, ACCETTATA, ESEGUITA, NON_ACCETTATA, SCADUTA);
+    private static final List<String> PENDING_STATES = List.of(NUOVA, PROPOSTA, ACCETTATA);
+    private static final BigDecimal ZERO = BigDecimal.ZERO.setScale(2);
+    private static final String INTERNAL_CHANNEL = "internal";
+
+    private final MissionRepository missions;
+    private final MissionProposalRepository proposals;
+    private final MissionNoteRepository notes;
+    private final MissionEventRepository events;
+    private final NotificationOutboxRepository outbox;
+    private final PricingConfigRepository pricingConfigs;
+    private final CustomerRepository customers;
+    private final WorkshopRepository workshops;
+    private final DriverRepository drivers;
+    private final AppUserRepository users;
+    private final PricingService pricing;
+    private final Clock clock;
+
+    public MissionService(
+            MissionRepository missions,
+            MissionProposalRepository proposals,
+            MissionNoteRepository notes,
+            MissionEventRepository events,
+            NotificationOutboxRepository outbox,
+            PricingConfigRepository pricingConfigs,
+            CustomerRepository customers,
+            WorkshopRepository workshops,
+            DriverRepository drivers,
+            AppUserRepository users,
+            PricingService pricing,
+            Clock clock) {
+        this.missions = missions;
+        this.proposals = proposals;
+        this.notes = notes;
+        this.events = events;
+        this.outbox = outbox;
+        this.pricingConfigs = pricingConfigs;
+        this.customers = customers;
+        this.workshops = workshops;
+        this.drivers = drivers;
+        this.users = users;
+        this.pricing = pricing;
+        this.clock = clock;
+    }
+
+    @Transactional
+    public MissionDtos.MissionResponse create(
+            String email, MissionDtos.CreateMissionRequest request) {
+        requireRole(email, RESPONSABILE);
+        if (!customers.existsById(request.clienteId())) {
+            throw badRequest("Cliente inesistente");
+        }
+        String intervention = normalize(request.tipoIntervento());
+        if (!List.of("traino", "riparazione_sul_posto").contains(intervention)) {
+            throw badRequest("Tipo intervento non valido");
+        }
+        String channel = normalize(request.canaleOrigine());
+        if (!List.of("centrale", "whatsapp", "telegram").contains(channel)) {
+            throw badRequest("Canale di origine non valido");
+        }
+        if ((request.origineLat() == null) != (request.origineLng() == null)) {
+            throw badRequest("Le coordinate devono essere entrambe valorizzate");
+        }
+        validateCoordinate(request.origineLat(), BigDecimal.valueOf(-90), BigDecimal.valueOf(90));
+        validateCoordinate(request.origineLng(), BigDecimal.valueOf(-180), BigDecimal.valueOf(180));
+        validateNonNegative(request.kmStimati(), "kmStimati");
+        if ("traino".equals(intervention) && request.officinaId() == null) {
+            throw badRequest("L'officina è obbligatoria per il traino");
+        }
+        if (request.officinaId() != null && !workshops.existsById(request.officinaId())) {
+            throw badRequest("Officina inesistente");
+        }
+
+        OffsetDateTime now = now();
+        Mission mission = new Mission(
+                "M-" + now.getYear() + "-" + UUID.randomUUID().toString().substring(0, 12).toUpperCase(),
+                request.clienteId(),
+                intervention,
+                channel,
+                request.descrizioneProblema().trim(),
+                request.origineIndirizzo().trim(),
+                request.origineLat(),
+                request.origineLng(),
+                request.officinaId(),
+                request.kmStimati(),
+                now);
+        Mission saved = missions.save(mission);
+        events.save(new MissionEvent(saved.getId(), userId(email), "MISSION_CREATED",
+                Map.of("codice", saved.getCodice(), "stato", NUOVA)));
+        return toResponse(saved);
+    }
+
+    @Transactional
+    public MissionDtos.ProposalResponse propose(
+            String email, Long missionId, MissionDtos.ProposeMissionRequest request) {
+        AppUser actor = requireRole(email, RESPONSABILE);
+        Mission mission = lockLiveMission(missionId);
+        if (!List.of(NUOVA, NON_ACCETTATA, SCADUTA).contains(mission.getStato())) {
+            throw conflict("La missione non è proponibile nello stato corrente");
+        }
+        Driver driver = drivers.lockById(request.autistaId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Autista non trovato"));
+        if (missions.existsByDriverIdAndFixtureFalseAndStatoIn(driver.getId(), ACTIVE_STATES)) {
+            throw conflict("L'autista ha già una missione live attiva");
+        }
+
+        OffsetDateTime proposedAt = now();
+        int timeout = pricingConfigs.findById((short) 1)
+                .orElseThrow(() -> new IllegalStateException("Pricing configuration id 1 is missing"))
+                .getTimeoutPropostaMin();
+        OffsetDateTime expiresAt = proposedAt.plusMinutes(timeout);
+        MissionProposal proposal = proposals.save(
+                new MissionProposal(mission.getId(), driver.getId(), proposedAt, expiresAt));
+        mission.propose(driver.getId(), proposedAt, expiresAt);
+        missions.save(mission);
+        events.save(new MissionEvent(mission.getId(), actor.getId(), "MISSION_PROPOSED",
+                Map.of("offertaId", proposal.getId(), "autistaId", driver.getId(), "scadenzaIl", expiresAt.toString())));
+        return new MissionDtos.ProposalResponse(PROPOSTA, expiresAt, proposal.getId());
+    }
+
+    @Transactional(noRollbackFor = MissionConflictException.class)
+    public MissionDtos.MissionResponse accept(String email, Long missionId) {
+        AppUser actor = requireRole(email, AUTISTA);
+        Driver driver = requireDriver(actor);
+        Mission mission = lockLiveMission(missionId);
+        if (!driver.getId().equals(mission.getDriverId())) {
+            throw new ForbiddenOperationException();
+        }
+        if (!PROPOSTA.equals(mission.getStato())) {
+            throw conflict("La missione non ha una proposta accettabile");
+        }
+        MissionProposal proposal = currentProposal(missionId, PROPOSTA);
+        OffsetDateTime acceptedAt = now();
+        if (!acceptedAt.isBefore(proposal.getScadenzaIl())) {
+            expire(mission, proposal, acceptedAt);
+            throw conflict("La proposta è scaduta");
+        }
+
+        mission.accept(acceptedAt);
+        proposal.respond(ACCETTATA, acceptedAt);
+        missions.save(mission);
+        proposals.save(proposal);
+        events.save(new MissionEvent(missionId, actor.getId(), "MISSION_ACCEPTED",
+                Map.of("autistaId", driver.getId(), "accettataIl", acceptedAt.toString())));
+        addOutboxEvent(mission, "MISSION_ACCEPTED", actor.getId(), acceptedAt);
+        return toResponse(mission);
+    }
+
+    @Transactional
+    public MissionDtos.MissionResponse reject(String email, Long missionId) {
+        AppUser actor = requireRole(email, AUTISTA);
+        Driver driver = requireDriver(actor);
+        Mission mission = lockLiveMission(missionId);
+        if (!driver.getId().equals(mission.getDriverId())) {
+            throw new ForbiddenOperationException();
+        }
+        if (!PROPOSTA.equals(mission.getStato())) {
+            throw conflict("La missione non ha una proposta rifiutabile");
+        }
+        OffsetDateTime respondedAt = now();
+        MissionProposal proposal = currentProposal(missionId, PROPOSTA);
+        proposal.respond(NON_ACCETTATA, respondedAt);
+        mission.reject();
+        proposals.save(proposal);
+        missions.save(mission);
+        events.save(new MissionEvent(missionId, actor.getId(), "MISSION_REJECTED",
+                Map.of("offertaId", proposal.getId(), "autistaId", driver.getId())));
+        return toResponse(mission);
+    }
+
+    @Transactional
+    public MissionDtos.MissionResponse complete(
+            String email, Long missionId, MissionDtos.CompleteMissionRequest request) {
+        AppUser actor = requireRole(email, AUTISTA);
+        Driver driver = requireDriver(actor);
+        Mission mission = lockLiveMission(missionId);
+        if (!driver.getId().equals(mission.getDriverId())) {
+            throw new ForbiddenOperationException();
+        }
+        if (!ACCETTATA.equals(mission.getStato())) {
+            throw conflict("Solo una missione accettata può essere chiusa");
+        }
+        validateNonNegative(request.kmEffettivi(), "kmEffettivi");
+        Instant acceptedAt = mission.getAccettataIl().toInstant();
+        PricingService.Price price = pricing.calculate(request.kmEffettivi(), acceptedAt);
+        OffsetDateTime closedAt = now();
+        mission.complete(request.kmEffettivi(), price.amount(), price.night(), closedAt);
+        MissionProposal proposal = currentProposal(missionId, ACCETTATA);
+        proposal.respond("chiusa", closedAt);
+        proposals.save(proposal);
+        missions.save(mission);
+        events.save(new MissionEvent(missionId, actor.getId(), "MISSION_COMPLETED",
+                Map.of("autistaId", driver.getId(), "kmEffettivi", request.kmEffettivi(),
+                        "costoCalcolato", price.amount(), "notturno", price.night())));
+        addOutboxEvent(mission, "MISSION_COMPLETED", actor.getId(), closedAt);
+        return toResponse(mission);
+    }
+
+    @Transactional
+    public MissionDtos.MissionResponse adjustCost(
+            String email, Long missionId, MissionDtos.CostAdjustmentRequest request) {
+        AppUser actor = requireRole(email, RESPONSABILE);
+        Mission mission = lockLiveMission(missionId);
+        if (!ESEGUITA.equals(mission.getStato())) {
+            throw conflict("È possibile rettificare solo una missione eseguita");
+        }
+        String reason = request.motivo().trim();
+        if (reason.length() < 3) {
+            throw badRequest("La motivazione deve contenere almeno 3 caratteri");
+        }
+        BigDecimal previousCost = mission.getCostoFinale();
+        mission.adjustCost(request.costoFinale().setScale(2, java.math.RoundingMode.HALF_UP),
+                reason, actor.getId());
+        missions.save(mission);
+        events.save(new MissionEvent(missionId, actor.getId(), "MISSION_COST_ADJUSTED",
+                Map.of("costoCalcolato", mission.getCostoCalcolato(),
+                        "costoPrecedente", previousCost,
+                        "costoFinale", mission.getCostoFinale(),
+                        "motivo", reason,
+                        "utenteId", actor.getId())));
+        return toResponse(mission);
+    }
+
+    @Transactional(readOnly = true)
+    public MissionDtos.MissionResponse get(String email, Long missionId) {
+        AppUser actor = currentUser(email);
+        Mission mission = missions.findById(missionId).orElseThrow(MissionNotFoundException::new);
+        authorizeMissionAccess(actor, mission);
+        return toResponse(mission);
+    }
+
+    @Transactional(readOnly = true)
+    public List<MissionDtos.MissionResponse> list(String email, String status, String mode) {
+        requireRole(email, RESPONSABILE);
+        boolean fixture = parseMode(mode);
+        if (status != null && !ALL_STATES.contains(normalize(status))) {
+            throw badRequest("Stato missione non valido");
+        }
+        Collection<String> states = status == null ? ALL_STATES : List.of(normalize(status));
+        return missions.findByFixtureAndStatoInOrderByCreataIlDesc(fixture, states)
+                .stream().map(this::toResponse).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<MissionDtos.MissionResponse> driverMissions(String email) {
+        Driver driver = requireDriver(requireRole(email, AUTISTA));
+        return missions.findByDriverIdAndFixtureFalseAndStatoInOrderByCreataIlDesc(
+                        driver.getId(), ACTIVE_STATES)
+                .stream().map(this::toResponse).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public MissionDtos.DriverHistoryResponse driverHistory(String email) {
+        Driver driver = requireDriver(requireRole(email, AUTISTA));
+        List<MissionDtos.MissionResponse> history =
+                missions.findByDriverIdAndFixtureFalseAndStatoOrderByChiusaIlDesc(driver.getId(), ESEGUITA)
+                        .stream().map(this::toResponse).toList();
+        BigDecimal total = history.stream()
+                .map(MissionDtos.MissionResponse::costoFinale)
+                .map(MissionService::requiredCost)
+                .reduce(ZERO, BigDecimal::add);
+        return new MissionDtos.DriverHistoryResponse(history, total);
+    }
+
+    @Transactional(readOnly = true)
+    public MissionDtos.DashboardResponse dashboard(String email, String mode) {
+        requireRole(email, RESPONSABILE);
+        boolean reference = parseMode(mode);
+        List<Mission> rows = missions.findByFixtureAndStatoInOrderByCreataIlDesc(reference, ALL_STATES);
+        long executed = rows.stream().filter(mission -> ESEGUITA.equals(mission.getStato())).count();
+        long pending = rows.stream().filter(mission -> PENDING_STATES.contains(mission.getStato())).count();
+        long expired = rows.stream().filter(mission -> SCADUTA.equals(mission.getStato())).count();
+        long rejected = rows.stream().filter(mission -> NON_ACCETTATA.equals(mission.getStato())).count();
+        BigDecimal total = rows.stream()
+                .filter(mission -> ESEGUITA.equals(mission.getStato()))
+                .map(Mission::getCostoFinale)
+                .map(MissionService::requiredCost)
+                .reduce(ZERO, BigDecimal::add);
+
+        Map<Long, DriverAggregate> aggregates = new HashMap<>();
+        for (Mission mission : rows) {
+            if (!ESEGUITA.equals(mission.getStato())) {
+                continue;
+            }
+            Long driverId = mission.getDriverId();
+            if (driverId == null) {
+                throw new IllegalStateException("Executed mission is missing its driver");
+            }
+            Driver driver = drivers.findById(driverId)
+                    .orElseThrow(() -> new IllegalStateException("Executed mission driver is missing"));
+            DriverAggregate aggregate = aggregates.computeIfAbsent(
+                    driver.getId(), ignored -> new DriverAggregate(driver.getNome()));
+            aggregate.count++;
+            aggregate.total = aggregate.total.add(requiredCost(mission.getCostoFinale()));
+        }
+        List<MissionDtos.DriverTotal> perDriver = aggregates.entrySet().stream()
+                .sorted(Map.Entry.comparingByKey())
+                .map(entry -> new MissionDtos.DriverTotal(
+                        entry.getKey(), entry.getValue().name, entry.getValue().count, entry.getValue().total))
+                .toList();
+        return new MissionDtos.DashboardResponse(
+                executed, pending, expired, rejected, total,
+                reference ? "2026-10-28" : null,
+                reference ? "excel_demo" : "live",
+                perDriver);
+    }
+
+    @Transactional(readOnly = true)
+    public List<MissionDtos.MissionNoteResponse> getNotes(String email, Long missionId) {
+        Mission mission = missions.findById(missionId).orElseThrow(MissionNotFoundException::new);
+        authorizeMissionAccess(currentUser(email), mission);
+        return notes.findByMissionIdOrderByCreatedAtAscIdAsc(missionId)
+                .stream().map(this::toNoteResponse).toList();
+    }
+
+    @Transactional
+    public MissionDtos.MissionNoteResponse addNote(String email, Long missionId, MissionDtos.CreateNoteRequest request) {
+        AppUser actor = currentUser(email);
+        Mission mission = missions.findById(missionId).orElseThrow(MissionNotFoundException::new);
+        authorizeMissionAccess(actor, mission);
+        String text = request.testo().trim();
+        if (text.isEmpty()) {
+            throw badRequest("La nota non può essere vuota");
+        }
+        return toNoteResponse(notes.save(new MissionNote(missionId, actor.getId(), text)));
+    }
+
+    @Transactional
+    public int expireDueProposals() {
+        OffsetDateTime currentTime = now();
+        List<Long> due = missions.findExpiredLiveMissionIds(currentTime);
+        int expired = 0;
+        for (Long missionId : due) {
+            Mission mission = missions.lockLiveById(missionId).orElse(null);
+            if (mission == null || !PROPOSTA.equals(mission.getStato())
+                    || mission.getScadenzaIl() == null || mission.getScadenzaIl().isAfter(currentTime)) {
+                continue;
+            }
+            MissionProposal proposal = currentProposal(missionId, PROPOSTA);
+            expire(mission, proposal, currentTime);
+            expired++;
+        }
+        return expired;
+    }
+
+    private void expire(Mission mission, MissionProposal proposal, OffsetDateTime when) {
+        proposal.respond(SCADUTA, when);
+        mission.expire();
+        proposals.save(proposal);
+        missions.save(mission);
+        events.save(new MissionEvent(mission.getId(), null, "MISSION_EXPIRED",
+                Map.of("offertaId", proposal.getId(), "scadutaIl", when.toString())));
+    }
+
+    private void addOutboxEvent(Mission mission, String eventType, Long actorId, OffsetDateTime occurredAt) {
+        Customer customer = customers.findById(mission.getCustomerId())
+                .orElseThrow(() -> new IllegalStateException("Mission customer is missing"));
+        Map<String, Object> payload = Map.of(
+                "eventType", eventType,
+                "missionId", mission.getId(),
+                "codice", mission.getCodice(),
+                "stato", mission.getStato(),
+                "actorUserId", actorId,
+                "occurredAt", occurredAt.toString());
+        outbox.save(new NotificationOutbox(
+                eventType + ":" + mission.getId(), mission.getId(), INTERNAL_CHANNEL,
+                customer.getTelefono(), payload));
+    }
+
+    private MissionProposal currentProposal(Long missionId, String expectedStatus) {
+        return proposals.findFirstByMissionIdAndFixtureFalseAndStatoOrderByIdDesc(missionId, expectedStatus)
+                .orElseThrow(() -> conflict("Proposta corrente non trovata"));
+    }
+
+    private Mission lockLiveMission(Long missionId) {
+        return missions.lockLiveById(missionId).orElseThrow(MissionNotFoundException::new);
+    }
+
+    private AppUser requireRole(String email, String expectedRole) {
+        AppUser user = currentUser(email);
+        if (!expectedRole.equals(user.getRuolo())) {
+            throw new ForbiddenOperationException();
+        }
+        return user;
+    }
+
+    private AppUser currentUser(String email) {
+        return users.findByEmailIgnoreCase(email).orElseThrow(ForbiddenOperationException::new);
+    }
+
+    private Long userId(String email) {
+        return currentUser(email).getId();
+    }
+
+    private Driver requireDriver(AppUser user) {
+        return drivers.findByUserId(user.getId()).orElseThrow(ForbiddenOperationException::new);
+    }
+
+    private void authorizeMissionAccess(AppUser actor, Mission mission) {
+        if (RESPONSABILE.equals(actor.getRuolo())) {
+            return;
+        }
+        if (!AUTISTA.equals(actor.getRuolo()) || mission.isFixture()) {
+            throw new ForbiddenOperationException();
+        }
+        Driver driver = requireDriver(actor);
+        if (!driver.getId().equals(mission.getDriverId())
+                && !proposals.existsByMissionIdAndDriverIdAndFixtureFalse(mission.getId(), driver.getId())) {
+            throw new ForbiddenOperationException();
+        }
+    }
+
+    private boolean parseMode(String mode) {
+        String normalized = mode == null ? "live" : normalize(mode);
+        if ("reference".equals(normalized)) {
+            return true;
+        }
+        if ("live".equals(normalized)) {
+            return false;
+        }
+        throw badRequest("Modalità dashboard non valida");
+    }
+
+    private void validateCoordinate(BigDecimal value, BigDecimal minimum, BigDecimal maximum) {
+        if (value != null && (value.compareTo(minimum) < 0 || value.compareTo(maximum) > 0)) {
+            throw badRequest("Coordinate fuori intervallo");
+        }
+    }
+
+    private void validateNonNegative(BigDecimal value, String field) {
+        if (value != null && value.signum() < 0) {
+            throw badRequest(field + " non può essere negativo");
+        }
+    }
+
+    private static String normalize(String value) {
+        return value.trim().toLowerCase(java.util.Locale.ROOT);
+    }
+
+    private static ResponseStatusException badRequest(String reason) {
+        return new ResponseStatusException(HttpStatus.BAD_REQUEST, reason);
+    }
+
+    private static BigDecimal requiredCost(BigDecimal cost) {
+        if (cost == null) {
+            throw new IllegalStateException("Executed mission is missing its final cost");
+        }
+        return cost;
+    }
+
+    private static MissionConflictException conflict(String reason) {
+        return new MissionConflictException(reason);
+    }
+
+    private OffsetDateTime now() {
+        return OffsetDateTime.ofInstant(clock.instant(), ZoneOffset.UTC);
+    }
+
+    private MissionDtos.MissionResponse toResponse(Mission mission) {
+        return new MissionDtos.MissionResponse(
+                mission.getId(), mission.getCodice(), mission.getStato(), mission.getCustomerId(),
+                mission.getDriverId(), mission.getTipoIntervento(), mission.getCanaleOrigine(),
+                mission.getDescrizioneProblema(), mission.getOrigineIndirizzo(),
+                mission.getOrigineLat(), mission.getOrigineLng(), mission.getWorkshopId(),
+                mission.getKmStimati(), mission.getKmEffettivi(), mission.getCreataIl(),
+                mission.getPropostaIl(), mission.getScadenzaIl(), mission.getAccettataIl(),
+                mission.getChiusaIl(), mission.getNotturno(), mission.getCostoCalcolato(),
+                mission.getCostoFinale(), mission.getRettificaMotivo());
+    }
+
+    private MissionDtos.MissionNoteResponse toNoteResponse(MissionNote note) {
+        return new MissionDtos.MissionNoteResponse(
+                note.getId(), note.getMissionId(), note.getUserId(), note.getTesto(), note.getCreatedAt());
+    }
+
+    private static final class DriverAggregate {
+        private final String name;
+        private long count;
+        private BigDecimal total = ZERO;
+
+        private DriverAggregate(String name) {
+            this.name = name;
+        }
+    }
+}
