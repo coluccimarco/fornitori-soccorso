@@ -27,8 +27,10 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @SpringBootTest
 @EnabledIfEnvironmentVariable(named = "SPRING_DATASOURCE_PASSWORD", matches = ".+")
@@ -56,6 +58,9 @@ class MissionPostgresIntegrationTests {
 
     @Autowired
     private EntityManager entityManager;
+
+    @Autowired
+    private PlatformTransactionManager transactionManager;
 
     @Test
     @Transactional
@@ -127,6 +132,7 @@ class MissionPostgresIntegrationTests {
         } finally {
             start.countDown();
             executor.shutdownNow();
+            executor.awaitTermination(10, TimeUnit.SECONDS);
             deleteMission(first.id());
             deleteMission(second.id());
         }
@@ -141,6 +147,7 @@ class MissionPostgresIntegrationTests {
         assertEquals("non_accettata", rejected.stato());
 
         missions.propose("responsabile@demo.it", created.id(), new MissionDtos.ProposeMissionRequest(2L));
+        entityManager.flush();
         jdbcTemplate.update(
                 "UPDATE missions SET scadenza_il = now() - interval '1 minute' WHERE id = ?",
                 created.id());
@@ -178,10 +185,12 @@ class MissionPostgresIntegrationTests {
     }
 
     private void deleteMission(long missionId) {
-        outbox.deleteByMissionId(missionId);
-        noteRepository.deleteByMissionId(missionId);
-        eventRepository.deleteByMissionId(missionId);
-        proposalRepository.deleteByMissionId(missionId);
-        missionRepository.deleteById(missionId);
+        new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
+            outbox.deleteByMissionId(missionId);
+            noteRepository.deleteByMissionId(missionId);
+            eventRepository.deleteByMissionId(missionId);
+            proposalRepository.deleteByMissionId(missionId);
+            missionRepository.deleteById(missionId);
+        });
     }
 }
