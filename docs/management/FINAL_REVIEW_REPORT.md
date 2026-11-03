@@ -92,10 +92,11 @@ evidenze non eseguite consultare
 ## Stato Git e pubblicazione
 
 Sul branch `documentazione` sono presenti il merge commit `6dbd5aa` e il commit
-documentale `1bd00ff`. Prima della pubblicazione va verificato con un nuovo fetch
-che `origin/main` non sia avanzato; il push e l'eventuale Pull Request sono
-registrati solo dopo l'esito di tale controllo. Nessun segreto o credenziale
-locale è stato modificato o inserito.
+documentale `1bd00ff`; l'aggiornamento del report è nel commit `9482363`.
+`origin/main` è stato rifetchato ed è rimasto a `f763d53`. Il branch è stato
+pubblicato su `origin/documentazione` e la [PR #4](https://github.com/coluccimarco/fornitori-soccorso/pull/4)
+è aperta verso `main`. Nessun segreto o credenziale locale è stato modificato
+o inserito.
 
 ## Azioni residue per la consegna didattica
 
