@@ -1,0 +1,19 @@
+%% FORNITORI | v1.0 | 03/11/2026 | owner: Membro 3
+%% Progettazione: endpoint chat/lookup/create non sono ancora disponibili.
+sequenceDiagram
+    actor Cliente
+    participant Bot as Chatbot guidato
+    participant Verify as Verifica identità
+    participant API as Backend
+    participant Notify as Adapter notifiche
+    Cliente->>Bot: avvia richiesta
+    Bot->>Cliente: richiede targa e consenso
+    Cliente->>Bot: invia targa
+    Bot->>Verify: verifica possesso/identità
+    Verify-->>Bot: esito autorizzazione
+    Bot->>Cliente: richiede posizione e problema
+    Cliente->>Bot: invia dati e conferma
+    Bot->>API: crea missione (idempotency key)
+    API-->>Bot: id e stato
+    API->>Notify: evento outbox accepted/completed
+    Bot-->>Cliente: conferma/stato autorizzato

@@ -1,0 +1,94 @@
+%% FORNITORI | v1.0 | 03/11/2026 | owner: Membro 1
+%% ER derivato da database/01_schema.sql; schema presente, baseline DB da validare.
+erDiagram
+    APP_USERS ||--o| DRIVERS : "user_id"
+    VEHICLES ||--o| DRIVERS : "vehicle_id"
+    INSURANCE_COMPANIES ||--o{ CUSTOMERS : "company_id"
+    CUSTOMERS ||--o{ MISSIONS : "customer_id"
+    DRIVERS o|--o{ MISSIONS : "driver_id"
+    WORKSHOPS o|--o{ MISSIONS : "workshop_id"
+    MISSIONS ||--o{ MISSION_PROPOSALS : "mission_id"
+    DRIVERS ||--o{ MISSION_PROPOSALS : "driver_id"
+    MISSIONS ||--o{ MISSION_NOTES : "mission_id"
+    APP_USERS ||--o{ MISSION_NOTES : "user_id"
+    MISSIONS ||--o{ MISSION_EVENTS : "mission_id"
+    APP_USERS o|--o{ MISSION_EVENTS : "actor_user_id"
+    APP_USERS o|--o{ MISSIONS : "rettifica_utente_id"
+    MISSIONS ||--o{ NOTIFICATIONS_OUTBOX : "mission_id"
+    APP_USERS {
+        bigint id PK
+        varchar email UK
+        varchar password_hash
+        varchar ruolo
+    }
+    DRIVERS {
+        bigint id PK
+        bigint user_id FK,UK
+        bigint vehicle_id FK,UK
+        varchar stato_seed
+    }
+    VEHICLES {
+        bigint id PK
+        varchar targa UK
+        numeric portata_t
+        numeric base_lat
+        numeric base_lng
+    }
+    INSURANCE_COMPANIES {
+        bigint id PK
+        varchar nome
+    }
+    CUSTOMERS {
+        bigint id PK
+        bigint company_id FK
+        varchar targa_norm UK
+        date scadenza_polizza
+    }
+    WORKSHOPS {
+        bigint id PK
+        varchar nome
+        numeric lat
+        numeric lng
+    }
+    PRICING_CONFIG {
+        smallint id PK
+        numeric uscita_eur
+        numeric tariffa_km_eur
+    }
+    MISSIONS {
+        bigint id PK
+        bigint customer_id FK
+        bigint driver_id FK
+        bigint workshop_id FK
+        varchar stato
+        boolean is_fixture
+    }
+    MISSION_PROPOSALS {
+        bigint id PK
+        bigint mission_id FK
+        bigint driver_id FK
+        varchar stato
+    }
+    MISSION_NOTES {
+        bigint id PK
+        bigint mission_id FK
+        bigint user_id FK
+    }
+    MISSION_EVENTS {
+        bigint id PK
+        bigint mission_id FK
+        bigint actor_user_id FK
+        jsonb detail
+    }
+    CHAT_SESSIONS {
+        bigint id PK
+        varchar channel
+        varchar external_chat_id
+        jsonb context
+    }
+    NOTIFICATIONS_OUTBOX {
+        bigint id PK
+        bigint mission_id FK
+        varchar event_key UK
+        varchar stato
+    }
