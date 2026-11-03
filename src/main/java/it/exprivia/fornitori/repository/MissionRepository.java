@@ -30,6 +30,17 @@ public interface MissionRepository extends JpaRepository<Mission, Long> {
     List<Mission> findByFixtureAndStatoOrderByChiusaIlDesc(boolean fixture, String stato);
 
     @Query("""
+            select m from Mission m, ChatMissionRequest r
+            where r.missionId = m.id and r.destinatario = :recipient
+              and m.canaleOrigine = :channel and m.fixture = false and m.stato in :states
+            order by m.id desc
+            """)
+    List<Mission> findOpenByChat(
+            @Param("channel") String channel,
+            @Param("recipient") String recipient,
+            @Param("states") Collection<String> states);
+
+    @Query("""
             select m.id from Mission m
             where m.fixture = false and m.stato = 'proposta'
               and m.scadenzaIl <= :now

@@ -470,8 +470,8 @@ paths:
   /api/v1/chat/lookup-targa:
     post:
       tags: [Chat]
-      summary: Lookup limitato cliente per chatbot dopo verifica identità
-      description: La challenge è il numero di polizza, che deve essere in corso di validità. Targa ignota, polizza errata o scaduta danno la stessa risposta con verificato false. Dopo 5 errori per targa in 15 minuti risponde 429.
+      summary: Riconosce il cliente dalla targa
+      description: Risponde con nome e compagnia se la targa è di un cliente con polizza valida, come previsto dai dialoghi di test del docente. Altrimenti verificato è false. Dopo 5 targhe non trovate nella stessa sessione in 15 minuti risponde 429.
       x-implementation-status: implemented
       x-required-role: SERVICE_CHATBOT
       security:
@@ -482,21 +482,19 @@ paths:
           application/json:
             schema: {$ref: '#/components/schemas/ChatVehicleLookup'}
       responses:
-        '200': {description: Esito lookup minimizzato, content: {application/json: {schema: {$ref: '#/components/schemas/ChatVehicleLookupResult'}}}}
+        '200': {description: Esito del riconoscimento, content: {application/json: {schema: {$ref: '#/components/schemas/ChatVehicleLookupResult'}}}}
         '400': {$ref: '#/components/responses/BadRequest'}
         '401': {$ref: '#/components/responses/Unauthorized'}
         '429': {description: Limite richieste superato}
   /api/v1/chat/missioni:
     post:
       tags: [Chat]
-      summary: Crea richiesta missione da conversazione verificata
-      description: Il token di verifica deve appartenere a clienteId. Lo stesso requestId restituisce la missione già creata.
+      summary: Crea richiesta missione da conversazione
+      description: Lo stesso requestId restituisce la missione già creata.
       x-implementation-status: implemented
       x-required-role: SERVICE_CHATBOT
       security:
         - serviceBearer: []
-      parameters:
-        - {name: X-Verification-Token, in: header, required: true, schema: {type: string}}
       requestBody:
         required: true
         content:
@@ -506,26 +504,26 @@ paths:
         '201': {description: Missione creata o già esistente per requestId, content: {application/json: {schema: {$ref: '#/components/schemas/ChatMissionCreated'}}}}
         '400': {$ref: '#/components/responses/BadRequest'}
         '401': {$ref: '#/components/responses/Unauthorized'}
-        '403': {$ref: '#/components/responses/Forbidden'}
         '409': {$ref: '#/components/responses/Conflict'}
-  /api/v1/chat/missioni/{id}/stato:
-    parameters:
-      - {$ref: '#/components/parameters/MissionId'}
-    get:
+  /api/v1/chat/stato:
+    post:
       tags: [Chat]
-      summary: Stato missione dopo verifica cliente
-      description: Il token di verifica è legato al cliente e scade dopo 60 minuti. Missioni di altri clienti e storiche rispondono 404. autistaNome è valorizzato solo per missioni accettate o eseguite.
+      summary: Stato dell'ultima richiesta aperta della chat
+      description: Cerca per canale e chat, non per id missione. Una missione eseguita non è più aperta e risponde 404. autistaNome è valorizzato solo per missioni accettate. Usa POST per non scrivere l'id della chat nell'URL.
       x-implementation-status: implemented
       x-required-role: SERVICE_CHATBOT
       security:
         - serviceBearer: []
-      parameters:
-        - {name: X-Verification-Token, in: header, required: true, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ChatStatusRequest'}
       responses:
-        '200': {description: Stato minimizzato, solo dopo verifica proprietario, content: {application/json: {schema: {$ref: '#/components/schemas/MissionStatus'}}}}
+        '200': {description: Stato della richiesta, content: {application/json: {schema: {$ref: '#/components/schemas/MissionStatus'}}}}
+        '400': {$ref: '#/components/responses/BadRequest'}
         '401': {$ref: '#/components/responses/Unauthorized'}
-        '403': {$ref: '#/components/responses/Forbidden'}
-        '404': {$ref: '#/components/responses/NotFound'}
+        '404': {description: Nessuna richiesta aperta per questa chat}
   /api/v1/chat/notifiche:
     get:
       tags: [Chat]
@@ -778,19 +776,24 @@ components:
       properties:
         verificato: {type: boolean}
         clienteId: {type: integer, format: int64, nullable: true}
-        nomeMascherato: {type: string, nullable: true}
-        verificationToken: {type: string, nullable: true}
+        clienteNome: {type: string, nullable: true}
+        compagniaNome: {type: string, nullable: true}
+    ChatStatusRequest:
+      type: object
+      required: [canale, destinatario]
+      properties:
+        canale: {type: string, enum: [telegram, whatsapp]}
+        destinatario: {type: string, maxLength: 120, description: Id della chat}
     ProviderWebhookPayload:
       type: object
       description: Payload raw del provider; schema provider-specific da definire in implementazione.
       additionalProperties: true
     ChatVehicleLookup:
       type: object
-      required: [sessionId, targa, verificationChallenge]
+      required: [sessionId, targa]
       properties:
         sessionId: {type: string, minLength: 16}
         targa: {type: string, minLength: 5, maxLength: 20}
-        verificationChallenge: {type: string, minLength: 1}
     ChatMissionRequest:
       allOf:
         - {$ref: '#/components/schemas/CreateMission'}

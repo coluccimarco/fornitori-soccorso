@@ -59,14 +59,16 @@
 
 - **Decisione:** il chatbot si autentica con un token di servizio fisso
   (`FORNITORI_CHAT_TOKEN`); senza token configurato le API chat rifiutano tutto.
-  Il cliente si verifica con targa e numero di polizza in corso di validità e riceve
-  un token firmato, legato al cliente e valido 60 minuti.
-- **Motivo:** è sufficiente per il perimetro didattico e non richiede un server JWT.
-  Il token nasce prima della missione, quindi non può esservi legato.
-- **Conseguenza:** il limite dei tentativi per targa resta in memoria e si azzera al
-  riavvio. Lo stato si consulta solo conoscendo l'id missione, cioè dalla chat che
-  l'ha creata.
-- **Stato:** applicata; la challenge è **DA CONFERMARE** con docente e gruppo.
+  Il cliente si riconosce dalla sola targa con polizza valida, mostrando nome e
+  compagnia; lo stato si cerca per chat, equivalente al numero di telefono del foglio.
+- **Motivo:** segue il foglio `DialoghiChatbot` del docente. Telegram non comunica il
+  numero del cliente.
+- **Conseguenza:** chi conosce una targa vede nome e compagnia del cliente e può
+  creare una richiesta. È accettabile con dati inventati, non in produzione, dove
+  servirebbe una verifica del titolare. Il limite di 5 targhe non trovate per
+  sessione resta in memoria e si azzera al riavvio.
+- **Stato:** applicata; sostituisce la verifica con la polizza e il requisito di
+  challenge della guida M3.
 
 ## D-008 — Traino sulle missioni da chatbot
 

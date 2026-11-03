@@ -14,15 +14,14 @@ public final class ChatDtos {
 
     public record VehicleLookupRequest(
             @NotBlank @Size(min = 16, max = 64) String sessionId,
-            @NotBlank @Size(min = 5, max = 20) String targa,
-            @NotBlank @Size(max = 100) String verificationChallenge) {
+            @NotBlank @Size(min = 5, max = 20) String targa) {
     }
 
     public record VehicleLookupResponse(
             boolean verificato,
             Long clienteId,
-            String nomeMascherato,
-            String verificationToken) {
+            String clienteNome,
+            String compagniaNome) {
         public static VehicleLookupResponse notVerified() {
             return new VehicleLookupResponse(false, null, null, null);
         }
@@ -59,6 +58,11 @@ public final class ChatDtos {
     }
 
     public record MissionCreatedResponse(Long id, String codice, String stato) {
+    }
+
+    public record MissionStatusRequest(
+            @NotBlank @Size(max = 20) String canale,
+            @NotBlank @Size(max = 120) String destinatario) {
     }
 
     public record MissionStatusResponse(

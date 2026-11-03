@@ -28,7 +28,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 class ChatApiSecurityTests {
     private static final String LOOKUP_BODY = """
-            {"sessionId":"sessione-di-prova-01","targa":"AB123CD","verificationChallenge":"POL-1"}
+            {"sessionId":"sessione-di-prova-01","targa":"AB123CD"}
             """;
 
     abstract static class ChatWebTest {
@@ -70,7 +70,7 @@ class ChatApiSecurityTests {
 
         @Test
         void wrongTokenIsUnauthorized() throws Exception {
-            mockMvc.perform(get("/api/v1/chat/missioni/1/stato")
+            mockMvc.perform(get("/api/v1/chat/notifiche").param("canale", "telegram")
                             .header("Authorization", "Bearer token-sbagliato"))
                     .andExpect(status().isUnauthorized());
             verifyNoInteractions(chatService);
@@ -91,7 +91,7 @@ class ChatApiSecurityTests {
             mockMvc.perform(post("/api/v1/chat/lookup-targa")
                             .header("Authorization", "Bearer token-di-prova")
                             .contentType(MediaType.APPLICATION_JSON)
-                            .content("{\"sessionId\":\"corta\",\"targa\":\"A\",\"verificationChallenge\":\"\"}"))
+                            .content("{\"sessionId\":\"corta\",\"targa\":\"A\"}"))
                     .andExpect(status().isBadRequest());
             verifyNoInteractions(chatService);
         }

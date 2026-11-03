@@ -5,47 +5,33 @@
 
 ## Scopo e maturità
 
-Implementare un flusso deterministico a menu, senza dipendenza obbligatoria da AI.
-Dialogo in [`chatbot/`](../../chatbot/README.md) e API `chat/*` **IMPLEMENTATI**;
-challenge di verifica **DA CONFERMARE** ([D-007](../DECISION_LOG.md)).
+Flusso deterministico guidato da parole chiave, senza dipendenza obbligatoria da AI.
+Dialogo in [`chatbot/`](../../chatbot/README.md) e API `chat/*` **IMPLEMENTATI**,
+allineati al foglio `DialoghiChatbot` del docente ([D-007](../DECISION_LOG.md)).
 
 ## Dialogo
 
-Stati proposti: `START → WAIT_PLATE → VERIFY_CUSTOMER → WAIT_LOCATION →
-WAIT_PROBLEM → CONFIRM → CREATE_REQUEST → SHOW_STATUS → END`, con `HELP`, `CANCEL`
-e fallback input in ogni stato. Conservare stato e contesto minimo, scadenza
-conversazione e numero tentativi; non memorizzare PII non necessaria.
+Stati: `START → WAIT_LOCATION → WAIT_PROBLEM → START`, con `AIUTO`, `ANNULLA` e `STATO`
+validi in ogni stato. Conservare stato e contesto minimo, scadenza conversazione e
+numero tentativi; non memorizzare PII non necessaria.
 
-1. Avvio, spiegazione e consenso.
-2. Richiesta targa; normalizzazione e lookup autorizzato.
-3. Verifica titolarità con challenge non prevedibile (non affidarsi alla sola targa).
-4. Raccolta posizione e problema; riepilogo/consenso.
-5. Richiesta di creare missione nuova; conferma solo dopo risposta backend.
-6. Consultazione stato solo dopo verifica del proprietario, mostra nome autista
-   solo se autorizzato.
-7. Errori: input non valido, lookup multiplo, servizio indisponibile, rate limit;
-   nessun dato di altri clienti in risposta.
+1. Il cliente scrive la targa, che viene normalizzata e cercata.
+2. Il bot mostra nome e compagnia e chiede indirizzo o posizione.
+3. Il bot chiede il problema e crea la missione in stato `nuova`.
+4. `STATO` risponde sull'ultima richiesta aperta della chat, con il nome dell'autista
+   se ha accettato.
+5. Errori: input non valido, targa ignota, servizio indisponibile, rate limit.
 
 ## API e integrazione
 
-Ricerca cliente `GET /api/v1/clienti?search=...` è oggi API centrale **IMPLEMENTATA**,
-non deve essere esposta pubblicamente come lookup anonimo. `POST /api/v1/missioni`,
-stato e webhook sono **PIANIFICATI** in OpenAPI. M3 concorda con M1 una credenziale
-service-to-service, autorizzazione, minimizzazione output e idempotency key prima
-del collegamento. Il bot non accede al DB.
+Il bot non accede al DB e usa `/api/v1/chat/*` con `FORNITORI_CHAT_TOKEN`. La ricerca
+`GET /api/v1/clienti?search=...` resta riservata alla centrale.
 
-Esempio interno futuro, non contratto definitivo:
-
-```json
-{"sessionId":"opaque-id","state":"WAIT_LOCATION","input":"Molfetta, via Roma"}
-```
-
-Testare DialoghiChatbot: happy path, targa ignota, challenge errata, input
-sconosciuto, cancel, timeout, duplicate callback, mission non autorizzata, provider
-offline. Sequenza prevista in [`diagrams/chatbot_sequence.mmd`](../diagrams/chatbot_sequence.mmd).
+I dialoghi 1-9 del foglio sono test automatici in `chatbot/tests/test_dialogs.py`; il
+10, con Gemini, è facoltativo e non implementato. Sequenza in
+[`diagrams/chatbot_sequence.mmd`](../diagrams/chatbot_sequence.mmd).
 
 **Dipendenze:** M1 auth/lookup/mission create; M5 provider e webhook; dataset dialoghi
-del corso. **Acceptance:** nessuna lettura cross-customer, test macchina a stati e
-handoff idempotente. **Risultato Sprint successivo:** prototipo menu e contratto
-condiviso, senza dipendenza AI. **Riferimenti:** [regole privacy](../06_SICUREZZA.md),
+del corso. **Acceptance:** dialoghi del docente superati, test macchina a stati e
+handoff idempotente. **Riferimenti:** [regole privacy](../06_SICUREZZA.md),
 [integration contracts](./INTEGRATION_CONTRACTS.md).

@@ -1,13 +1,12 @@
 # Chatbot FORNITORI (Membro 3)
 
-Dialogo guidato a menu in Python, senza dipendenze esterne (solo libreria standard,
-Python 3.10 o superiore). Non accede al database e non tocca il backend Java: parla
+Dialogo guidato in Python, senza dipendenze esterne (solo libreria standard, Python 3.10
+o superiore), allineato ai dialoghi di test del docente. Non accede al database: parla
 con il backend solo tramite gli endpoint `/api/v1/chat/*` di `api/openapi.yaml`.
 
-**Stato:** dialogo, canale Telegram, collegamento al backend reale e notifiche al cliente
-sono pronti e provati con backend e PostgreSQL locali, ma senza passare dai server di
-Telegram: la conversazione e l'arrivo dei messaggi sul telefono sono ancora da provare.
-WhatsApp non è collegato.
+**Stato:** dialogo, canale Telegram e collegamento al backend reale sono pronti e provati.
+L'invio delle notifiche è provato solo senza i server di Telegram, quindi il loro arrivo
+sul telefono è da verificare. WhatsApp non è collegato.
 
 ## Provarlo
 
@@ -42,7 +41,7 @@ In quello del bot, dalla cartella `chatbot/`:
 FORNITORI_API_URL=http://localhost:8080 python3 -m fornitori_chatbot --http
 ```
 
-Con il backend reale valgono le targhe e le polizze di `database/02_seed.sql`.
+Con il backend reale valgono le targhe di `database/02_seed.sql`, per esempio `PW 660 SW`.
 
 ## Collegarlo a Telegram
 
@@ -78,18 +77,16 @@ mai scritto in file del repo o in chat.
 
 ## Dialogo
 
-`START → WAIT_PLATE → VERIFY_CUSTOMER → WAIT_LOCATION → WAIT_PROBLEM → CONFIRM →
-SHOW_STATUS → END`. `AIUTO` e `ANNULLA` valgono in ogni stato.
+`START → WAIT_LOCATION → WAIT_PROBLEM → START`. `AIUTO`, `ANNULLA` e `STATO` valgono in
+ogni stato; un messaggio che non è una targa riceve il testo di aiuto.
 
-- **Tentativi:** 3 input non validi chiudono il dialogo; 3 verifiche fallite bloccano
-  la verifica per 15 minuti, anche dopo `ANNULLA`.
-- **Scadenze:** un dialogo inattivo scade dopo 30 minuti; una chat con missione è
-  ricordata per 24 ore.
+- **Tentativi:** 3 input non validi fanno ricominciare il dialogo; il backend risponde
+  429 dopo 5 targhe non trovate nella stessa sessione.
+- **Scadenze:** un dialogo inattivo scade dopo 30 minuti.
 - **Anti-duplicati:** `requestId` resta lo stesso nei tentativi dopo un errore di rete,
   e i `message_id` già visti vengono ignorati.
-- **Privacy:** targa e dati raccolti si cancellano appena non servono, il numero di
-  polizza non viene conservato, targa ignota e polizza errata hanno la stessa risposta.
-- **Memoria:** le sessioni stanno in RAM, quindi un riavvio le azzera.
+- **Memoria:** i dialoghi in corso stanno in RAM, quindi un riavvio li azzera. Le missioni
+  e lo stato stanno nel backend e restano consultabili.
 
 ## Aggiungere un canale (Membro 5)
 
@@ -109,13 +106,16 @@ risposte = engine.handle(InboundMessage(
 
 ## Limiti noti
 
-1. **Verifica del titolare:** il bot chiede il numero di polizza. La guida chiede una
-   verifica "non prevedibile": va confermata (`docs/DECISION_LOG.md`, D-007).
+1. **Nessuna verifica del titolare:** come nei dialoghi del docente, basta la targa. Chi la
+   conosce vede nome e compagnia e può creare una richiesta: non adatto alla produzione
+   (`docs/DECISION_LOG.md`, D-007).
 2. **Traino:** il bot crea sempre `riparazione_sul_posto`. La centrale imposta traino e
    officina con `PATCH /api/v1/missioni/{id}/intervento`, ma serve il comando nell'interfaccia.
-3. **Stato dopo la chat:** il bot risponde sullo stato solo dalla chat che ha creato la
-   missione, entro 24 ore e finché non si riavvia. Dopo 60 minuti richiede la verifica.
-4. **Notifiche al cliente:** con `--telegram` il bot controlla ogni 5 secondi se ci sono
+3. **Stato:** `STATO` cerca per chat, non per numero di telefono, che Telegram non comunica.
+4. **Indirizzi:** un indirizzo scritto non diventa coordinate: la geocodifica è di Membro 4.
+5. **Dialogo 10 del foglio:** la frase libera con Gemini è facoltativa e non implementata.
+6. **Consenso:** i dialoghi del docente non lo prevedono, quindi il bot non lo chiede.
+7. **Notifiche al cliente:** con `--telegram` il bot controlla ogni 5 secondi se ci sono
    messaggi di presa in carico e conclusione da inviare. Partono solo per le missioni create
    dal bot: per quelle create dalla centrale la chat del cliente non è nota. Se il bot è
    spento restano in coda e partono alla riaccensione.

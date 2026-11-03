@@ -70,7 +70,6 @@ class HttpBackendTests(unittest.TestCase):
         return MissionRequest(
             session_id="s" * 32,
             request_id="r" * 32,
-            verification_token="token-verifica",
             cliente_id=7,
             tipo_intervento="riparazione_sul_posto",
             descrizione_problema="Motore in panne",
@@ -85,51 +84,47 @@ class HttpBackendTests(unittest.TestCase):
             {
                 "verificato": True,
                 "clienteId": 7,
-                "nomeMascherato": "M*** R***",
-                "verificationToken": "abc",
+                "clienteNome": "Lucia Gallo",
+                "compagniaNome": "Polizza Sicura Assicurazioni",
             },
         )
-        result = self.backend.lookup_targa("s" * 32, "AB123CD", "POL-1")
+        result = self.backend.lookup_targa("s" * 32, "PW660SW")
         sent = self.stub.requests[0]
         self.assertEqual((sent["method"], sent["path"]), ("POST", "/api/v1/chat/lookup-targa"))
         self.assertEqual(sent["headers"]["Authorization"], "Bearer token-di-prova")
-        self.assertEqual(
-            sent["json"],
-            {"sessionId": "s" * 32, "targa": "AB123CD", "verificationChallenge": "POL-1"},
-        )
+        self.assertEqual(sent["json"], {"sessionId": "s" * 32, "targa": "PW660SW"})
         self.assertTrue(result.verificato)
         self.assertEqual(result.cliente_id, 7)
-        self.assertEqual(result.verification_token, "abc")
+        self.assertEqual(result.cliente_nome, "Lucia Gallo")
+        self.assertEqual(result.compagnia_nome, "Polizza Sicura Assicurazioni")
 
     def test_lookup_404_is_not_verified(self):
         self.reply(404, b"")
-        self.assertFalse(self.backend.lookup_targa("s" * 32, "AB123CD", "X").verificato)
+        self.assertFalse(self.backend.lookup_targa("s" * 32, "AB123CD").verificato)
 
     def test_create_mission_payload(self):
         self.reply(201, {"id": 31, "codice": "M-2026-00031", "stato": "nuova"})
         created = self.backend.create_mission(self.mission_request())
         sent = self.stub.requests[0]
         self.assertEqual(sent["path"], "/api/v1/chat/missioni")
-        self.assertEqual(sent["headers"]["X-Verification-Token"], "token-verifica")
-        self.assertNotIn("verificationToken", sent["json"])
         self.assertEqual(sent["json"]["requestId"], "r" * 32)
         self.assertEqual(sent["json"]["clienteId"], 7)
         self.assertEqual(sent["json"]["canaleOrigine"], "telegram")
         self.assertEqual(sent["json"]["tipoIntervento"], "riparazione_sul_posto")
+        self.assertEqual(sent["json"]["destinatario"], "chat-1")
         self.assertEqual(created.id, 31)
 
-    def test_status_sends_verification_header(self):
+    def test_status_keeps_chat_out_of_the_url(self):
         self.reply(200, {"codice": "M-1", "stato": "accettata", "autistaNome": "Autista Prova"})
-        status = self.backend.get_status(31, "abc")
+        status = self.backend.current_status("telegram", "chat-1")
         sent = self.stub.requests[0]
-        self.assertEqual((sent["method"], sent["path"]), ("GET", "/api/v1/chat/missioni/31/stato"))
-        self.assertEqual(sent["headers"]["X-Verification-Token"], "abc")
+        self.assertEqual((sent["method"], sent["path"]), ("POST", "/api/v1/chat/stato"))
+        self.assertEqual(sent["json"], {"canale": "telegram", "destinatario": "chat-1"})
         self.assertEqual(status.autista_nome, "Autista Prova")
 
-    def test_create_mission_sends_recipient(self):
-        self.reply(201, {"id": 31, "codice": "M-1", "stato": "nuova"})
-        self.backend.create_mission(self.mission_request())
-        self.assertEqual(self.stub.requests[0]["json"]["destinatario"], "chat-1")
+    def test_status_404_means_no_open_request(self):
+        self.reply(404, b"")
+        self.assertIsNone(self.backend.current_status("telegram", "chat-1"))
 
     def test_pending_notifications_are_parsed(self):
         self.reply(
@@ -180,7 +175,7 @@ class HttpBackendTests(unittest.TestCase):
     def test_non_json_response_is_unavailable(self):
         self.reply(200, b"<html>")
         with self.assertRaises(BackendUnavailable):
-            self.backend.get_status(1, "abc")
+            self.backend.current_status("telegram", "chat-1")
 
     def test_incomplete_response_is_unavailable(self):
         self.reply(201, {"id": 1})
@@ -190,7 +185,7 @@ class HttpBackendTests(unittest.TestCase):
     def test_unreachable_server_is_unavailable(self):
         backend = HttpBackend("http://127.0.0.1:1", "token", timeout=1)
         with self.assertRaises(BackendUnavailable):
-            backend.get_status(1, "abc")
+            backend.current_status("telegram", "chat-1")
 
 
 if __name__ == "__main__":

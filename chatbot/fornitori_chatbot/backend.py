@@ -16,7 +16,7 @@ class RateLimited(BackendError):
 
 
 class Unauthorized(BackendError):
-    """HTTP 401/403 sullo stato: token di verifica scaduto o non valido."""
+    """HTTP 401/403: token di servizio mancante o errato."""
 
 
 class NotFound(BackendError):
@@ -35,15 +35,14 @@ class InvalidRequest(BackendError):
 class LookupResult:
     verificato: bool
     cliente_id: Optional[int] = None
-    nome_mascherato: Optional[str] = None
-    verification_token: Optional[str] = None
+    cliente_nome: Optional[str] = None
+    compagnia_nome: Optional[str] = None
 
 
 @dataclass(frozen=True)
 class MissionRequest:
     session_id: str
     request_id: str
-    verification_token: str
     cliente_id: int
     tipo_intervento: str
     descrizione_problema: str
@@ -80,13 +79,13 @@ class Notification:
 
 
 class BackendClient(Protocol):
-    def lookup_targa(self, session_id: str, targa: str, challenge: str) -> LookupResult:
+    def lookup_targa(self, session_id: str, targa: str) -> LookupResult:
         ...
 
     def create_mission(self, request: MissionRequest) -> MissionCreated:
         ...
 
-    def get_status(self, mission_id: int, verification_token: str) -> MissionStatus:
+    def current_status(self, channel: str, recipient: str) -> Optional[MissionStatus]:
         ...
 
     def pending_notifications(self, channel: str) -> List[Notification]:

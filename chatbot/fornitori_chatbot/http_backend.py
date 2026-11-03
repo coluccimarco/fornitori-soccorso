@@ -1,4 +1,4 @@
-"""Client HTTP dei tre endpoint /api/v1/chat/* descritti in api/openapi.yaml."""
+"""Client HTTP degli endpoint /api/v1/chat/* descritti in api/openapi.yaml."""
 import json
 import urllib.error
 import urllib.request
@@ -27,20 +27,20 @@ class HttpBackend:
         self._service_token = service_token
         self._timeout = timeout
 
-    def lookup_targa(self, session_id: str, targa: str, challenge: str) -> LookupResult:
+    def lookup_targa(self, session_id: str, targa: str) -> LookupResult:
         try:
             body = self._call(
                 "POST",
                 "/api/v1/chat/lookup-targa",
-                {"sessionId": session_id, "targa": targa, "verificationChallenge": challenge},
+                {"sessionId": session_id, "targa": targa},
             )
         except NotFound:
             return LookupResult(verificato=False)
         return LookupResult(
             verificato=bool(body.get("verificato")),
             cliente_id=body.get("clienteId"),
-            nome_mascherato=body.get("nomeMascherato"),
-            verification_token=body.get("verificationToken"),
+            cliente_nome=body.get("clienteNome"),
+            compagnia_nome=body.get("compagniaNome"),
         )
 
     def create_mission(self, request: MissionRequest) -> MissionCreated:
@@ -57,23 +57,17 @@ class HttpBackend:
             "canaleOrigine": request.canale_origine,
             "destinatario": request.destinatario,
         }
-        body = self._call(
-            "POST",
-            "/api/v1/chat/missioni",
-            payload,
-            headers={"X-Verification-Token": request.verification_token},
-        )
+        body = self._call("POST", "/api/v1/chat/missioni", payload)
         try:
             return MissionCreated(body["id"], body["codice"], body["stato"])
         except KeyError as exc:
             raise BackendUnavailable("risposta missione incompleta") from exc
 
-    def get_status(self, mission_id: int, verification_token: str) -> MissionStatus:
-        body = self._call(
-            "GET",
-            f"/api/v1/chat/missioni/{quote(str(mission_id), safe='')}/stato",
-            headers={"X-Verification-Token": verification_token},
-        )
+    def current_status(self, channel: str, recipient: str) -> Optional[MissionStatus]:
+        try:
+            body = self._call("POST", "/api/v1/chat/stato", {"canale": channel, "destinatario": recipient})
+        except NotFound:
+            return None
         try:
             return MissionStatus(
                 body["codice"], body["stato"], body.get("autistaNome"), body.get("aggiornataIl")
@@ -100,22 +94,13 @@ class HttpBackend:
             {"inviata": sent, "errore": error},
         )
 
-    def _call(
-        self,
-        method: str,
-        path: str,
-        payload: Optional[Dict[str, Any]] = None,
-        headers: Optional[Dict[str, str]] = None,
-    ) -> Dict[str, Any]:
-        all_headers = {"Authorization": f"Bearer {self._service_token}", "Accept": "application/json"}
-        all_headers.update(headers or {})
+    def _call(self, method: str, path: str, payload: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        headers = {"Authorization": f"Bearer {self._service_token}", "Accept": "application/json"}
         data = None
         if payload is not None:
             data = json.dumps(payload).encode("utf-8")
-            all_headers["Content-Type"] = "application/json"
-        request = urllib.request.Request(
-            self._base_url + path, data=data, headers=all_headers, method=method
-        )
+            headers["Content-Type"] = "application/json"
+        request = urllib.request.Request(self._base_url + path, data=data, headers=headers, method=method)
         try:
             with urllib.request.urlopen(request, timeout=self._timeout) as response:
                 raw = response.read()

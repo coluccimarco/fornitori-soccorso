@@ -27,9 +27,9 @@ CSRF con header `X-CSRF-TOKEN`.
 | `GET /api/v1/maps/route` | Centrale/autista autorizzato | Coordinate, percorso e km stimati | Progettato |
 | `POST /api/v1/webhooks/{telegram,whatsapp}` | Firma/secret del provider | Evento verificato | Progettato |
 | `PATCH /api/v1/missioni/{id}/intervento` | RESPONSABILE + CSRF | Corregge tipo e officina prima della proposta | Implementato |
-| `POST /api/v1/chat/lookup-targa` | SERVICE_CHATBOT | Verifica targa e polizza, esito minimizzato e token di verifica | Implementato |
-| `POST /api/v1/chat/missioni` | SERVICE_CHATBOT + token verifica | Creazione idempotente per `requestId` | Implementato |
-| `GET /api/v1/chat/missioni/{id}/stato` | SERVICE_CHATBOT + token verifica | Stato minimizzato, no accesso cross-customer | Implementato |
+| `POST /api/v1/chat/lookup-targa` | SERVICE_CHATBOT | Riconosce il cliente dalla targa: nome e compagnia | Implementato |
+| `POST /api/v1/chat/missioni` | SERVICE_CHATBOT | Creazione idempotente per `requestId` | Implementato |
+| `POST /api/v1/chat/stato` | SERVICE_CHATBOT | Stato dell'ultima richiesta aperta della chat | Implementato |
 | `GET /api/v1/chat/notifiche`, `POST /api/v1/chat/notifiche/{id}/esito` | SERVICE_CHATBOT | Notifiche da inviare ed esito dell'invio | Implementato |
 
 Per tutte le operazioni protette: `401` indica sessione assente/non valida, `403`
@@ -42,8 +42,8 @@ progettati e non devono essere chiamati come funzionalità disponibili.
 - **Membro 2 — Frontend:** login JSON (prima recuperare CSRF), sessione/cookie,
   GET anagrafiche, filtro clienti e gestione di `401`/`403`/`409`.
 - **Membro 3 — Chatbot:** lookup targa, creazione missione e stato sono implementati
-  e autenticati con `FORNITORI_CHAT_TOKEN`. La challenge è provvisoriamente il numero
-  di polizza ([D-007](./DECISION_LOG.md)).
+  e autenticati con `FORNITORI_CHAT_TOKEN`; il cliente si riconosce dalla sola targa
+  ([D-007](./DECISION_LOG.md)).
 - **Membro 4 — Mappe:** basi mezzi, coordinate officine e campi coordinate missione
   sono nel modello; route esterno e distanze non sono ancora implementati.
 - **Membro 5 — Notifiche:** gli eventi `MISSION_ACCEPTED` e `MISSION_COMPLETED`

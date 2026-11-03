@@ -1,17 +1,14 @@
 package it.exprivia.fornitori;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import it.exprivia.fornitori.service.ChatLookupLimiter;
-import it.exprivia.fornitori.service.ChatVerificationTokens;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
-import java.util.Optional;
 import org.junit.jupiter.api.Test;
 
 class ChatSupportTests {
@@ -39,58 +36,28 @@ class ChatSupportTests {
     }
 
     private final MutableClock clock = new MutableClock();
-    private final ChatVerificationTokens tokens = new ChatVerificationTokens("chiave-di-prova", 60, clock);
-
-    @Test
-    void tokenIdentifiesCustomerUntilExpiry() {
-        String token = tokens.issue(7L);
-        assertEquals(Optional.of(7L), tokens.verify(token));
-        clock.advance(Duration.ofMinutes(59));
-        assertEquals(Optional.of(7L), tokens.verify(token));
-        clock.advance(Duration.ofMinutes(1));
-        assertEquals(Optional.empty(), tokens.verify(token));
-    }
-
-    @Test
-    void forgedOrMalformedTokensAreRejected() {
-        String token = tokens.issue(7L);
-        String otherKey = new ChatVerificationTokens("altra-chiave", 60, clock).issue(7L);
-        String forgedPayload = new ChatVerificationTokens("chiave-di-prova", 60, clock).issue(8L).split("\\.")[0]
-                + "." + token.split("\\.")[1];
-        assertEquals(Optional.empty(), tokens.verify(otherKey));
-        assertEquals(Optional.empty(), tokens.verify(forgedPayload));
-        assertEquals(Optional.empty(), tokens.verify("non-valido"));
-        assertEquals(Optional.empty(), tokens.verify("%%%.%%%"));
-        assertEquals(Optional.empty(), tokens.verify(null));
-    }
-
-    @Test
-    void withoutKeyNoTokenIsAccepted() {
-        ChatVerificationTokens unconfigured = new ChatVerificationTokens("", 60, clock);
-        assertEquals(Optional.empty(), unconfigured.verify(tokens.issue(7L)));
-    }
 
     @Test
     void limiterBlocksAfterFiveFailuresUntilWindowEnds() {
         ChatLookupLimiter limiter = new ChatLookupLimiter(clock);
         for (int attempt = 0; attempt < 5; attempt++) {
-            assertFalse(limiter.isBlocked("AB123CD"));
-            limiter.recordFailure("AB123CD");
+            assertFalse(limiter.isBlocked("sessione-a"));
+            limiter.recordFailure("sessione-a");
         }
-        assertTrue(limiter.isBlocked("AB123CD"));
-        assertFalse(limiter.isBlocked("EF456GH"));
+        assertTrue(limiter.isBlocked("sessione-a"));
+        assertFalse(limiter.isBlocked("sessione-b"));
         clock.advance(Duration.ofMinutes(15));
-        assertFalse(limiter.isBlocked("AB123CD"));
+        assertFalse(limiter.isBlocked("sessione-a"));
     }
 
     @Test
-    void successfulVerificationResetsFailures() {
+    void recognizedPlateResetsFailures() {
         ChatLookupLimiter limiter = new ChatLookupLimiter(clock);
         for (int attempt = 0; attempt < 4; attempt++) {
-            limiter.recordFailure("AB123CD");
+            limiter.recordFailure("sessione-a");
         }
-        limiter.reset("AB123CD");
-        limiter.recordFailure("AB123CD");
-        assertFalse(limiter.isBlocked("AB123CD"));
+        limiter.reset("sessione-a");
+        limiter.recordFailure("sessione-a");
+        assertFalse(limiter.isBlocked("sessione-a"));
     }
 }

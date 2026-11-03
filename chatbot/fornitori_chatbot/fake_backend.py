@@ -1,5 +1,4 @@
 """Backend finto per sviluppo e test: dati inventati, nessuna rete."""
-import secrets
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
 
@@ -9,24 +8,23 @@ from .backend import (
     MissionCreated,
     MissionRequest,
     MissionStatus,
-    NotFound,
     Notification,
-    Unauthorized,
 )
 
 
 @dataclass(frozen=True)
 class FakeCustomer:
     id: int
-    nome_mascherato: str
+    nome: str
+    compagnia: str
     targa_norm: str
-    polizza: str
 
 
 DEMO_CUSTOMERS = (
-    FakeCustomer(1, "M*** R***", "AB123CD", "POL-TEST-001"),
-    FakeCustomer(2, "L*** B***", "EF456GH", "POL-TEST-002"),
+    FakeCustomer(1, "Mario Prova", "Compagnia Test", "AB123CD"),
+    FakeCustomer(2, "Laura Prova", "Compagnia Test", "EF456GH"),
 )
+OPEN_STATES = {"nuova", "proposta", "accettata", "non_accettata", "scaduta"}
 
 
 class FakeBackend:
@@ -34,27 +32,19 @@ class FakeBackend:
         self._customers = {c.targa_norm: c for c in customers}
         self._missions: Dict[int, MissionStatus] = {}
         self._by_request: Dict[str, MissionCreated] = {}
-        self._tokens: Dict[str, int] = {}
-        self._owners: Dict[int, int] = {}
-        self._recipients: Dict[int, str] = {}
+        self._recipients: Dict[int, Tuple[str, str]] = {}
         self._notifications: Dict[int, Notification] = {}
         self.notification_reports: List[Tuple[int, bool, Optional[str]]] = []
-        self.create_calls = 0
+        self.requests: List[MissionRequest] = []
 
-    def lookup_targa(self, session_id: str, targa: str, challenge: str) -> LookupResult:
+    def lookup_targa(self, session_id: str, targa: str) -> LookupResult:
         customer = self._customers.get(targa)
-        if customer is None or not secrets.compare_digest(
-            customer.polizza.encode(), challenge.strip().upper().encode()
-        ):
+        if customer is None:
             return LookupResult(verificato=False)
-        token = secrets.token_urlsafe(24)
-        self._tokens[token] = customer.id
-        return LookupResult(True, customer.id, customer.nome_mascherato, token)
+        return LookupResult(True, customer.id, customer.nome, customer.compagnia)
 
     def create_mission(self, request: MissionRequest) -> MissionCreated:
-        self.create_calls += 1
-        if self._tokens.get(request.verification_token) != request.cliente_id:
-            raise Unauthorized()
+        self.requests.append(request)
         existing = self._by_request.get(request.request_id)
         if existing is not None:
             return existing
@@ -64,17 +54,15 @@ class FakeBackend:
         created = MissionCreated(mission_id, f"M-TEST-{mission_id:05d}", "nuova")
         self._by_request[request.request_id] = created
         self._missions[mission_id] = MissionStatus(created.codice, "nuova")
-        self._owners[mission_id] = request.cliente_id
-        self._recipients[mission_id] = request.destinatario
+        self._recipients[mission_id] = (request.canale_origine, request.destinatario)
         return created
 
-    def get_status(self, mission_id: int, verification_token: str) -> MissionStatus:
-        customer_id = self._tokens.get(verification_token)
-        if customer_id is None:
-            raise Unauthorized()
-        if mission_id not in self._missions or self._owners[mission_id] != customer_id:
-            raise NotFound()
-        return self._missions[mission_id]
+    def current_status(self, channel: str, recipient: str) -> Optional[MissionStatus]:
+        for mission_id in sorted(self._missions, reverse=True):
+            status = self._missions[mission_id]
+            if self._recipients[mission_id] == (channel, recipient) and status.stato in OPEN_STATES:
+                return status
+        return None
 
     def pending_notifications(self, channel: str) -> List[Notification]:
         return list(self._notifications.values())
@@ -92,9 +80,5 @@ class FakeBackend:
         if tipo:
             notification_id = len(self.notification_reports) + len(self._notifications) + 1
             self._notifications[notification_id] = Notification(
-                notification_id, tipo, self._recipients[mission_id], codice, autista_nome
+                notification_id, tipo, self._recipients[mission_id][1], codice, autista_nome
             )
-
-    def revoke_tokens(self) -> None:
-        """Simula la scadenza dei token di verifica."""
-        self._tokens.clear()

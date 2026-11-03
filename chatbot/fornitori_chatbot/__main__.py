@@ -15,7 +15,7 @@ def build_backend(use_http: bool):
     if not use_http:
         print("Backend finto. Dati di prova:")
         for customer in DEMO_CUSTOMERS:
-            print(f"  targa {customer.targa_norm} - polizza {customer.polizza}")
+            print(f"  targa {customer.targa_norm}")
         return FakeBackend()
     base_url = os.environ.get("FORNITORI_API_URL", "http://localhost:8080")
     token = os.environ.get("FORNITORI_CHAT_TOKEN")

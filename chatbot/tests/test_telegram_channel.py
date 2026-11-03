@@ -57,16 +57,13 @@ class TelegramBotTests(unittest.TestCase):
 
     def test_full_dialog_with_shared_location(self):
         self.deliver(update(1, text="/start"))
-        self.deliver(update(2, text="1"))
-        self.deliver(update(3, text="AB 123 CD"))
-        self.deliver(update(4, text="POL-TEST-001"))
-        self.deliver(update(5, location={"latitude": 41.2, "longitude": 16.6}))
-        self.deliver(update(6, text="Motore in panne"))
-        self.deliver(update(7, text="si"))
+        self.deliver(update(2, text="AB 123 CD"))
+        self.deliver(update(3, location={"latitude": 41.2, "longitude": 16.6}))
+        self.deliver(update(4, text="Motore in panne"))
         self.assertIn("M-TEST-00001", self.texts()[-1])
 
     def test_start_restarts_an_open_dialog(self):
-        self.deliver(update(1, text="1"))
+        self.deliver(update(1, text="AB 123 CD"))
         self.deliver(update(2, text="/start"))
         self.assertEqual(self.texts()[-1], msg.WELCOME)
 
@@ -82,12 +79,12 @@ class TelegramBotTests(unittest.TestCase):
         self.assertEqual(self.api.sent, [])
 
     def test_unsupported_content_gets_a_reply(self):
-        self.deliver(update(1, text="1"))
+        self.deliver(update(1, text="AB 123 CD"))
         self.deliver(update(2, photo=[{"file_id": "x"}]))
-        self.assertEqual(self.texts()[-1], msg.INVALID_PLATE)
+        self.assertEqual(self.texts()[-1], msg.INVALID_LOCATION)
 
     def test_chats_are_separate(self):
-        self.deliver(update(1, chat_id=10, text="1"))
+        self.deliver(update(1, chat_id=10, text="AB 123 CD"))
         self.deliver(update(2, chat_id=20, text="ciao"))
         self.assertEqual(self.api.sent[-1], (20, msg.WELCOME))
 
@@ -96,8 +93,8 @@ class TelegramBotTests(unittest.TestCase):
         with self.assertLogs("fornitori_chatbot.telegram_channel", logging.WARNING):
             self.deliver(update(1, text="ciao"))
         self.api.send_error = None
-        self.deliver(update(2, text="1"))
-        self.assertEqual(self.texts(), [msg.ASK_PLATE])
+        self.deliver(update(2, text="stato"))
+        self.assertEqual(self.texts(), [msg.NO_OPEN_REQUESTS])
 
     def test_dialog_error_replies_unavailable(self):
         def broken(message):

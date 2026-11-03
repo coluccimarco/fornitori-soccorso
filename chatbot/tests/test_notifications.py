@@ -15,12 +15,10 @@ class NotificationTests(unittest.TestCase):
         self.send_error = None
         self.dispatcher = NotificationDispatcher(self.backend, "telegram", self.send, clock=lambda: self.now)
 
-        token = self.backend.lookup_targa("s" * 32, "AB123CD", "POL-TEST-001").verification_token
         self.mission = self.backend.create_mission(
             MissionRequest(
                 session_id="s" * 32,
                 request_id="r" * 32,
-                verification_token=token,
                 cliente_id=1,
                 tipo_intervento="riparazione_sul_posto",
                 descrizione_problema="Motore in panne",
@@ -82,7 +80,7 @@ class NotificationTests(unittest.TestCase):
 
     def test_dialog_passes_chat_as_recipient(self):
         engine = ChatEngine(self.backend)
-        for text in ("1", "EF456GH", "POL-TEST-002", "Via Roma 1, Molfetta", "Motore in panne", "si"):
+        for text in ("EF456GH", "Via Roma 1, Molfetta", "Motore in panne"):
             engine.handle(InboundMessage("telegram", "chat-42", text=text))
         self.backend.set_status(2, "accettata", "Autista Prova")
         self.dispatcher.dispatch_once()

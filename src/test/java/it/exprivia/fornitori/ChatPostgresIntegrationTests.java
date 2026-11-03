@@ -14,7 +14,6 @@ import it.exprivia.fornitori.repository.MissionRepository;
 import it.exprivia.fornitori.repository.NotificationOutboxRepository;
 import it.exprivia.fornitori.service.MissionService;
 import java.math.BigDecimal;
-import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,9 +34,7 @@ import org.springframework.web.server.ResponseStatusException;
 class ChatPostgresIntegrationTests {
     private static final String SESSION = "sessione-di-prova-01";
     private static final String PLATE = "pw 660-sw";
-    private static final String POLICY = "PS-2026-730226";
-    private static final String OTHER_PLATE = "ZS795LG";
-    private static final String OTHER_POLICY = "AD-2026-571497";
+    private static final String CHAT = "chat-di-prova";
     private static final String RESPONSABILE = "responsabile@demo.it";
     private static final String AUTISTA = "autista1@demo.it";
 
@@ -60,31 +57,36 @@ class ChatPostgresIntegrationTests {
         return request.header("Authorization", "Bearer token-di-prova");
     }
 
-    private ResultActions lookup(String plate, String policy) throws Exception {
+    private ResultActions lookup(String session, String plate) throws Exception {
         return mockMvc.perform(asBot(post("/api/v1/chat/lookup-targa"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
-                        {"sessionId":"%s","targa":"%s","verificationChallenge":"%s"}
-                        """.formatted(SESSION, plate, policy)));
+                        {"sessionId":"%s","targa":"%s"}
+                        """.formatted(session, plate)));
     }
 
-    private String verify(String plate, String policy) throws Exception {
-        String body = lookup(plate, policy).andExpect(status().isOk())
-                .andExpect(jsonPath("$.verificato").value(true))
-                .andReturn().getResponse().getContentAsString();
-        return JsonPath.read(body, "$.verificationToken");
-    }
-
-    private ResultActions create(String token, String requestId, long customerId) throws Exception {
+    private ResultActions create(String requestId, long customerId, String chat) throws Exception {
         return mockMvc.perform(asBot(post("/api/v1/chat/missioni"))
-                .header("X-Verification-Token", token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                         {"sessionId":"%s","requestId":"%s","clienteId":%d,
                          "tipoIntervento":"riparazione_sul_posto","descrizioneProblema":"Motore in panne",
                          "origineIndirizzo":"Via Roma 1, Molfetta","origineLat":41.2,"origineLng":16.6,
-                         "officinaId":null,"canaleOrigine":"telegram","destinatario":"chat-di-prova"}
-                        """.formatted(SESSION, requestId, customerId)));
+                         "officinaId":null,"canaleOrigine":"telegram","destinatario":"%s"}
+                        """.formatted(SESSION, requestId, customerId, chat)));
+    }
+
+    private long createdId(ResultActions result) throws Exception {
+        String body = result.andReturn().getResponse().getContentAsString();
+        return ((Number) JsonPath.read(body, "$.id")).longValue();
+    }
+
+    private ResultActions readStatus(String chat) throws Exception {
+        return mockMvc.perform(asBot(post("/api/v1/chat/stato"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"canale":"telegram","destinatario":"%s"}
+                        """.formatted(chat)));
     }
 
     private ResultActions pendingNotifications() throws Exception {
@@ -101,8 +103,89 @@ class ChatPostgresIntegrationTests {
     }
 
     @Test
+    void plateFromTeacherDialogueIsRecognizedWithNameAndCompany() throws Exception {
+        lookup(SESSION, PLATE).andExpect(status().isOk())
+                .andExpect(jsonPath("$.verificato").value(true))
+                .andExpect(jsonPath("$.clienteId").value(1))
+                .andExpect(jsonPath("$.clienteNome").value("Lucia Gallo"))
+                .andExpect(jsonPath("$.compagniaNome").value("Polizza Sicura Assicurazioni"));
+    }
+
+    @Test
+    void unknownPlateIsNotVerified() throws Exception {
+        lookup(SESSION, "ZZ 000 ZZ").andExpect(status().isOk())
+                .andExpect(jsonPath("$.verificato").value(false))
+                .andExpect(jsonPath("$.clienteId").isEmpty());
+    }
+
+    @Test
+    void expiredPolicyIsNotVerified() throws Exception {
+        jdbcTemplate.update("UPDATE customers SET scadenza_polizza = DATE '2020-01-01' WHERE id = 1");
+        lookup(SESSION, PLATE).andExpect(jsonPath("$.verificato").value(false));
+    }
+
+    @Test
+    void repeatedUnknownPlatesAreRateLimitedPerSession() throws Exception {
+        String session = "sessione-limitata-01";
+        for (int attempt = 0; attempt < 5; attempt++) {
+            lookup(session, "AA111AA").andExpect(status().isOk());
+        }
+        lookup(session, PLATE).andExpect(status().isTooManyRequests())
+                .andExpect(jsonPath("$.error").value("rate_limited"));
+        lookup("altra-sessione-di-prova", PLATE).andExpect(jsonPath("$.verificato").value(true));
+    }
+
+    @Test
+    void chatFollowsMissionUntilItIsClosed() throws Exception {
+        long missionId = createdId(create("richiesta-di-prova-01", 1L, CHAT)
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.stato").value("nuova")));
+        assertEquals("telegram", missionRepository.findById(missionId).orElseThrow().getCanaleOrigine());
+
+        readStatus(CHAT).andExpect(status().isOk())
+                .andExpect(jsonPath("$.stato").value("nuova"))
+                .andExpect(jsonPath("$.autistaNome").isEmpty());
+
+        missions.propose(RESPONSABILE, missionId, new MissionDtos.ProposeMissionRequest(1L));
+        readStatus(CHAT).andExpect(jsonPath("$.stato").value("proposta"))
+                .andExpect(jsonPath("$.autistaNome").isEmpty());
+
+        missions.accept(AUTISTA, missionId);
+        readStatus(CHAT).andExpect(jsonPath("$.stato").value("accettata"))
+                .andExpect(jsonPath("$.autistaNome").value("Luca Bianchi"));
+
+        missions.complete(AUTISTA, missionId, new MissionDtos.CompleteMissionRequest(new BigDecimal("10.00")));
+        readStatus(CHAT).andExpect(status().isNotFound());
+    }
+
+    @Test
+    void statusShowsLatestMissionOfThatChatOnly() throws Exception {
+        createdId(create("richiesta-di-prova-02", 1L, CHAT));
+        long latest = createdId(create("richiesta-di-prova-03", 1L, CHAT));
+        String latestCode = missionRepository.findById(latest).orElseThrow().getCodice();
+
+        readStatus(CHAT).andExpect(jsonPath("$.codice").value(latestCode));
+        readStatus("altra-chat").andExpect(status().isNotFound());
+    }
+
+    @Test
+    void sameRequestIdReturnsSameMission() throws Exception {
+        long first = createdId(create("richiesta-di-prova-04", 1L, CHAT).andExpect(status().isCreated()));
+        long count = missionRepository.count();
+        long second = createdId(create("richiesta-di-prova-04", 1L, CHAT).andExpect(status().isCreated()));
+        assertEquals(first, second);
+        assertEquals(count, missionRepository.count());
+        create("richiesta-di-prova-04", 2L, CHAT).andExpect(status().isConflict());
+    }
+
+    @Test
+    void unknownCustomerIsRejected() throws Exception {
+        create("richiesta-di-prova-05", 999999L, CHAT).andExpect(status().isBadRequest());
+    }
+
+    @Test
     void acceptanceAndCompletionQueueNotificationsForTheChat() throws Exception {
-        long missionId = createdId(create(verify(PLATE, POLICY), "richiesta-di-prova-07", 1L));
+        long missionId = createdId(create("richiesta-di-prova-07", 1L, CHAT));
         missions.propose(RESPONSABILE, missionId, new MissionDtos.ProposeMissionRequest(1L));
         pendingNotifications().andExpect(jsonPath("$.notifiche.length()").value(0));
 
@@ -110,7 +193,7 @@ class ChatPostgresIntegrationTests {
         pendingNotifications().andExpect(status().isOk())
                 .andExpect(jsonPath("$.notifiche.length()").value(1))
                 .andExpect(jsonPath("$.notifiche[0].tipo").value("MISSION_ACCEPTED"))
-                .andExpect(jsonPath("$.notifiche[0].destinatario").value("chat-di-prova"))
+                .andExpect(jsonPath("$.notifiche[0].destinatario").value(CHAT))
                 .andExpect(jsonPath("$.notifiche[0].autistaNome").value("Luca Bianchi"));
 
         long acceptedId = notificationIdFor("MISSION_ACCEPTED:" + missionId);
@@ -125,7 +208,7 @@ class ChatPostgresIntegrationTests {
 
     @Test
     void failedNotificationStopsAfterFiveAttempts() throws Exception {
-        long missionId = createdId(create(verify(PLATE, POLICY), "richiesta-di-prova-08", 1L));
+        long missionId = createdId(create("richiesta-di-prova-08", 1L, CHAT));
         missions.propose(RESPONSABILE, missionId, new MissionDtos.ProposeMissionRequest(1L));
         missions.accept(AUTISTA, missionId);
         long id = notificationIdFor("MISSION_ACCEPTED:" + missionId);
@@ -162,110 +245,9 @@ class ChatPostgresIntegrationTests {
                 .andExpect(status().isBadRequest());
     }
 
-    private long createdId(ResultActions result) throws Exception {
-        String body = result.andReturn().getResponse().getContentAsString();
-        return ((Number) JsonPath.read(body, "$.id")).longValue();
-    }
-
-    private ResultActions readStatus(String token, long missionId) throws Exception {
-        return mockMvc.perform(asBot(get("/api/v1/chat/missioni/{id}/stato", missionId))
-                .header("X-Verification-Token", token));
-    }
-
-    @Test
-    void botFollowsMissionFromCreationToCompletion() throws Exception {
-        String token = verify(PLATE, POLICY);
-        long missionId = createdId(create(token, "richiesta-di-prova-01", 1L)
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.stato").value("nuova")));
-        assertEquals("telegram", missionRepository.findById(missionId).orElseThrow().getCanaleOrigine());
-
-        readStatus(token, missionId).andExpect(status().isOk())
-                .andExpect(jsonPath("$.stato").value("nuova"))
-                .andExpect(jsonPath("$.autistaNome").isEmpty());
-
-        missions.propose(RESPONSABILE, missionId, new MissionDtos.ProposeMissionRequest(1L));
-        readStatus(token, missionId).andExpect(jsonPath("$.stato").value("proposta"))
-                .andExpect(jsonPath("$.autistaNome").isEmpty());
-
-        missions.accept(AUTISTA, missionId);
-        readStatus(token, missionId).andExpect(jsonPath("$.stato").value("accettata"))
-                .andExpect(jsonPath("$.autistaNome").value("Luca Bianchi"));
-
-        missions.complete(AUTISTA, missionId, new MissionDtos.CompleteMissionRequest(new BigDecimal("10.00")));
-        readStatus(token, missionId).andExpect(jsonPath("$.stato").value("eseguita"))
-                .andExpect(jsonPath("$.autistaNome").value("Luca Bianchi"));
-    }
-
-    @Test
-    void sameRequestIdReturnsSameMission() throws Exception {
-        String token = verify(PLATE, POLICY);
-        long first = createdId(create(token, "richiesta-di-prova-02", 1L).andExpect(status().isCreated()));
-        long count = missionRepository.count();
-        long second = createdId(create(token, "richiesta-di-prova-02", 1L).andExpect(status().isCreated()));
-        assertEquals(first, second);
-        assertEquals(count, missionRepository.count());
-    }
-
-    @Test
-    void unknownPlateAndWrongPolicyAreIndistinguishable() throws Exception {
-        String wrongPolicy = lookup(PLATE, "POLIZZA-ERRATA").andExpect(status().isOk())
-                .andReturn().getResponse().getContentAsString();
-        String unknownPlate = lookup("XX000XX", POLICY).andExpect(status().isOk())
-                .andReturn().getResponse().getContentAsString();
-        assertEquals(wrongPolicy, unknownPlate);
-        assertEquals(false, JsonPath.read(wrongPolicy, "$.verificato"));
-    }
-
-    @Test
-    void expiredPolicyIsNotVerified() throws Exception {
-        jdbcTemplate.update("UPDATE customers SET scadenza_polizza = DATE '2020-01-01' WHERE id = 2");
-        lookup(OTHER_PLATE, OTHER_POLICY).andExpect(jsonPath("$.verificato").value(false));
-    }
-
-    @Test
-    void repeatedFailuresAreRateLimited() throws Exception {
-        for (int attempt = 0; attempt < 5; attempt++) {
-            lookup("AA111AA", "SBAGLIATA").andExpect(status().isOk());
-        }
-        lookup("AA111AA", "SBAGLIATA").andExpect(status().isTooManyRequests())
-                .andExpect(jsonPath("$.error").value("rate_limited"));
-    }
-
-    @Test
-    void verifiedCustomerCannotActForAnotherCustomer() throws Exception {
-        String token = verify(PLATE, POLICY);
-        String otherToken = verify(OTHER_PLATE, OTHER_POLICY);
-        create(token, "richiesta-di-prova-03", 2L).andExpect(status().isForbidden());
-
-        long missionId = createdId(create(token, "richiesta-di-prova-04", 1L).andExpect(status().isCreated()));
-        readStatus(otherToken, missionId).andExpect(status().isNotFound());
-        create(otherToken, "richiesta-di-prova-04", 2L).andExpect(status().isConflict());
-    }
-
-    @Test
-    void fixtureMissionsAreNotReadable() throws Exception {
-        Map<String, Object> fixture = jdbcTemplate.queryForMap("""
-                SELECT m.id, c.targa_norm, c.numero_polizza FROM missions m
-                JOIN customers c ON c.id = m.customer_id
-                WHERE m.is_fixture AND c.scadenza_polizza >= CURRENT_DATE
-                ORDER BY m.id LIMIT 1
-                """);
-        String token = verify((String) fixture.get("targa_norm"), (String) fixture.get("numero_polizza"));
-        readStatus(token, ((Number) fixture.get("id")).longValue()).andExpect(status().isNotFound());
-    }
-
-    @Test
-    void missingOrInvalidVerificationTokenIsUnauthorized() throws Exception {
-        readStatus("non-valido", 1L).andExpect(status().isUnauthorized());
-        mockMvc.perform(asBot(get("/api/v1/chat/missioni/{id}/stato", 1L)))
-                .andExpect(status().isUnauthorized());
-        create("non-valido", "richiesta-di-prova-05", 1L).andExpect(status().isUnauthorized());
-    }
-
     @Test
     void centreConvertsChatMissionToTowing() throws Exception {
-        long missionId = createdId(create(verify(PLATE, POLICY), "richiesta-di-prova-06", 1L));
+        long missionId = createdId(create("richiesta-di-prova-06", 1L, CHAT));
 
         assertThrows(ResponseStatusException.class, () -> missions.updateIntervention(
                 RESPONSABILE, missionId, new MissionDtos.UpdateInterventionRequest("traino", null)));

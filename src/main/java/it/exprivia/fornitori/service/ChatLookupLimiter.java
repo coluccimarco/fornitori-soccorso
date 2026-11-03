@@ -7,10 +7,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.springframework.stereotype.Component;
 
-/**
- * Limita i tentativi di verifica per targa: vale anche per le targhe inesistenti,
- * così il blocco non rivela quali targhe sono assicurate. Lo stato resta in memoria.
- */
+/** Limita le targhe non trovate per conversazione, così il bot non si presta a provarle tutte. */
 @Component
 public class ChatLookupLimiter {
     static final int MAX_FAILURES = 5;
@@ -23,21 +20,21 @@ public class ChatLookupLimiter {
         this.clock = clock;
     }
 
-    public boolean isBlocked(String plate) {
+    public boolean isBlocked(String sessionId) {
         Instant now = clock.instant();
         failures.values().removeIf(entry -> !now.isBefore(entry.expiresAt()));
-        Failures entry = failures.get(plate);
+        Failures entry = failures.get(sessionId);
         return entry != null && entry.count() >= MAX_FAILURES;
     }
 
-    public void recordFailure(String plate) {
+    public void recordFailure(String sessionId) {
         Instant now = clock.instant();
-        failures.merge(plate, new Failures(1, now.plus(WINDOW)),
+        failures.merge(sessionId, new Failures(1, now.plus(WINDOW)),
                 (current, ignored) -> new Failures(current.count() + 1, current.expiresAt()));
     }
 
-    public void reset(String plate) {
-        failures.remove(plate);
+    public void reset(String sessionId) {
+        failures.remove(sessionId);
     }
 
     private record Failures(int count, Instant expiresAt) {
