@@ -1,0 +1,744 @@
+openapi: 3.0.3
+info:
+  title: FORNITORI REST API
+  version: 1.0.0
+  description: >
+    Contratto condiviso per FORNITORI. Auth e anagrafiche sono implementate;
+    missioni, utenti, chatbot, dashboard, mappe e webhook sono progettati e non
+    devono essere chiamati finché non implementati.
+servers:
+  - url: /
+tags:
+  - name: Auth
+  - name: Utenti
+  - name: Anagrafiche
+  - name: Missioni
+  - name: Dashboard
+  - name: Autisti
+  - name: Mappe
+  - name: Integrazioni
+  - name: Chat
+security:
+  - sessionCookie: []
+paths:
+  /api/v1/auth/login:
+    post:
+      tags: [Auth]
+      summary: Autenticazione email/password (cookie sessione HttpOnly)
+      description: Login JSON. Richiede il token di GET /api/v1/auth/csrf nell'header indicato.
+      x-implementation-status: implemented
+      x-required-role: PUBLIC
+      security:
+        - sessionCookie: []
+          csrfHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/LoginRequest'}
+            example: {email: "responsabile@demo.it", password: "<password demo>"}
+      responses:
+        '200': {description: Sessione autenticata, content: {application/json: {schema: {$ref: '#/components/schemas/CurrentUser'}}}}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+  /api/v1/auth/me:
+    get:
+      tags: [Auth]
+      summary: Identità e ruolo della sessione
+      x-implementation-status: implemented
+      x-required-role: AUTHENTICATED
+      responses:
+        '200': {description: Utente autenticato, content: {application/json: {schema: {$ref: '#/components/schemas/CurrentUser'}}}}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+  /api/v1/auth/logout:
+    post:
+      tags: [Auth]
+      summary: Revoca sessione
+      description: Richiede autenticazione e token CSRF.
+      x-implementation-status: implemented
+      x-required-role: AUTHENTICATED
+      security:
+        - sessionCookie: []
+          csrfHeader: []
+      responses:
+        '204': {description: Sessione invalidata}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+  /api/v1/auth/csrf:
+    get:
+      tags: [Auth]
+      summary: Token CSRF per richieste mutative
+      description: Endpoint pubblico; crea o recupera il token associato alla sessione.
+      x-implementation-status: implemented
+      x-required-role: PUBLIC
+      security: []
+      responses: {'200': {description: Token CSRF, content: {application/json: {schema: {type: object, properties: {token: {type: string}, headerName: {type: string}}}}}}}
+  /api/v1/autisti:
+    get:
+      tags: [Anagrafiche]
+      summary: Elenco autisti e disponibilità operativa derivata dalle missioni LIVE
+      description: Solo RESPONSABILE. L'occupazione dipende dalle missioni non fixture, non dallo stato seed.
+      x-implementation-status: implemented
+      x-required-role: RESPONSABILE
+      responses:
+        '200': {description: Autisti, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/Driver'}}}}}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /api/v1/mezzi:
+    get:
+      tags: [Anagrafiche]
+      summary: Mezzi e coordinate basi
+      description: Solo RESPONSABILE.
+      x-implementation-status: implemented
+      x-required-role: RESPONSABILE
+      responses:
+        '200': {description: Mezzi, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/Vehicle'}}}}}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /api/v1/compagnie:
+    get:
+      tags: [Anagrafiche]
+      summary: Compagnie assicurative
+      description: Solo RESPONSABILE.
+      x-implementation-status: implemented
+      x-required-role: RESPONSABILE
+      responses:
+        '200': {description: Compagnie, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/Company'}}}}}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /api/v1/officine:
+    get:
+      tags: [Anagrafiche]
+      summary: Officine e coordinate
+      description: Solo RESPONSABILE.
+      x-implementation-status: implemented
+      x-required-role: RESPONSABILE
+      responses:
+        '200': {description: Officine, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/Workshop'}}}}}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /api/v1/clienti:
+    get:
+      tags: [Anagrafiche]
+      summary: Ricerca cliente per nome/targa
+      description: Solo RESPONSABILE. Ricerca case-insensitive per nome e normalizzata per targa.
+      x-implementation-status: implemented
+      x-required-role: RESPONSABILE
+      parameters:
+        - {name: search, in: query, schema: {type: string}}
+      responses:
+        '200': {description: Clienti, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/Customer'}}}}}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+    post:
+      tags: [Anagrafiche]
+      summary: Inserisci nuovo cliente (solo centrale)
+      description: Richiede ruolo RESPONSABILE e token CSRF.
+      x-implementation-status: implemented
+      x-required-role: RESPONSABILE
+      security:
+        - sessionCookie: []
+          csrfHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CreateCustomer'}
+      responses:
+        '201': {description: Cliente creato, content: {application/json: {schema: {$ref: '#/components/schemas/Customer'}}}}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /api/v1/utenti:
+    get:
+      tags: [Utenti]
+      summary: Elenco profili utente senza credenziali
+      description: Progettato per la centrale; password e hash non vengono restituiti.
+      x-implementation-status: designed
+      x-required-role: RESPONSABILE
+      responses:
+        '200': {description: Profili utente, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/UserSummary'}}}}}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /api/v1/utenti/{id}:
+    parameters:
+      - {$ref: '#/components/parameters/UserId'}
+    get:
+      tags: [Utenti]
+      summary: Dettaglio profilo utente senza credenziali
+      x-implementation-status: designed
+      x-required-role: RESPONSABILE
+      responses:
+        '200': {description: Profilo, content: {application/json: {schema: {$ref: '#/components/schemas/UserSummary'}}}}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /api/v1/missioni:
+    get:
+      tags: [Missioni]
+      summary: Missioni per stato e modalità riferimento/live
+      x-implementation-status: designed
+      x-required-role: RESPONSABILE
+      parameters:
+        - {name: stato, in: query, schema: {type: string}}
+        - {name: mode, in: query, schema: {type: string, enum: [reference, live], default: live}}
+      responses:
+        '200': {description: Elenco missioni, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/Mission'}}}}}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+    post:
+      tags: [Missioni]
+      summary: Crea missione nuova da centrale
+      x-implementation-status: designed
+      x-required-role: RESPONSABILE
+      security:
+        - sessionCookie: []
+          csrfHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CreateMission'}
+            example:
+              clienteId: 1
+              tipoIntervento: traino
+              descrizioneProblema: "Veicolo in panne"
+              origineIndirizzo: "Via Roma 10, Molfetta"
+              origineLat: 41.2003
+              origineLng: 16.5978
+              officinaId: 1
+              canaleOrigine: centrale
+      responses:
+        '201': {description: Missione creata, content: {application/json: {schema: {$ref: '#/components/schemas/Mission'}}}}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /api/v1/missioni/{id}:
+    parameters:
+      - {$ref: '#/components/parameters/MissionId'}
+    get:
+      tags: [Missioni]
+      summary: Dettaglio missione secondo ruolo
+      x-implementation-status: designed
+      x-required-role: [RESPONSABILE, ASSIGNED_AUTISTA]
+      responses:
+        '200': {description: Dettaglio missione, content: {application/json: {schema: {$ref: '#/components/schemas/Mission'}}}}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /api/v1/missioni/{id}/proposte:
+    parameters:
+      - {$ref: '#/components/parameters/MissionId'}
+    post:
+      tags: [Missioni]
+      summary: Proponi o riproponi la missione a un autista libero (centrale)
+      x-implementation-status: designed
+      x-required-role: RESPONSABILE
+      security:
+        - sessionCookie: []
+          csrfHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ProposeMission'}
+            example: {autistaId: 2}
+      responses:
+        '200': {description: Proposta inviata, content: {application/json: {schema: {type: object, properties: {stato: {type: string, example: proposta}, scadenzaIl: {type: string, format: date-time}, offertaId: {type: integer}}}}}}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /api/v1/missioni/{id}/accept:
+    parameters:
+      - {$ref: '#/components/parameters/MissionId'}
+    post:
+      tags: [Autisti]
+      summary: Accetta proposta corrente (solo autista destinatario)
+      x-implementation-status: designed
+      x-required-role: ASSIGNED_AUTISTA
+      security:
+        - sessionCookie: []
+          csrfHeader: []
+      responses:
+        '200': {description: Missione accettata, content: {application/json: {schema: {$ref: '#/components/schemas/Mission'}}}}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /api/v1/missioni/{id}/reject:
+    parameters:
+      - {$ref: '#/components/parameters/MissionId'}
+    post:
+      tags: [Autisti]
+      summary: Rifiuta proposta corrente
+      x-implementation-status: designed
+      x-required-role: ASSIGNED_AUTISTA
+      security:
+        - sessionCookie: []
+          csrfHeader: []
+      responses:
+        '200': {description: Missione non accettata}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /api/v1/missioni/{id}/complete:
+    parameters:
+      - {$ref: '#/components/parameters/MissionId'}
+    post:
+      tags: [Autisti]
+      summary: Chiudi missione accettata con esito OK, km reali e costo calcolato
+      x-implementation-status: designed
+      x-required-role: ASSIGNED_AUTISTA
+      security:
+        - sessionCookie: []
+          csrfHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CompleteMission'}
+            example: {kmEffettivi: 18}
+      responses:
+        '200': {description: Missione eseguita, content: {application/json: {schema: {$ref: '#/components/schemas/Mission'}}}}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /api/v1/missioni/{id}/cost:
+    parameters:
+      - {$ref: '#/components/parameters/MissionId'}
+    patch:
+      tags: [Missioni]
+      summary: Rettifica motivata del costo (solo centrale)
+      x-implementation-status: designed
+      x-required-role: RESPONSABILE
+      security:
+        - sessionCookie: []
+          csrfHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CostAdjustment'}
+            example: {costoFinale: 80.00, motivo: "Correzione autorizzata dopo verifica"}
+      responses:
+        '200': {description: Nuovo importo e evento audit}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /api/v1/missioni/{id}/notes:
+    parameters:
+      - {$ref: '#/components/parameters/MissionId'}
+    get:
+      tags: [Missioni]
+      summary: Note della missione
+      x-implementation-status: designed
+      x-required-role: [RESPONSABILE, ASSIGNED_AUTISTA]
+      responses:
+        '200': {description: Elenco note, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/MissionNote'}}}}}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+    post:
+      tags: [Autisti]
+      summary: Segnalazione testuale alla centrale
+      x-implementation-status: designed
+      x-required-role: ASSIGNED_AUTISTA
+      security:
+        - sessionCookie: []
+          csrfHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CreateMissionNote'}
+            example: {testo: "Cliente non presente, attendo 10 minuti"}
+      responses:
+        '201': {description: Nota persistita, content: {application/json: {schema: {$ref: '#/components/schemas/MissionNote'}}}}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /api/v1/dashboard:
+    get:
+      tags: [Dashboard]
+      summary: Riepilogo 4 viste e totali per autista
+      x-implementation-status: designed
+      x-required-role: RESPONSABILE
+      parameters:
+        - {name: mode, in: query, schema: {type: string, enum: [reference, live], default: live}}
+      responses:
+        '200':
+          description: Dashboard
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Dashboard'}
+              example:
+                eseguite: 16
+                pending: 6
+                scadute: 4
+                nonAccettate: 4
+                totaleEur: 1509.71
+                riferimentoAl: "2026-10-28"
+                fonte: "excel_demo"
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /api/v1/autista/missioni:
+    get:
+      tags: [Autisti]
+      summary: Missioni aperte del solo autista autenticato
+      x-implementation-status: designed
+      x-required-role: AUTISTA
+      responses:
+        '200': {description: Missioni dell'autista, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/Mission'}}}}}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /api/v1/autista/storico:
+    get:
+      tags: [Autisti]
+      summary: Missioni eseguite e guadagno del solo autista autenticato
+      x-implementation-status: designed
+      x-required-role: AUTISTA
+      responses:
+        '200': {description: Storico e totale, content: {application/json: {schema: {$ref: '#/components/schemas/DriverHistory'}}}}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /api/v1/maps/route:
+    get:
+      tags: [Mappe]
+      summary: Calcola base → sinistro → officina, se traino; solo base → sinistro se riparazione
+      description: Il server deve verificare che driverId corrisponda al principal AUTISTA; non fidarsi dell'id fornito dal client.
+      x-implementation-status: designed
+      x-required-role: [RESPONSABILE, ASSIGNED_AUTISTA]
+      parameters:
+        - {name: missionId, in: query, required: true, schema: {type: integer, format: int64}}
+        - {name: driverId, in: query, required: true, schema: {type: integer, format: int64}}
+      responses:
+        '200':
+          description: Routing suggerito, non chilometri effettivi
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Route'}
+              example: {kmStimati: 18.4, origine: osrm, geometria: {type: LineString, coordinates: [[16.5978,41.2003],[16.601,41.202],[16.605,41.205]]}}
+        '503': {description: Servizio esterno non disponibile; client può correggere km effettivi}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /api/v1/chat/lookup-targa:
+    post:
+      tags: [Chat]
+      summary: Lookup limitato cliente per chatbot dopo verifica identità
+      description: Progettato; il meccanismo challenge deve essere approvato. Vietata l'enumerazione clienti.
+      x-implementation-status: designed
+      x-required-role: SERVICE_CHATBOT
+      security:
+        - serviceBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ChatVehicleLookup'}
+      responses:
+        '200': {description: Esito lookup minimizzato, content: {application/json: {schema: {$ref: '#/components/schemas/ChatVehicleLookupResult'}}}}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '429': {description: Limite richieste superato}
+  /api/v1/chat/missioni:
+    post:
+      tags: [Chat]
+      summary: Crea richiesta missione da conversazione verificata
+      x-implementation-status: designed
+      x-required-role: SERVICE_CHATBOT
+      security:
+        - serviceBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ChatMissionRequest'}
+      responses:
+        '201': {description: Missione creata, content: {application/json: {schema: {$ref: '#/components/schemas/Mission'}}}}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /api/v1/chat/missioni/{id}/stato:
+    parameters:
+      - {$ref: '#/components/parameters/MissionId'}
+    get:
+      tags: [Chat]
+      summary: Stato missione dopo verifica cliente
+      description: Il token di verifica è legato alla sessione e alla missione, ha scadenza breve e non consente enumerazione.
+      x-implementation-status: designed
+      x-required-role: SERVICE_CHATBOT
+      security:
+        - serviceBearer: []
+      parameters:
+        - {name: X-Verification-Token, in: header, required: true, schema: {type: string}}
+      responses:
+        '200': {description: Stato minimizzato, solo dopo verifica proprietario, content: {application/json: {schema: {$ref: '#/components/schemas/MissionStatus'}}}}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+  /api/v1/webhooks/telegram:
+    post:
+      tags: [Integrazioni]
+      summary: Ingresso pubblico Telegram (secret header validato)
+      x-implementation-status: designed
+      x-required-role: TELEGRAM_WEBHOOK_SIGNATURE
+      security: []
+      parameters:
+        - {name: X-Telegram-Bot-Api-Secret-Token, in: header, required: true, schema: {type: string}}
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/ProviderWebhookPayload'}}}}
+      responses:
+        '200': {description: Update ricevuto; elaborazione idempotente}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '429': {description: Limite richieste superato}
+  /api/v1/webhooks/whatsapp:
+    post:
+      tags: [Integrazioni]
+      summary: Ingresso gateway WhatsApp/Twilio, firma provider validata
+      x-implementation-status: designed
+      x-required-role: WHATSAPP_PROVIDER_SIGNATURE
+      security: []
+      parameters:
+        - {name: X-Twilio-Signature, in: header, required: true, schema: {type: string}}
+      requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/ProviderWebhookPayload'}}}}
+      responses:
+        '200': {description: Evento verificato e idempotente}
+        '400': {$ref: '#/components/responses/BadRequest'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '429': {description: Limite richieste superato}
+components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: JSESSIONID
+    csrfHeader:
+      type: apiKey
+      in: header
+      name: X-CSRF-TOKEN
+    serviceBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    MissionId:
+      name: id
+      in: path
+      required: true
+      schema: {type: integer, format: int64}
+    UserId:
+      name: id
+      in: path
+      required: true
+      schema: {type: integer, format: int64}
+  responses:
+    Unauthorized: {description: Autenticazione richiesta}
+    Forbidden: {description: Operazione non autorizzata}
+    Conflict: {description: Stato missione, disponibilità o duplicato in conflitto}
+    BadRequest: {description: Input non valido}
+    NotFound: {description: Risorsa non trovata o non accessibile}
+  schemas:
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties: {email: {type: string, format: email}, password: {type: string, minLength: 1}}
+    CurrentUser:
+      type: object
+      properties:
+        id: {type: integer, format: int64}
+        nome: {type: string}
+        email: {type: string}
+        ruolo: {type: string, enum: [responsabile, autista]}
+        autistaId: {type: integer, format: int64, nullable: true}
+    UserSummary:
+      type: object
+      properties:
+        id: {type: integer, format: int64}
+        nome: {type: string}
+        email: {type: string, format: email}
+        ruolo: {type: string, enum: [responsabile, autista]}
+        autistaId: {type: integer, format: int64, nullable: true}
+    Customer:
+      type: object
+      properties:
+        id: {type: integer, format: int64}
+        nome: {type: string}
+        telefono: {type: string}
+        targa: {type: string}
+        modelloVeicolo: {type: string, nullable: true}
+        compagniaId: {type: integer, format: int64}
+        compagniaNome: {type: string}
+        numeroPolizza: {type: string}
+        scadenzaPolizza: {type: string, format: date}
+        cittaResidenza: {type: string, nullable: true}
+    Driver:
+      type: object
+      properties:
+        id: {type: integer, format: int64}
+        nome: {type: string}
+        telefono: {type: string}
+        mezzoId: {type: integer, format: int64}
+        zona: {type: string}
+        disponibilita: {type: string, enum: [disponibile, occupato]}
+    Vehicle:
+      type: object
+      properties:
+        id: {type: integer, format: int64}
+        targa: {type: string}
+        tipologia: {type: string}
+        portataT: {type: number}
+        baseIndirizzo: {type: string}
+        baseCitta: {type: string}
+        baseLat: {type: number}
+        baseLng: {type: number}
+    Company:
+      type: object
+      properties:
+        id: {type: integer, format: int64}
+        nome: {type: string}
+        telefonoCentrale: {type: string, nullable: true}
+        emailSinistri: {type: string, nullable: true}
+    Workshop:
+      type: object
+      properties:
+        id: {type: integer, format: int64}
+        nome: {type: string}
+        indirizzo: {type: string}
+        citta: {type: string}
+        lat: {type: number}
+        lng: {type: number}
+    CreateCustomer:
+      type: object
+      required: [nome, telefono, targa, compagniaId, numeroPolizza, scadenzaPolizza]
+      properties:
+        nome: {type: string}
+        telefono: {type: string}
+        targa: {type: string}
+        modelloVeicolo: {type: string}
+        compagniaId: {type: integer, format: int64}
+        numeroPolizza: {type: string}
+        scadenzaPolizza: {type: string, format: date}
+        cittaResidenza: {type: string}
+    CreateMission:
+      description: Coordinate origine devono essere entrambe omesse o entrambe valorizzate; traino richiede officinaId.
+      type: object
+      required: [clienteId, tipoIntervento, descrizioneProblema, origineIndirizzo, canaleOrigine]
+      properties:
+        clienteId: {type: integer, format: int64}
+        tipoIntervento: {type: string, enum: [traino, riparazione_sul_posto]}
+        descrizioneProblema: {type: string}
+        origineIndirizzo: {type: string}
+        origineLat: {type: number, minimum: -90, maximum: 90, nullable: true}
+        origineLng: {type: number, minimum: -180, maximum: 180, nullable: true}
+        officinaId: {type: integer, format: int64, nullable: true}
+        canaleOrigine: {type: string, enum: [centrale, whatsapp, telegram]}
+    ProposeMission:
+      type: object
+      required: [autistaId]
+      properties:
+        autistaId: {type: integer, format: int64, minimum: 1}
+    CompleteMission:
+      type: object
+      required: [kmEffettivi]
+      properties:
+        kmEffettivi: {type: number, minimum: 0}
+    CostAdjustment:
+      type: object
+      required: [costoFinale, motivo]
+      properties:
+        costoFinale: {type: number, minimum: 0}
+        motivo: {type: string, minLength: 3, maxLength: 1000}
+    CreateMissionNote:
+      type: object
+      required: [testo]
+      properties:
+        testo: {type: string, minLength: 1, maxLength: 2000}
+    MissionNote:
+      type: object
+      properties:
+        id: {type: integer, format: int64}
+        missionId: {type: integer, format: int64}
+        userId: {type: integer, format: int64}
+        testo: {type: string}
+        createdAt: {type: string, format: date-time}
+    DriverHistory:
+      type: object
+      properties:
+        missioni: {type: array, items: {$ref: '#/components/schemas/Mission'}}
+        totaleEur: {type: number, minimum: 0}
+    MissionStatus:
+      type: object
+      properties:
+        codice: {type: string}
+        stato: {type: string, enum: [nuova, proposta, accettata, eseguita, non_accettata, scaduta]}
+        autistaNome: {type: string, nullable: true}
+        aggiornataIl: {type: string, format: date-time}
+    ChatVehicleLookupResult:
+      type: object
+      properties:
+        verificato: {type: boolean}
+        clienteId: {type: integer, format: int64, nullable: true}
+        nomeMascherato: {type: string, nullable: true}
+        verificationToken: {type: string, nullable: true}
+    ProviderWebhookPayload:
+      type: object
+      description: Payload raw del provider; schema provider-specific da definire in implementazione.
+      additionalProperties: true
+    ChatVehicleLookup:
+      type: object
+      required: [sessionId, targa, verificationChallenge]
+      properties:
+        sessionId: {type: string, minLength: 16}
+        targa: {type: string, minLength: 5, maxLength: 20}
+        verificationChallenge: {type: string, minLength: 1}
+    ChatMissionRequest:
+      allOf:
+        - {$ref: '#/components/schemas/CreateMission'}
+        - type: object
+          required: [sessionId, requestId]
+          properties:
+            sessionId: {type: string, minLength: 16}
+            requestId: {type: string, minLength: 16, description: Chiave di idempotenza}
+    Mission:
+      type: object
+      properties:
+        id: {type: integer, format: int64}
+        codice: {type: string, example: "M-2026-00031"}
+        stato: {type: string, enum: [nuova, proposta, accettata, eseguita, non_accettata, scaduta]}
+        clienteId: {type: integer, format: int64}
+        autistaId: {type: integer, format: int64, nullable: true}
+        scadenzaIl: {type: string, format: date-time, nullable: true}
+        accettataIl: {type: string, format: date-time, nullable: true}
+        chiusaIl: {type: string, format: date-time, nullable: true}
+        kmStimati: {type: number, nullable: true}
+        kmEffettivi: {type: number, nullable: true}
+        notturno: {type: boolean, nullable: true}
+        costoCalcolato: {type: number, nullable: true}
+        costoFinale: {type: number, nullable: true}
+    Dashboard:
+      type: object
+      properties:
+        eseguite: {type: integer}
+        pending: {type: integer}
+        scadute: {type: integer}
+        nonAccettate: {type: integer}
+        totaleEur: {type: number}
+        totalePerAutista: {type: array, items: {type: object}}
+    Route:
+      type: object
+      properties:
+        kmStimati: {type: number}
+        origine: {type: string}
+        geometria: {type: object}

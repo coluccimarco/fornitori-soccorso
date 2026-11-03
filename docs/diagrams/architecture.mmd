@@ -1,0 +1,15 @@
+%% FORNITORI | v1.0 | 03/11/2026 | owner: Membro 1
+%% Implementato: API/sessione/DB/anagrafiche. Pianificato: UI, chatbot, routing, provider.
+flowchart LR
+    Centrale[UI Centrale<br/>PIANIFICATO] -->|HTTPS JSON + cookie + CSRF| API[Spring Boot REST<br/>IMPLEMENTATO]
+    Autista[UI Autista<br/>PIANIFICATO] -->|HTTPS JSON + cookie + CSRF| API
+    API --> Security[Spring Security<br/>IMPLEMENTATO]
+    API --> Controller[Controller]
+    Controller --> Service[Service]
+    Service --> Repo[Spring Data JPA]
+    Repo --> DB[(PostgreSQL)]
+    DB --> Fixture[Fixture Excel]
+    DB --> Live[Missioni live<br/>Sprint 2]
+    Chat[Chatbot guidato<br/>PIANIFICATO] -. API .-> API
+    Maps[Leaflet / routing<br/>PIANIFICATO] -. API coordinate .-> API
+    API -. Outbox eventi .-> Notify[WhatsApp / Telegram<br/>PIANIFICATO]

@@ -1,0 +1,42 @@
+# Sprint 3 — Integrazioni
+
+**Versione:** 1.0 · **Data:** 03/11/2026 · **Responsabile:** Membro 1 — Scrum Master<br>
+**Indice:** goal · componenti · dipendenze · acceptance · demo · rischi
+
+## Sprint Goal
+
+Integrare chatbot, routing mappe e notifiche senza dipendere direttamente dalle
+tabelle o replicare regole backend. Tutto **PIANIFICATO**.
+
+## Attività pianificate
+
+| Attività | Owner | Dipendenze |
+|---|---|---|
+| Menu chatbot, session state, verify customer e create request | M3 | API create mission e identity check M1 |
+| Adapter callback Telegram/WhatsApp e retry/idempotenza | M5 | provider approval, webhook auth M1 |
+| Leaflet map e route per traino/repair | M4 | mission coordinates, provider decision M1 |
+| Eventi accepted/completed e outbox dispatcher | M1/M5 | state transition Sprint 2 |
+| UI map/status e stati integrazione | M2/M4 | route/status API |
+| Contract/integration tests e privacy review | Tutti | sandbox/fake adapters |
+
+Stime da rifinire in planning; non sono ore consuntivate.
+
+## Acceptance criteria
+
+- Chat guided happy/error path, session isolation e verifica cliente prima di leggere
+  stato; output non rivela missioni altrui.
+- Routing distingue traino e riparazione, attribuisce provider e tratta la distanza
+  come stima, non costo o km effettivi.
+- Notifiche partono da outbox dopo commit, callback firmati, retry con backoff e
+  chiave idempotente; nessun segreto/PII nei log.
+- Provider offline non corrompe lo stato missione; fallback e errori osservabili.
+
+## Demo e rischi
+
+Demo in sandbox/fake provider, input targa verificata, route fixture e notifiche
+duplicate senza doppio invio. DoD: contract tests condivisi e review security/privacy.
+Rischi: API rate limits, disponibilità provider, geocoding e costi/termini d'uso.
+Passaggio a Sprint 4 con integrazioni ripetibili in ambiente di test.
+
+**Riferimenti:** guide [chatbot](../team/MEMBRO_3_CHATBOT.md),
+[mappe](../team/MEMBRO_4_MAPS.md), [notifiche](../team/MEMBRO_5_NOTIFICATIONS.md).
