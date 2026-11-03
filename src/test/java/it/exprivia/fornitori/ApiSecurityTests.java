@@ -73,11 +73,6 @@ class ApiSecurityTests {
     }
 
     @Test
-    void mapPageIsPublicAndCarriesNoData() throws Exception {
-        mockMvc.perform(get("/mappa.html")).andExpect(status().isOk());
-    }
-
-    @Test
     void unauthenticatedRegistryRequestReturnsUnauthorized() throws Exception {
         mockMvc.perform(get("/api/v1/autisti"))
                 .andExpect(status().isUnauthorized())

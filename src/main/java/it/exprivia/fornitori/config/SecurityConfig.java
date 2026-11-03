@@ -98,7 +98,6 @@ public class SecurityConfig {
                         .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
                         .sessionFixation(fixation -> fixation.changeSessionId()))
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers(HttpMethod.GET, "/mappa.html").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/maps/route")
                         .hasAnyRole(UserRole.AUTISTA.name(), UserRole.RESPONSABILE.name())
                         .requestMatchers(HttpMethod.GET, "/api/v1/auth/csrf").permitAll()

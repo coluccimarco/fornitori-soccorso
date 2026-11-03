@@ -45,7 +45,7 @@ progettati e non devono essere chiamati come funzionalità disponibili.
   e autenticati con `FORNITORI_CHAT_TOKEN`; il cliente si riconosce dalla sola targa
   ([D-007](./DECISION_LOG.md)).
 - **Membro 4 — Mappe:** `GET /api/v1/maps/route` converte l'indirizzo in coordinate e
-  restituisce percorso e km; `/mappa.html` è la pagina Leaflet da integrare nella UI.
+  restituisce percorso GeoJSON, punti e km; la visualizzazione Leaflet è da fare nella UI.
 - **Membro 5 — Notifiche:** gli eventi `MISSION_ACCEPTED` e `MISSION_COMPLETED`
   vengono scritti nell'outbox in modo transazionale; il dispatcher/provider restano da implementare.
 

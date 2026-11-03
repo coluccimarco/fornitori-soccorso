@@ -5,9 +5,9 @@
 
 ## Scopo e stato
 
-Visualizzazione percorso e distanza. **IMPLEMENTATI**: `GET /api/v1/maps/route` con
-geocodifica Nominatim e percorso OSRM, e la pagina Leaflet `/mappa.html` ([D-010](../DECISION_LOG.md)).
-Da fare: integrare la mappa nel pannello e nell'area autisti e proporre i km alla chiusura.
+Visualizzazione percorso e distanza. **IMPLEMENTATA** l'API `GET /api/v1/maps/route` con
+geocodifica Nominatim e percorso OSRM ([D-010](../DECISION_LOG.md)). Da fare: mostrare
+la mappa con Leaflet nel pannello e nell'area autisti e proporre i km alla chiusura.
 
 ## Tecnologie proposte
 

@@ -17,7 +17,7 @@ vengono configurate credenziali autorizzate.
 | Missioni, timeout, pricing, note, dashboard e storico autista | **IMPLEMENTATO** in `feature/backend`; PostgreSQL CI **PASS** |
 | Chatbot (`chatbot/`) e API `chat/*` | **IMPLEMENTATO**; provato da Telegram con backend e PostgreSQL locali |
 | Notifiche al cliente | **IMPLEMENTATO** e provato su Telegram per le missioni da chat; WhatsApp **PIANIFICATO** |
-| Mappe | **IMPLEMENTATO**: geocodifica, percorso, km stimati e pagina provvisoria `/mappa.html` |
+| Mappe | API **IMPLEMENTATA**: geocodifica, percorso e km stimati; visualizzazione da fare nella UI |
 | UI | **PIANIFICATO**; guide e contratti in `docs/` |
 | CI Java 25 | Build, test, OpenAPI e PostgreSQL baseline/integration **PASS** |
 
