@@ -1,0 +1,418 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#ffffff">
+  <title>Soccorso stradale — Fornitori</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./public-site.css">
+</head>
+<body>
+  <div id="publicView" class="public-site">
+    <div class="utility-bar">
+      <div class="utility-left">
+        <a href="#servizi">Servizi <span class="utility-chevron">⌄</span></a>
+        <a href="#chi-siamo">Lavora con noi</a>
+      </div>
+      <div class="utility-right">
+        <a href="#contatti">CONTATTI</a>
+        <a class="assistance-link" href="#contatti">ASSISTENZA STRADALE</a>
+      </div>
+    </div>
+    <header class="public-header">
+      <div class="public-brand-row">
+        <a class="public-brand" href="/" aria-label="Fornitori Soccorso, home">
+          <span class="public-brand-symbol" aria-hidden="true">
+            <svg viewBox="0 0 42 48" role="img" width="36" height="46" fill="#f2bf00">
+              <path d="M27 3 9 10 5 17l18 1-12 8 4 7 15-7-2 17 7-2 4-24-8-7 6-4-3-7-8 4-2-7Z"/>
+              <path class="brand-road-cut" fill="#fff" d="m23 10-5 8 8 1-7 8 4 2 9-11-8-2 4-7Z"/>
+            </svg>
+          </span>
+          <span class="public-brand-copy"><strong>fornitori</strong><small>SOCCORSO STRADALE</small></span>
+        </a>
+        <div class="header-tools">
+          <div class="social-links" aria-label="Social">
+            <a href="#contatti" aria-label="LinkedIn">in</a>
+            <a href="#contatti" aria-label="Facebook">f</a>
+            <a href="#contatti" aria-label="Instagram">◎</a>
+            <a href="#contatti" aria-label="YouTube">▶</a>
+          </div>
+          <div class="text-size-tools" aria-label="Dimensione testo"><span>A</span><span>A</span><strong>A</strong></div>
+          <span class="language-label">IT <span>⌄</span></span>
+          <a class="operator-link" href="#accesso" data-show-login>Area operatori <span>↗</span></a>
+        </div>
+      </div>
+      <nav class="public-nav" aria-label="Navigazione principale">
+        <button class="public-nav-toggle" type="button" data-bs-toggle="collapse" data-bs-target="#publicNavLinks" aria-expanded="false" aria-controls="publicNavLinks">☰ <span>Menu</span></button>
+        <div class="collapse public-nav-links" id="publicNavLinks">
+          <a href="#chi-siamo">Chi siamo</a>
+          <a href="#servizi">I servizi</a>
+          <a href="#soccorso">Soccorso stradale</a>
+          <a href="#fornitori">Fornitori</a>
+          <a href="#sicurezza">Sicurezza</a>
+          <a href="#viabilita">Viabilità</a>
+          <a href="#contatti">Contatti</a>
+          <a class="public-search" href="#servizi" aria-label="Cerca">⌕</a>
+        </div>
+      </nav>
+    </header>
+
+    <main class="public-content" id="soccorso">
+      <nav class="public-breadcrumb" aria-label="Percorso">
+        <a href="/">Home</a><span>›</span><a href="#servizi">Servizi</a><span>›</span><span>Soccorso stradale</span>
+      </nav>
+      <h1>Soccorso stradale</h1>
+      <div class="hero-illustration" role="img" aria-label="Illustrazione di un carro attrezzi che soccorre un'automobile">
+        <img src="./images/soccorso-stradale.svg" alt="">
+      </div>
+
+      <section class="service-copy" id="servizi">
+        <p>Il servizio di soccorso stradale ti aiuta a ripartire in sicurezza in caso di guasto o incidente. Se il veicolo non può proseguire, spostati in un luogo sicuro e richiedi assistenza tramite i riferimenti del gestore della strada.</p>
+        <p>Sulle strade extraurbane la scelta dell’operatore può dipendere dalle condizioni del tratto. In autostrada e sui raccordi, invece, è necessario rivolgersi agli operatori autorizzati per quel percorso.</p>
+        <h2>Come richiedere assistenza</h2>
+        <p>Comunica la tua posizione, la direzione di marcia, il modello del veicolo e il tipo di problema. Se ti trovi in una situazione di pericolo, allontanati dalla carreggiata e contatta i servizi di emergenza.</p>
+      </section>
+
+      <section class="contact-section" id="contatti">
+        <div>
+          <p class="contact-eyebrow">HAI BISOGNO DI AIUTO?</p>
+          <h2>Contatti e assistenza</h2>
+          <p>Per conoscere il numero corretto, fai riferimento alla segnaletica presente sulla tratta o al gestore stradale competente.</p>
+        </div>
+        <a class="contact-button" href="#viabilita">Informazioni sulla viabilità <span>→</span></a>
+      </section>
+      <div class="public-bottom-links" id="chi-siamo"><a id="fornitori" href="#soccorso">Fornitori</a><a id="sicurezza" href="#soccorso">Sicurezza stradale</a><a id="viabilita" href="#contatti">Viabilità e contatti</a></div>
+    </main>
+    <footer class="public-footer"><span>Fornitori Soccorso Stradale</span><span>Informazioni e assistenza</span></footer>
+  </div>
+
+  <div id="loginView" class="login-shell d-none">
+    <section class="login-card">
+      <a class="brand brand-login" href="/" id="backToHome" aria-label="Torna alla pagina iniziale">
+        <span class="brand-mark">F</span>
+        <span>fornitori<span class="brand-dot">.</span></span>
+      </a>
+      <a class="back-to-site" href="/" id="backToSite">← Torna alla pagina principale</a>
+      <p class="eyebrow mt-5 mb-2">AREA RISERVATA</p>
+      <h1 class="h2 fw-bold mb-2">Bentornato</h1>
+      <p class="text-secondary mb-4">Accedi per gestire le missioni o consultare la tua area autista.</p>
+      <div id="loginAlert" class="alert alert-danger d-none" role="alert"></div>
+      <form id="loginForm">
+        <div class="mb-3">
+          <label for="loginEmail" class="form-label">Email</label>
+          <input id="loginEmail" name="email" type="email" class="form-control form-control-lg" autocomplete="username" required>
+        </div>
+        <div class="mb-4">
+          <label for="loginPassword" class="form-label">Password</label>
+          <input id="loginPassword" name="password" type="password" class="form-control form-control-lg" autocomplete="current-password" required>
+        </div>
+        <button id="loginButton" class="btn btn-primary btn-lg w-100" type="submit">
+          <span class="button-label">Accedi</span>
+          <span class="spinner-border spinner-border-sm d-none" aria-hidden="true"></span>
+        </button>
+      </form>
+      <p class="small text-secondary mt-4 mb-0">Accesso riservato agli utenti autorizzati.</p>
+    </section>
+  </div>
+
+  <div id="appView" class="app-shell d-none">
+    <aside class="sidebar" id="sidebar">
+      <a class="brand" href="#" data-view-link="dashboard">
+        <span class="brand-mark">F</span>
+        <span>fornitori<span class="brand-dot">.</span></span>
+      </a>
+      <p class="nav-caption">WORKSPACE</p>
+      <nav class="side-nav" aria-label="Navigazione principale">
+        <button class="nav-link active" type="button" data-view-link="dashboard">
+          <span class="nav-icon">⌂</span><span>Panoramica</span>
+        </button>
+        <button class="nav-link" type="button" data-manager-only data-view-link="clienti">
+          <span class="nav-icon">◉</span><span>Clienti</span>
+        </button>
+        <button class="nav-link" type="button" data-manager-only data-view-link="autisti">
+          <span class="nav-icon">♙</span><span>Autisti</span>
+        </button>
+        <button class="nav-link" type="button" data-manager-only data-view-link="mezzi">
+          <span class="nav-icon">▰</span><span>Mezzi</span>
+        </button>
+        <button class="nav-link" type="button" data-manager-only data-view-link="compagnie">
+          <span class="nav-icon">▦</span><span>Compagnie</span>
+        </button>
+        <button class="nav-link" type="button" data-manager-only data-view-link="officine">
+          <span class="nav-icon">⌖</span><span>Officine</span>
+        </button>
+        <p class="nav-caption nav-caption-spaced">OPERATIVITÀ</p>
+        <button class="nav-link" type="button" data-manager-only data-view-link="missioni">
+          <span class="nav-icon">↗</span><span>Missioni</span>
+        </button>
+        <button class="nav-link d-none" type="button" data-driver-only data-view-link="autista">
+          <span class="nav-icon">↗</span><span>Le mie missioni</span>
+        </button>
+        <button class="nav-link d-none" type="button" data-driver-only data-view-link="storico">
+          <span class="nav-icon">◷</span><span>Storico e guadagni</span>
+        </button>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="connection-indicator"><span class="connection-dot"></span> Sessione attiva</div>
+        <button id="logoutButton" class="logout-button" type="button">
+          <span class="nav-icon">⇥</span><span>Esci</span>
+        </button>
+      </div>
+    </aside>
+
+    <div class="main-column">
+      <header class="topbar">
+        <button id="menuButton" class="menu-button" type="button" aria-label="Apri navigazione" aria-expanded="false">☰</button>
+        <div class="breadcrumb-label"><span id="workspaceLabel">Centrale operativa</span> <span>/</span> <strong id="currentSection">Panoramica</strong></div>
+        <div class="user-chip">
+          <span class="user-avatar" id="userAvatar">—</span>
+          <span class="user-name" id="userName">Utente</span>
+        </div>
+      </header>
+
+      <main class="content">
+        <div id="pageAlert" class="alert d-none" role="alert"></div>
+        <section id="dashboardPage" class="page-section">
+          <div class="page-heading">
+            <div>
+              <p class="eyebrow mb-2">IL TUO WORKSPACE</p>
+              <h1>Panoramica</h1>
+              <p class="text-secondary mb-0">Dati aggiornati direttamente dalle anagrafiche.</p>
+            </div>
+            <button id="refreshButton" class="btn btn-outline-secondary" type="button">
+              <span class="refresh-icon">↻</span> Aggiorna dati
+            </button>
+          </div>
+
+          <div class="row g-3 stats-grid" aria-live="polite">
+            <div class="col-6 col-xl-3">
+              <article class="stat-card">
+                <div class="stat-top"><span class="stat-icon stat-violet">◉</span><span class="stat-label">Clienti</span></div>
+                <p class="stat-value" id="customerCount">—</p>
+                <button class="stat-link" type="button" data-view-link="clienti">Apri anagrafica <span>→</span></button>
+              </article>
+            </div>
+            <div class="col-6 col-xl-3">
+              <article class="stat-card">
+                <div class="stat-top"><span class="stat-icon stat-blue">♙</span><span class="stat-label">Autisti</span></div>
+                <p class="stat-value" id="driverCount">—</p>
+                <button class="stat-link" type="button" data-view-link="autisti">Apri anagrafica <span>→</span></button>
+              </article>
+            </div>
+            <div class="col-6 col-xl-3">
+              <article class="stat-card">
+                <div class="stat-top"><span class="stat-icon stat-green">▰</span><span class="stat-label">Mezzi</span></div>
+                <p class="stat-value" id="vehicleCount">—</p>
+                <button class="stat-link" type="button" data-view-link="mezzi">Apri anagrafica <span>→</span></button>
+              </article>
+            </div>
+            <div class="col-6 col-xl-3">
+              <article class="stat-card">
+                <div class="stat-top"><span class="stat-icon stat-orange">⌖</span><span class="stat-label">Officine</span></div>
+                <p class="stat-value" id="workshopCount">—</p>
+                <button class="stat-link" type="button" data-view-link="officine">Apri anagrafica <span>→</span></button>
+              </article>
+            </div>
+          </div>
+
+          <section class="panel mission-notice">
+            <div class="notice-symbol">↗</div>
+            <div>
+              <p class="eyebrow mb-1">PROSSIMO PASSO</p>
+              <h2 class="h5 mb-1">Gestione richieste di soccorso</h2>
+              <p class="text-secondary mb-0">Crea missioni, assegna gli autisti e monitora proposte, interventi e guadagni.</p>
+            </div>
+            <button class="btn btn-sm btn-outline-primary ms-auto" type="button" data-view-link="missioni">Apri missioni →</button>
+          </section>
+
+          <section class="panel">
+            <div class="panel-heading">
+              <div>
+                <h2 class="h5 mb-1">Anagrafiche</h2>
+                <p class="text-secondary small mb-0">Stato delle risorse caricate dal server</p>
+              </div>
+            </div>
+            <div id="overviewResources" class="resource-list">
+              <div class="resource-row"><span>Clienti</span><span class="resource-loading">Caricamento…</span></div>
+              <div class="resource-row"><span>Autisti</span><span class="resource-loading">Caricamento…</span></div>
+              <div class="resource-row"><span>Mezzi</span><span class="resource-loading">Caricamento…</span></div>
+              <div class="resource-row"><span>Compagnie assicurative</span><span class="resource-loading">Caricamento…</span></div>
+              <div class="resource-row"><span>Officine</span><span class="resource-loading">Caricamento…</span></div>
+            </div>
+          </section>
+        </section>
+
+        <section id="missionPage" class="page-section d-none" data-manager-only>
+          <div class="page-heading">
+            <div>
+              <p class="eyebrow mb-2">CENTRALE OPERATIVA</p>
+              <h1>Missioni</h1>
+              <p class="text-secondary mb-0">Crea le richieste, invia proposte e monitora le risposte degli autisti.</p>
+            </div>
+            <button id="newMissionButton" class="btn btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#missionModal">+ Nuova missione</button>
+          </div>
+          <div class="row g-3 mb-3">
+            <div class="col-6 col-xl-3"><article class="stat-card mission-stat"><span class="stat-label">Missioni in corso</span><p class="stat-value" id="missionPendingCount">—</p></article></div>
+            <div class="col-6 col-xl-3"><article class="stat-card mission-stat"><span class="stat-label">Missioni eseguite</span><p class="stat-value" id="missionDoneCount">—</p></article></div>
+            <div class="col-6 col-xl-3"><article class="stat-card mission-stat"><span class="stat-label">Proposte scadute</span><p class="stat-value" id="missionExpiredCount">—</p></article></div>
+            <div class="col-6 col-xl-3"><article class="stat-card mission-stat"><span class="stat-label">Totale missioni</span><p class="stat-value" id="missionRevenue">—</p></article></div>
+          </div>
+          <section class="panel driver-totals-panel">
+            <div class="panel-heading mb-2"><div><h2 class="h6 mb-1">Guadagni per autista</h2><p class="small text-secondary mb-0">Totali sulle missioni eseguite nella vista selezionata.</p></div></div>
+            <div id="driverTotals" class="driver-total-list"><span class="small text-secondary">Caricamento…</span></div>
+          </section>
+          <div id="missionAlert" class="alert d-none" role="alert"></div>
+          <section class="panel registry-panel">
+            <div class="registry-toolbar">
+              <label class="form-label mb-0" for="missionMode">Vista</label>
+              <select id="missionMode" class="form-select form-select-sm mission-mode">
+                <option value="live">Operativa</option>
+                <option value="reference">Storico di riferimento</option>
+              </select>
+              <select id="missionStatus" class="form-select form-select-sm mission-mode" aria-label="Filtra per stato">
+                <option value="">Tutti gli stati</option>
+                <option value="nuova">Nuove</option>
+                <option value="proposta">Proposte</option>
+                <option value="accettata">Accettate</option>
+                <option value="eseguita">Eseguite</option>
+                <option value="non_accettata">Rifiutate</option>
+                <option value="scaduta">Scadute</option>
+              </select>
+              <span id="missionCount" class="small text-secondary ms-auto"></span>
+            </div>
+            <div id="missionList" class="mission-list" aria-live="polite"></div>
+          </section>
+        </section>
+
+        <section id="driverPage" class="page-section d-none" data-driver-only>
+          <div class="page-heading">
+            <div>
+              <p class="eyebrow mb-2">AREA AUTISTA</p>
+              <h1>Le mie missioni</h1>
+              <p class="text-secondary mb-0">Proposte da gestire e missione attualmente assegnata.</p>
+            </div>
+            <button id="driverRefreshButton" class="btn btn-outline-secondary" type="button">↻ Aggiorna</button>
+          </div>
+          <div id="driverAlert" class="alert d-none" role="alert"></div>
+          <div id="driverMissions" class="driver-mission-list"></div>
+          <section id="activeMissionDetail" class="d-none"></section>
+        </section>
+
+        <section id="historyPage" class="page-section d-none" data-driver-only>
+          <div class="page-heading">
+            <div>
+              <p class="eyebrow mb-2">AREA AUTISTA</p>
+              <h1>Storico e guadagni</h1>
+              <p class="text-secondary mb-0">Riepilogo delle missioni concluse.</p>
+            </div>
+            <div class="history-total">Totale <strong id="driverTotal">—</strong></div>
+          </div>
+          <div id="historyAlert" class="alert d-none" role="alert"></div>
+          <section class="panel registry-panel">
+            <div id="driverHistory" class="mission-list"></div>
+          </section>
+        </section>
+
+        <section id="registryPage" class="page-section d-none" data-manager-only>
+          <div class="page-heading">
+            <div>
+              <p class="eyebrow mb-2">GESTIONE DATI</p>
+              <h1 id="registryTitle">Clienti</h1>
+              <p id="registryDescription" class="text-secondary mb-0">Consulta e cerca le anagrafiche disponibili.</p>
+            </div>
+            <button id="addCustomerButton" class="btn btn-primary d-none" type="button" data-bs-toggle="modal" data-bs-target="#customerModal">
+              <span class="button-plus">+</span> Nuovo cliente
+            </button>
+          </div>
+          <div id="registryAlert" class="alert d-none" role="alert"></div>
+          <section class="panel registry-panel">
+            <div class="registry-toolbar">
+              <div class="search-wrap">
+                <span class="search-icon" aria-hidden="true">⌕</span>
+                <input id="registrySearch" type="search" class="form-control" placeholder="Cerca per nome o targa…" aria-label="Cerca">
+              </div>
+              <span id="registryCount" class="small text-secondary"></span>
+            </div>
+            <div class="table-responsive">
+              <table class="table align-middle registry-table">
+                <thead id="registryHead"></thead>
+                <tbody id="registryBody"></tbody>
+              </table>
+            </div>
+            <div id="registryEmpty" class="empty-state d-none">
+              <span class="empty-icon">⌕</span>
+              <h2 class="h6">Nessun risultato</h2>
+              <p class="small text-secondary mb-0">Prova a modificare i termini di ricerca.</p>
+            </div>
+          </section>
+        </section>
+      </main>
+      <footer class="app-footer">Fornitori <span>·</span> Area riservata</footer>
+    </div>
+  </div>
+
+  <div class="modal fade" id="missionModal" tabindex="-1" aria-labelledby="missionModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <form id="missionForm">
+          <div class="modal-header"><div><p class="eyebrow mb-1">NUOVA RICHIESTA</p><h2 class="modal-title fs-5" id="missionModalTitle">Crea missione</h2></div><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Chiudi"></button></div>
+          <div class="modal-body">
+            <div id="missionFormAlert" class="alert alert-danger d-none" role="alert"></div>
+            <div class="row g-3">
+              <div class="col-md-6"><label class="form-label" for="missionCustomer">Cliente *</label><select class="form-select" id="missionCustomer" required><option value="">Seleziona cliente</option></select></div>
+              <div class="col-md-6"><label class="form-label" for="missionType">Tipo intervento *</label><select class="form-select" id="missionType" required><option value="traino">Traino</option><option value="riparazione_sul_posto">Riparazione sul posto</option></select></div>
+              <div class="col-md-6"><label class="form-label" for="missionWorkshop">Officina <span class="text-secondary">(obbligatoria per il traino)</span></label><select class="form-select" id="missionWorkshop"><option value="">Seleziona officina</option></select></div>
+              <div class="col-md-6"><label class="form-label" for="missionChannel">Canale *</label><select class="form-select" id="missionChannel"><option value="centrale">Centrale</option><option value="whatsapp">WhatsApp</option><option value="telegram">Telegram</option></select></div>
+              <div class="col-12"><label class="form-label" for="missionOrigin">Luogo dell'intervento *</label><input class="form-control" id="missionOrigin" maxlength="500" required></div>
+              <div class="col-12"><label class="form-label" for="missionProblem">Problema / note *</label><textarea class="form-control" id="missionProblem" maxlength="2000" rows="3" required></textarea></div>
+            </div>
+          </div>
+          <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Annulla</button><button id="saveMissionButton" type="submit" class="btn btn-primary"><span class="button-label">Crea missione</span><span class="spinner-border spinner-border-sm d-none" aria-hidden="true"></span></button></div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="customerModal" tabindex="-1" aria-labelledby="customerModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <form id="customerForm">
+          <div class="modal-header">
+            <div>
+              <p class="eyebrow mb-1">ANAGRAFICA</p>
+              <h2 class="modal-title fs-5" id="customerModalTitle">Aggiungi cliente</h2>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Chiudi"></button>
+          </div>
+          <div class="modal-body">
+            <div id="customerFormAlert" class="alert alert-danger d-none" role="alert"></div>
+            <div class="row g-3">
+              <div class="col-md-6"><label class="form-label" for="customerName">Nome e cognome *</label><input id="customerName" name="nome" class="form-control" required maxlength="200"></div>
+              <div class="col-md-6"><label class="form-label" for="customerPhone">Telefono *</label><input id="customerPhone" name="telefono" class="form-control" required maxlength="40"></div>
+              <div class="col-md-6"><label class="form-label" for="customerPlate">Targa *</label><input id="customerPlate" name="targa" class="form-control text-uppercase" required maxlength="20"></div>
+              <div class="col-md-6"><label class="form-label" for="customerVehicle">Modello veicolo</label><input id="customerVehicle" name="modelloVeicolo" class="form-control" maxlength="120"></div>
+              <div class="col-md-6"><label class="form-label" for="customerCompany">Compagnia assicurativa *</label><select id="customerCompany" name="compagniaId" class="form-select" required><option value="">Seleziona compagnia</option></select></div>
+              <div class="col-md-6"><label class="form-label" for="customerPolicy">Numero polizza *</label><input id="customerPolicy" name="numeroPolizza" class="form-control" required maxlength="100"></div>
+              <div class="col-md-6"><label class="form-label" for="customerExpiry">Scadenza polizza *</label><input id="customerExpiry" name="scadenzaPolizza" type="date" class="form-control" required></div>
+              <div class="col-md-6"><label class="form-label" for="customerCity">Città di residenza</label><input id="customerCity" name="cittaResidenza" class="form-control" maxlength="120"></div>
+            </div>
+            <p class="small text-secondary mt-3 mb-0">I campi contrassegnati con * sono obbligatori.</p>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Annulla</button>
+            <button id="saveCustomerButton" type="submit" class="btn btn-primary">
+              <span class="button-label">Salva cliente</span>
+              <span class="spinner-border spinner-border-sm d-none" aria-hidden="true"></span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="./app.js" defer></script>
+</body>
+</html>

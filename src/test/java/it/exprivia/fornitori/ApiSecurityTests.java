@@ -6,6 +6,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.forwardedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -54,6 +55,23 @@ class ApiSecurityTests {
 
     @MockitoBean
     private ChatService chatService;
+
+    @Test
+    void frontendAssetsArePublic() throws Exception {
+        mockMvc.perform(get("/"))
+                .andExpect(status().isOk())
+                .andExpect(forwardedUrl("index.html"));
+        mockMvc.perform(get("/index.html"))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/app.js"))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/styles.css"))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/public-site.css"))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/images/soccorso-stradale.svg"))
+                .andExpect(status().isOk());
+    }
 
     @Test
     void unauthenticatedRegistryRequestReturnsUnauthorized() throws Exception {

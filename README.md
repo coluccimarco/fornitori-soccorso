@@ -17,7 +17,7 @@ vengono configurate credenziali autorizzate.
 | Missioni, timeout, pricing, note, dashboard e storico autista | **IMPLEMENTATO** in `feature/backend`; PostgreSQL CI **PASS** |
 | Chatbot (`chatbot/`) e API `chat/*` | **IMPLEMENTATO**; provato da Telegram con backend e PostgreSQL locali |
 | Notifiche al cliente | **IMPLEMENTATO** e provato su Telegram per le missioni da chat; WhatsApp **PIANIFICATO** |
-| UI e mappe | **PIANIFICATO**; guide e contratti in `docs/` |
+| UI | **IMPLEMENTATA** in `src/main/resources/static/`; mappe **PIANIFICATE** finché non sarà disponibile un endpoint dedicato |
 | CI Java 25 | Build, test, OpenAPI e PostgreSQL baseline/integration **PASS** |
 
 ## Requisiti locali
@@ -34,7 +34,7 @@ vengono configurate credenziali autorizzate.
 | Build | Maven Wrapper 3.9.9 |
 | Persistenza | PostgreSQL 18 o compatibile |
 | Contratto | REST/JSON, OpenAPI 3.0.3 |
-| Client previsti | Web HTML/CSS/JavaScript/Bootstrap; Leaflet/OSM per mappe |
+| Client | Web HTML/CSS/JavaScript/Bootstrap 5.3, servito da Spring Boot |
 | Provider previsti | Telegram e WhatsApp Business/Twilio, soggetti ad approvazione |
 
 ### Windows: installazione JDK 25
@@ -95,6 +95,10 @@ storico di riferimento al 28/10/2026. Non vanno modificate dallo scheduler opera
 .\mvnw.cmd clean verify
 .\mvnw.cmd spring-boot:run
 ```
+
+Con il backend avviato, aprire `http://localhost:8080/`. La pagina pubblica è
+accessibile senza login; l'area riservata usa la sessione e le API REST dello stesso
+server.
 
 Hibernate è configurato in `validate`: l'applicazione si avvia solo se il database
 esiste, gli script sono stati eseguiti e le variabili datasource sono corrette.
