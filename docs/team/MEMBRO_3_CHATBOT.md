@@ -6,8 +6,9 @@
 ## Scopo e maturità
 
 Implementare un flusso deterministico a menu, senza dipendenza obbligatoria da AI.
-Codice chatbot assente (**PIANIFICATO**); accesso chatbot a mission create/status è
-**DA PROGETTARE/APPROVARE** prima di implementare.
+Dialogo in [`chatbot/`](../../chatbot/README.md) provato con backend finto
+(**DA VALIDARE** sul backend reale); accesso chatbot a mission create/status è
+**DA PROGETTARE/APPROVARE** prima del collegamento.
 
 ## Dialogo
 
