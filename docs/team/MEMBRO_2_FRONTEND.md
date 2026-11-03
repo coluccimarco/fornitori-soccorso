@@ -1,43 +1,48 @@
 # Membro 2 — Frontend
 
-**Versione:** 1.0 · **Data:** 03/11/2026 · **Responsabile:** Membro 2<br>
-**Indice:** obiettivo · stack · schermate · API · test · acceptance
+## Stato
 
-## Scopo
-
-Costruire UI centrale e area autista usando REST; non duplicare assegnazione,
-autorizzazioni o tariffa. Il frontend non è presente nel repository (**PIANIFICATO**).
-
-## Stack e struttura proposta
-
-HTML/CSS/JavaScript/Bootstrap sono la proposta del corso; confermare framework prima
-di scaffoldare. Suggerimento: `frontend/src/{api,components,pages,auth,styles}`,
-`frontend/tests`, README con setup. Centralizza base URL, sessione e gestione errori.
+Il frontend HTML/CSS/JavaScript con Bootstrap 5 è servito da Spring Boot nella
+cartella `src/main/resources/static/`. Si avvia insieme al backend e si apre da
+`http://localhost:8080/`.
 
 ## Schermate e flussi
 
-1. Login e logout; recupera CSRF e sessione.
-2. Dashboard centrale con conteggi e filtri.
-3. Anagrafiche: autisti, mezzi, compagnie, clienti, officine; ricerca cliente.
-4. Creazione missione e dettaglio, proposta, countdown e storico.
-5. Area autista: missione proposta, accept/reject, dettaglio, chiusura e segnalazione.
-6. Storico/guadagni e vista mappa solo quando i relativi endpoint saranno attivi.
+- Pagina pubblica informativa e accesso all'area riservata.
+- Login/logout con sessione e token CSRF.
+- Centrale: conteggi delle anagrafiche, ricerca e consultazione di clienti,
+  autisti, mezzi, compagnie e officine; inserimento clienti.
+- Missioni: creazione, filtri, proposte agli autisti, countdown, dashboard e
+  consultazione delle segnalazioni.
+- Area autista: proposte, accettazione/rifiuto, missione attiva, note, chiusura
+  con chilometri e storico con guadagni.
+- Layout responsive, con area autista ottimizzata per smartphone.
 
-Sprint 1 accessibile oggi: login e GET anagrafiche implementati. Tutte le schermate
-missione/dashboard sono **PIANIFICATE**; non simulare dati come se provenissero dal
-server. Quando backend pronto, consumare route `/api/v1` da
-[`api/openapi.yaml`](../../api/openapi.yaml).
+Le richieste usano soltanto gli endpoint REST implementati in
+[`api/openapi.yaml`](../../api/openapi.yaml), con cookie same-origin e header
+`X-CSRF-TOKEN` sulle mutazioni. Non vengono simulati dati o mappe.
 
-## Sicurezza, UX e test
+## Limiti del contratto missioni
 
-Invia cookie sessione con richieste same-origin/credentials e `X-CSRF-TOKEN` alle
-mutazioni. Gestisci `401` ritornando al login, `403`, `400`, `409`, loading, empty,
-retry esplicito e responsive. Non persistere password/token oltre sessione; evitare
-XSS inserendo testo come text node. Testare form, focus/accessibilità, viewport,
-errori rete e permessi.
+La risposta missione attuale contiene gli ID di cliente e officina, ma non nome,
+telefono o indirizzo. La centrale mostra i dati disponibili interrogando le
+anagrafiche autorizzate; l'area autista mostra gli ID e segnala che i recapiti e i
+dettagli non sono forniti dall'API missioni. Non vengono effettuate chiamate alle
+API anagrafiche riservate al responsabile.
 
-**Dipendenze:** M1 auth/CSRF e API; M4 mappe; Sprint 2 mission workflow.
-**Acceptance:** nessun hardcode che finga risultati, flussi da browser testati,
-screen responsive e review M1. **Risultato Sprint successivo:** shell navigabile,
-login e anagrafiche collegate; mission screen attivabili con endpoint validati.
-**Riferimenti:** [contratti](./INTEGRATION_CONTRACTS.md), [API](../04_API_REST.md).
+La mappa resta esclusa finché non sarà disponibile un endpoint specifico.
+
+## Verifica e avvio
+
+Con JDK 25 e database configurato, eseguire:
+
+```powershell
+.\mvnw.cmd clean verify
+.\mvnw.cmd spring-boot:run
+```
+
+Le credenziali del database vanno configurate nell'ambiente locale secondo il
+[README](../../README.md); non sono incluse nel frontend né nel repository.
+
+**Riferimenti:** [contratti](./INTEGRATION_CONTRACTS.md),
+[API](../04_API_REST.md).

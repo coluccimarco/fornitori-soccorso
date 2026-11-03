@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 986 308" role="img" aria-labelledby="title desc">
+  <title id="title">Soccorso stradale</title>
+  <desc id="desc">Un carro attrezzi recupera un'automobile in panne.</desc>
+  <rect width="986" height="308" fill="#fff5cf"/>
+  <g fill="#f3bd00">
+    <path d="M43 213h33l33-78c4-10 14-17 25-17h119v99h277v-52l73 45v28H43z"/>
+    <path d="M62 213h139v26H43v-14c0-7 6-12 19-12zm140 0h402c7 0 12 5 12 12v14H202z"/>
+    <path d="M109 138h68v49h-90zm77 0h27v49h-27z" fill="#ffe991"/>
+    <path d="M244 112h14l4 79h260v10H247z"/>
+    <path d="m391 160 91-60c6-4 14-2 17 4 3 5 1 11-4 15l-83 62z"/>
+    <rect x="348" y="157" width="64" height="37" rx="4"/>
+    <path d="M493 102h39c4 0 7 3 7 7s-3 7-7 7h-39z"/>
+    <path d="m531 116 6-4 63 107-5 3z" fill="#ffe28a"/>
+    <path d="m620 214 8-32c2-7 8-11 16-10l87 9 29-25c15-13 34-19 53-16l94 14c10 2 17 9 20 18l11 39 28 5-4 28-344-29c-9-1-15-9-13-18z"/>
+    <path d="m739 183 22-20c12-10 27-14 42-12l39 6-6 34-99-8zm112 10 5-34 46 7c5 1 9 5 11 10l7 25z" fill="#ffe991"/>
+    <path d="M42 228h545v10H42z"/>
+  </g>
+  <g fill="#fff5cf" stroke="#f3bd00" stroke-width="7">
+    <circle cx="137" cy="237" r="36"/>
+    <circle cx="426" cy="237" r="36"/>
+    <circle cx="688" cy="228" r="25"/>
+    <circle cx="872" cy="244" r="25"/>
+  </g>
+  <g fill="#f3bd00">
+    <circle cx="137" cy="237" r="19"/>
+    <circle cx="426" cy="237" r="19"/>
+    <circle cx="688" cy="228" r="12"/>
+    <circle cx="872" cy="244" r="12"/>
+  </g>
+</svg>
