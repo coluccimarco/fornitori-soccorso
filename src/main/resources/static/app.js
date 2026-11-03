@@ -593,13 +593,14 @@
 
   $("#loginForm").addEventListener("submit", async (event) => {
     event.preventDefault();
+    const formElement = event.currentTarget;
     const button = $("#loginButton");
     const alert = $("#loginAlert");
     alert.classList.add("d-none");
     setBusy(button, true);
     try {
       await loadCsrf();
-      const form = new FormData(event.currentTarget);
+      const form = new FormData(formElement);
       const user = await request("/api/v1/auth/login", {
         method: "POST",
         mutating: true,
@@ -613,7 +614,7 @@
         showLogin("Il profilo non è abilitato all'accesso all'area riservata.");
         return;
       }
-      event.currentTarget.reset();
+      formElement.reset();
       showApp(user);
     } catch (error) {
       alert.textContent = error.status === 401 ? "Email o password non corretti." : error.message;
@@ -679,11 +680,12 @@
 
   $("#customerForm").addEventListener("submit", async (event) => {
     event.preventDefault();
+    const formElement = event.currentTarget;
     const button = $("#saveCustomerButton");
     const alert = $("#customerFormAlert");
     alert.classList.add("d-none");
     setBusy(button, true);
-    const form = new FormData(event.currentTarget);
+    const form = new FormData(formElement);
     const payload = Object.fromEntries(form.entries());
     payload.targa = payload.targa.trim().toUpperCase();
     payload.compagniaId = Number(payload.compagniaId);
@@ -697,7 +699,7 @@
         mutating: true,
         body: JSON.stringify(payload)
       });
-      event.currentTarget.reset();
+      formElement.reset();
       bootstrap.Modal.getOrCreateInstance($("#customerModal")).hide();
       await loadRegistries();
       goToView("clienti");
@@ -767,6 +769,7 @@
 
   $("#missionForm").addEventListener("submit", async (event) => {
     event.preventDefault();
+    const formElement = event.currentTarget;
     const button = $("#saveMissionButton");
     const alert = $("#missionFormAlert");
     alert.classList.add("d-none");
@@ -791,7 +794,7 @@
           canaleOrigine: $("#missionChannel").value
         })
       });
-      event.currentTarget.reset();
+      formElement.reset();
       bootstrap.Modal.getOrCreateInstance($("#missionModal")).hide();
       await loadMissions();
       showInlineAlert("#missionAlert", "Missione creata. Ora puoi inviare una proposta a un autista.", "success");
