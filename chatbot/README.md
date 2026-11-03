@@ -4,9 +4,9 @@ Dialogo guidato a menu in Python, senza dipendenze esterne (solo libreria standa
 Python 3.10 o superiore). Non accede al database e non tocca il backend Java: parla
 con il backend solo tramite i tre endpoint `/api/v1/chat/*` di `api/openapi.yaml`.
 
-**Stato:** dialogo, backend finto e test sono pronti. Il client HTTP è provato solo
-contro un server di prova, perché gli endpoint `chat/*` non esistono ancora nel backend.
-Il collegamento a Telegram/WhatsApp è del Membro 5.
+**Stato:** dialogo, backend finto, canale Telegram e test sono pronti. Il client HTTP è
+provato solo contro un server di prova, perché gli endpoint `chat/*` non esistono ancora
+nel backend. WhatsApp non è collegato.
 
 ## Provarlo
 
@@ -29,6 +29,25 @@ Quando gli endpoint saranno disponibili:
 FORNITORI_API_URL=http://localhost:8080 FORNITORI_CHAT_TOKEN=... python3 -m fornitori_chatbot --http
 ```
 
+## Collegarlo a Telegram
+
+1. Su Telegram apri **@BotFather**, invia `/newbot` e copia il token che ti restituisce.
+2. Dalla cartella `chatbot/`, incolla il token al prompt (non viene mostrato) e avvia:
+
+```bash
+read -rs TELEGRAM_BOT_TOKEN && export TELEGRAM_BOT_TOKEN
+```
+
+```bash
+python3 -m fornitori_chatbot --telegram
+```
+
+3. Apri il tuo bot su Telegram e premi **Avvia**. Per il backend reale aggiungi `--http`.
+
+Il bot resta attivo finché il comando è in esecuzione. Usa il long polling, quindi non
+serve ngrok né un indirizzo pubblico; risponde solo nelle chat private. Il token non va
+mai scritto in file del repo o in chat.
+
 ## Struttura
 
 | File | Contenuto |
@@ -38,7 +57,8 @@ FORNITORI_API_URL=http://localhost:8080 FORNITORI_CHAT_TOKEN=... python3 -m forn
 | `backend.py` | Interfaccia verso il backend e tipi di errore |
 | `fake_backend.py` | Backend finto per sviluppo e test |
 | `http_backend.py` | Backend reale via HTTP |
-| `__main__.py` | Console di prova |
+| `telegram_channel.py` | Canale Telegram |
+| `__main__.py` | Avvio da console o Telegram |
 
 ## Dialogo
 
@@ -55,7 +75,10 @@ SHOW_STATUS → END`. `AIUTO` e `ANNULLA` valgono in ogni stato.
   polizza non viene conservato, targa ignota e polizza errata hanno la stessa risposta.
 - **Memoria:** le sessioni stanno in RAM, quindi un riavvio le azzera.
 
-## Integrazione con il canale (Membro 5)
+## Aggiungere un canale (Membro 5)
+
+Per WhatsApp o per i webhook basta trasformare ogni messaggio in un `InboundMessage`
+(modello: `telegram_channel.py`):
 
 ```python
 engine = ChatEngine(HttpBackend(url, token))

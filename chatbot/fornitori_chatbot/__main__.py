@@ -1,11 +1,13 @@
-"""Console di prova: python3 -m fornitori_chatbot [--http]"""
+"""Avvio del chatbot: python3 -m fornitori_chatbot [--http] [--telegram]"""
 import argparse
+import logging
 import os
 import sys
 
 from .engine import ChatEngine, InboundMessage
 from .fake_backend import DEMO_CUSTOMERS, FakeBackend
 from .http_backend import HttpBackend
+from .telegram_channel import InvalidToken, TelegramApi, TelegramBot
 
 
 def build_backend(use_http: bool):
@@ -33,12 +35,7 @@ def parse_location(text: str):
         return None
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description="Console di prova del chatbot FORNITORI")
-    parser.add_argument("--http", action="store_true", help="usa il backend reale")
-    args = parser.parse_args()
-
-    engine = ChatEngine(build_backend(args.http))
+def run_console(engine: ChatEngine) -> None:
     print("Scrivi un messaggio. /pos LAT LNG simula la posizione condivisa, /esci termina.\n")
     while True:
         try:
@@ -56,6 +53,33 @@ def main() -> None:
         for reply in engine.handle(message):
             print(f"Bot: {reply}")
         print()
+
+
+def run_telegram(engine: ChatEngine) -> None:
+    token = os.environ.get("TELEGRAM_BOT_TOKEN")
+    if not token:
+        sys.exit("Imposta TELEGRAM_BOT_TOKEN per usare Telegram.")
+    print("Bot Telegram attivo. Premi Ctrl+C per fermarlo.")
+    try:
+        TelegramBot(TelegramApi(token), engine).run()
+    except InvalidToken:
+        sys.exit("Telegram ha rifiutato il token: controlla TELEGRAM_BOT_TOKEN.")
+    except KeyboardInterrupt:
+        print()
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Chatbot FORNITORI")
+    parser.add_argument("--http", action="store_true", help="usa il backend reale")
+    parser.add_argument("--telegram", action="store_true", help="collega il bot a Telegram")
+    args = parser.parse_args()
+
+    logging.basicConfig(level=logging.WARNING, format="%(levelname)s %(name)s: %(message)s")
+    engine = ChatEngine(build_backend(args.http))
+    if args.telegram:
+        run_telegram(engine)
+    else:
+        run_console(engine)
 
 
 if __name__ == "__main__":
