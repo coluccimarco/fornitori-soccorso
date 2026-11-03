@@ -37,6 +37,15 @@ ruolo insufficiente, `400` input non valido, `409` conflitto. I dettagli delle 2
 operazioni implementate sono definiti in OpenAPI; mappe e webhook restano
 progettati e non devono essere chiamati come funzionalità disponibili.
 
+## Stato notifiche aggiornato
+
+Il bot implementa `GET /api/v1/chat/notifiche` e `POST
+/api/v1/chat/notifiche/{id}/esito`; il dispatcher Telegram è presente. La CI non
+integra un provider reale e le notifiche alle missioni create dalla centrale non
+sono equivalenti a un canale cliente noto. WhatsApp e webhook restano progettati.
+Il conteggio attuale è 34 operazioni (29 implemented, 5 designed); fare riferimento
+alla [specifica API](./architecture/API_SPECIFICATION.md).
+
 ## Dipendenze tra membri
 
 - **Membro 2 — Frontend:** login JSON (prima recuperare CSRF), sessione/cookie,
@@ -47,7 +56,8 @@ progettati e non devono essere chiamati come funzionalità disponibili.
 - **Membro 4 — Mappe:** basi mezzi, coordinate officine e campi coordinate missione
   sono nel modello; route esterno e distanze non sono ancora implementati.
 - **Membro 5 — Notifiche:** gli eventi `MISSION_ACCEPTED` e `MISSION_COMPLETED`
-  vengono scritti nell'outbox in modo transazionale; il dispatcher/provider restano da implementare.
+  sono scritti nell'outbox in modo transazionale; il bot ha un dispatcher Telegram.
+  Webhook e WhatsApp restano da implementare.
 
 Ogni cambio di payload o permesso deve aggiornare OpenAPI e coordinarsi con i
 consumatori prima dell'integrazione.

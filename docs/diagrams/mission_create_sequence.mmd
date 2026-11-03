@@ -1,0 +1,12 @@
+%% Implemented backend mission creation; UI caller is not present.
+sequenceDiagram
+    actor Centrale as Client RESPONSABILE
+    participant API as MissionController
+    participant Service as MissionService
+    participant DB as PostgreSQL
+    Centrale->>API: POST /api/v1/missioni
+    API->>Service: validate DTO and role
+    Service->>DB: validate customer/intervention, insert mission nuova
+    DB-->>Service: mission id and code
+    Service-->>API: response DTO
+    API-->>Centrale: 201 Created

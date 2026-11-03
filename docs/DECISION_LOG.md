@@ -1,4 +1,9 @@
-# Registro decisioni e questioni aperte
+# Registro decisioni e questioni aperte — storico
+
+> **Documento storico.** Per stato consolidato e decisioni recenti consultare
+> [management/DECISION_LOG.md](./management/DECISION_LOG.md). Le righe D-001–D-009
+> seguenti sono conservate senza riscrivere il contesto storico e non prevalgono
+> sulle verifiche al commit `25c613b`.
 
 **Versione:** 1.1 · **Data:** 03/11/2026 · **Responsabile:** Membro 1 — Architecture Owner<br>
 **Indice:** fixture/live · tariffa · rounding · autenticazione · Java 25

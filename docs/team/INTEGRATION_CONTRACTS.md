@@ -5,20 +5,23 @@
 
 ## Fonte normativa
 
-`api/openapi.yaml` definisce path, request/response e stati. Sprint 1 implementa
-auth/sessione/anagrafiche; missioni, dashboard, maps e webhook sono **PIANIFICATI**.
-La tabella di dettaglio è in [API_CONTRACT.md](../API_CONTRACT.md).
+`api/openapi.yaml` definisce path, request/response e stati per operazione. La
+baseline integrata contiene auth, anagrafiche, missioni, dashboard e API chatbot;
+mappe e webhooks in ingresso restano **PIANIFICATI**. La description generale
+OpenAPI è nota come obsoleta; il conteggio rilevato è 34 operazioni (29 implemented,
+5 designed). La tabella di dettaglio è in
+[API_SPECIFICATION.md](../architecture/API_SPECIFICATION.md).
 
 ## Dipendenze
 
 | Da → a | Contratto/dato | Stato |
 |---|---|---|
 | M2 → M1 | Sessione cookie + CSRF; auth e GET anagrafiche | Implementato |
-| M2 → M1 | Mission create, proposal, driver view, dashboard | Pianificato |
-| M3 → M1 | Lookup targa e create mission con identità verificata | Lookup centrale implementato; API chatbot non approvata |
-| M3 ↔ M5 | Conversazione, callback, provider idempotente | Pianificato |
-| M4 → M1/M2 | Coordinate veicolo/origine/officina, route e km suggeriti | coordinate anagrafiche implementate; routing pianificato |
-| M1 → M5 | Outbox + `MISSION_ACCEPTED` / `MISSION_COMPLETED` | Tabella predisposta; eventi/worker pianificati |
+| M2 → M1 | Mission create, proposal, driver view, dashboard | API implementate; UI non presente |
+| M3 → M1 | Lookup targa e create mission via servizio | API chatbot implementate; la targa non prova identità |
+| M3 ↔ M5 | Conversazione, dispatcher Telegram e notifiche | Console/Telegram e notifiche presenti; webhook/WhatsApp pianificati |
+| M4 → M1/M2 | Coordinate veicolo/origine/officina, route e km suggeriti | Coordinate disponibili; routing pianificato |
+| M1 → M5 | Outbox + `MISSION_ACCEPTED` / `MISSION_COMPLETED` | Outbox backend e dispatcher bot presenti; consegna Telegram dichiarata in README bot |
 
 ## Change process
 

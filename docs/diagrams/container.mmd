@@ -1,0 +1,26 @@
+%% Container view: solid lines are present in the repository; dotted lines future.
+flowchart TB
+    subgraph Client["Client"]
+        Ops["Responsabile<br/>UI non presente"]
+        Driver["Autista<br/>UI non presente"]
+        Customer["Cliente"]
+        Bot["Chatbot Python<br/>engine + HTTP backend"]
+        Telegram["Canale Telegram<br/>long polling"]
+    end
+    subgraph App["Applicazione FORNITORI"]
+        Web["REST API<br/>Spring Boot / Java 25"]
+        Service["Application services<br/>auth / mission / chat / pricing"]
+        Persistence["Spring Data JPA"]
+    end
+    DB[("PostgreSQL 18")]
+    Map["Routing provider futuro"]
+    WhatsApp["WhatsApp futuro"]
+    Ops -->|"cookie sessione + CSRF"| Web
+    Driver -->|"cookie sessione + CSRF"| Web
+    Customer --> Telegram
+    Telegram --> Bot
+    Bot -->|"Bearer token"| Web
+    Web --> Service --> Persistence --> DB
+    Bot -. "outbox API / polling" .-> Web
+    Web -.-> Map
+    Bot -.-> WhatsApp

@@ -40,3 +40,11 @@ Passaggio a Sprint 4 con integrazioni ripetibili in ambiente di test.
 
 **Riferimenti:** guide [chatbot](../team/MEMBRO_3_CHATBOT.md),
 [mappe](../team/MEMBRO_4_MAPS.md), [notifiche](../team/MEMBRO_5_NOTIFICATIONS.md).
+
+### Nota di riconciliazione — 03/11/2026
+
+La scheda resta un piano storico, non un verbale. La baseline `main` successiva
+contiene il bot Python/Telegram, le API chat e il dispatcher Telegram; il README
+del modulo documenta una prova reale che non è parte dei job CI. Mappe/routing,
+UI e WhatsApp restano non implementati. Vedi
+[registro Scrum](./README.md) e [audit](../management/DOCUMENTATION_AUDIT.md).

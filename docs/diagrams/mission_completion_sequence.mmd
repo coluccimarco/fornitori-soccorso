@@ -1,0 +1,14 @@
+%% Implemented backend completion and outbox write.
+sequenceDiagram
+    actor Autista as AUTISTA assegnato
+    participant API as MissionController
+    participant Service as MissionService / PricingService
+    participant DB as PostgreSQL
+    participant Outbox as notifications_outbox
+    Autista->>API: POST /missioni/{id}/complete(kmEffettivi)
+    API->>Service: verify owner, status, input
+    Service->>Service: calculate final cost (server-side)
+    Service->>DB: lock and update mission, audit event
+    Service->>Outbox: enqueue notification in same transaction
+    DB-->>API: commit
+    API-->>Autista: completed mission and amounts

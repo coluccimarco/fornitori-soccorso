@@ -23,9 +23,10 @@ di scaffoldare. Suggerimento: `frontend/src/{api,components,pages,auth,styles}`,
 5. Area autista: missione proposta, accept/reject, dettaglio, chiusura e segnalazione.
 6. Storico/guadagni e vista mappa solo quando i relativi endpoint saranno attivi.
 
-Sprint 1 accessibile oggi: login e GET anagrafiche implementati. Tutte le schermate
-missione/dashboard sono **PIANIFICATE**; non simulare dati come se provenissero dal
-server. Quando backend pronto, consumare route `/api/v1` da
+Il backend auth/anagrafiche e le API missioni/dashboard sono presenti nella
+baseline integrata; le schermate browser sono **PIANIFICATE** e non esiste ancora
+un frontend nel repository. Non simulare dati come se provenissero dal server.
+Consumare route `/api/v1` da
 [`api/openapi.yaml`](../../api/openapi.yaml).
 
 ## Sicurezza, UX e test
@@ -36,7 +37,7 @@ retry esplicito e responsive. Non persistere password/token oltre sessione; evit
 XSS inserendo testo come text node. Testare form, focus/accessibilità, viewport,
 errori rete e permessi.
 
-**Dipendenze:** M1 auth/CSRF e API; M4 mappe; Sprint 2 mission workflow.
+**Dipendenze:** M1 auth/CSRF e API già implementate; M4 mappe pianificate.
 **Acceptance:** nessun hardcode che finga risultati, flussi da browser testati,
 screen responsive e review M1. **Risultato Sprint successivo:** shell navigabile,
 login e anagrafiche collegate; mission screen attivabili con endpoint validati.

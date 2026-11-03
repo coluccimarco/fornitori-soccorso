@@ -1,0 +1,17 @@
+%% C4-inspired system context; proposed users and implemented integrations distinguished.
+flowchart LR
+    Ops["Responsabile centrale<br/>API disponibili; UI futura"]
+    Driver["Autista<br/>API disponibili; UI futura"]
+    Customer["Cliente"]
+    System["FORNITORI<br/>Backend missioni + DB<br/>API chatbot"]
+    Telegram["Telegram<br/>canale presente"]
+    PostgreSQL[("PostgreSQL 18")]
+    Maps["Provider mappe<br/>futuro"]
+    WhatsApp["WhatsApp<br/>futuro"]
+    Ops -->|"sessione operatore, CSRF"| System
+    Driver -->|"sessione operatore, ruolo AUTISTA"| System
+    Customer -->|"richiesta e stato"| Telegram
+    Telegram -->|"bot Python / long polling"| System
+    System -->|"JPA / transazioni"| PostgreSQL
+    System -. "routing progettato" .-> Maps
+    System -. "canale progettato" .-> WhatsApp

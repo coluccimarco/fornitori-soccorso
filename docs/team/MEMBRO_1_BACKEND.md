@@ -21,7 +21,7 @@ Login JSON, CSRF, logout, profilo, sessione HttpOnly, ruoli e API anagrafiche:
 autisti, mezzi, compagnie, clienti (ricerca e inserimento), officine. Configura
 PostgreSQL da environment; applica script `database/01...04` in ordine.
 
-## Sprint 2 — IMPLEMENTATO NEL BRANCH `feature/backend`
+## Sprint 2 — IMPLEMENTATO IN `main`
 
 - Missioni, proposte e storico proposte; transizioni transazionali.
 - Timeout da `pricing_config`, scheduler live-only e guard al momento dell'accept.
@@ -32,6 +32,11 @@ PostgreSQL da environment; applica script `database/01...04` in ordine.
 - Note e API autista con verifica dell'identità lato server.
 - Test unitari/MVC e test PostgreSQL end-to-end/concorrenza passati in CI;
   la verifica PostgreSQL locale resta bloccata dall'assenza di credenziali.
+
+Le 13 operazioni backend missione del report storico sono state integrate in
+`main` tramite PR #3. Il job CI latest `41651140562` è verde su Java 25 e
+PostgreSQL 18. Il conteggio corrente del contratto è 34 operazioni (29 implementate,
+5 progettate), non il conteggio storico Sprint 2.
 
 ## Logging, test e Definition of Done
 

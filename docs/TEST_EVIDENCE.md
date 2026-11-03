@@ -42,3 +42,31 @@ Non dichiarare superati i test DB Sprint 2 finché il job PostgreSQL CI e
 `04_assert_baseline.sql` non terminano con successo. La verifica di connessione
 locale senza password ha restituito `fe_sendauth: no password supplied`; non sono
 state modificate configurazione o dati del server.
+
+## Addendum — baseline integrata su `main` (03/11/2026)
+
+Questa sezione aggiorna la lettura dello stato attuale senza riscrivere le righe
+storiche qui sopra, che descrivono i run sul branch `feature/backend`.
+
+| Controllo | Evidenza | Esito |
+|---|---|---|
+| Baseline corrente | `main` al commit `25c613b`; PR #3 merged | Verificato |
+| CI corrente | GitHub Actions run `41651140562`; job Java/OpenAPI e PostgreSQL 18 entrambi `success` | PASS |
+| OpenAPI corrente | 34 operazioni: 29 `implemented`, 5 `designed` (rilevate dal YAML) | Verificato; metadata, non test provider |
+| Chatbot/Telegram | Codice e test bot presenti; README modulo dichiara prova Telegram con backend/PostgreSQL locali | Implementazione presente; prova esterna non ripetuta dall'audit |
+| Suite automatica Python | `python -m unittest discover` dalla directory `chatbot/`: 64 test, exit code 0 | PASS locale; non parte della CI |
+| UI, mappe e WhatsApp | UI/mappe assenti; mappe/webhook `designed`; WhatsApp non collegato | NOT RUN / non implementato |
+| Specifica docente | PDF e Excel originali non inclusi nel checkout auditato | BLOCKED |
+
+Il workflow su `main` non esegue la suite Python; i test Java/OpenAPI/PostgreSQL
+verdi non certificano la consegna Telegram dal vivo o componenti mancanti.
+
+### Esecuzione locale di questa revisione
+
+| Controllo | Evidenza | Esito |
+|---|---|---|
+| Maven / JDK | Temurin 25.0.5; `.\mvnw.cmd --batch-mode --no-transfer-progress clean verify`; BUILD SUCCESS | PASS |
+| Test Maven | 38 contabilizzati; 0 failure, 0 error; 21 pass e 17 skip (13 Chat PostgreSQL, 3 Mission PostgreSQL, 1 context-load senza datasource locale configurato) | PASS con integrazione locale NOT RUN |
+| Suite chatbot | `python -m unittest discover` dalla cartella `chatbot`; 64 pass, 0 failure | PASS |
+| Documentazione | `python tools/validate_docs.py`; 76 file Markdown/link, DOCX, workbook, API e diagrammi | PASS strutturale |
+| Ispezione visuale DOCX | Word installato; esportazione automatica in PDF non completata | NOT RUN |
