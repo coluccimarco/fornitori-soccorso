@@ -106,9 +106,12 @@ class BrowserDatabaseTests(unittest.TestCase):
         mission_id = self.create_ui(manager, 'E2E browser complete')
         self.propose_ui(manager, mission_id)
         driver = self.login('autista1@demo.it')
-        expect(driver.locator('#driverMissions')).to_contain_text('Lucia Gallo')
+        # Su una proposta il cliente resta nascosto: nome e recapito compaiono dopo l'accettazione.
+        expect(driver.locator('#driverMissions')).to_contain_text("visibili dopo l'accettazione")
+        expect(driver.locator('#driverMissions')).not_to_contain_text('Lucia Gallo')
         driver.locator(f'[data-mission-id="{mission_id}"][data-driver-action="accept"]').click()
         expect(driver.locator('#activeMissionDetail')).to_be_visible()
+        expect(driver.locator('#activeMissionDetail')).to_contain_text('Lucia Gallo')
         self.assertEqual('accettata', self.scalar('select stato from missions where id=%s', mission_id))
         driver.locator('#missionNoteText').fill('Arrivato - browser')
         driver.locator('#missionNoteForm button').click()
