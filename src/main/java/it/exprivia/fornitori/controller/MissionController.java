@@ -114,6 +114,13 @@ public class MissionController {
         return missions.driverMissions(authentication.getName());
     }
 
+    @GetMapping("/autista/missioni/{id}")
+    public MissionDtos.DriverMissionDetailResponse driverMissionDetail(
+            Authentication authentication,
+            @PathVariable Long id) {
+        return missions.driverMissionDetail(authentication.getName(), id);
+    }
+
     @GetMapping("/autista/storico")
     public MissionDtos.DriverHistoryResponse driverHistory(Authentication authentication) {
         return missions.driverHistory(authentication.getName());

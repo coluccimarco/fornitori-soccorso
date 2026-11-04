@@ -57,6 +57,12 @@ public class MapService {
     public MapDtos.RouteResponse route(String email, Long missionId, Long requestedDriverId) {
         MissionDtos.MissionResponse mission = missions.get(email, missionId);
         Driver driver = resolveDriver(email, mission, requestedDriverId);
+        GeoPoint origin = missionOrigin(mission);
+        MapDtos.RoutePoint accident =
+                new MapDtos.RoutePoint("sinistro", mission.origineIndirizzo(), origin.lat(), origin.lng());
+        if (driver == null) {
+            return new MapDtos.RouteResponse(null, null, null, List.of(accident), null);
+        }
         Vehicle vehicle = vehicles.findById(driver.getVehicleId())
                 .orElseThrow(() -> new IllegalStateException("Driver vehicle is missing"));
 
@@ -64,8 +70,7 @@ public class MapService {
         points.add(new MapDtos.RoutePoint(
                 "base", vehicle.getBaseIndirizzo() + ", " + vehicle.getBaseCitta(),
                 vehicle.getBaseLat(), vehicle.getBaseLng()));
-        GeoPoint origin = missionOrigin(mission);
-        points.add(new MapDtos.RoutePoint("sinistro", mission.origineIndirizzo(), origin.lat(), origin.lng()));
+        points.add(accident);
         if ("traino".equals(mission.tipoIntervento())) {
             Workshop workshop = workshops.findById(mission.officinaId())
                     .orElseThrow(() -> new IllegalStateException("Mission workshop is missing"));
@@ -79,6 +84,7 @@ public class MapService {
         return new MapDtos.RouteResponse(route.km(), ROUTING_SOURCE, driver.getId(), points, route.geometry());
     }
 
+    /** Null se la centrale non ha ancora scelto un autista: la mappa mostra solo dove si trova il cliente. */
     private Driver resolveDriver(String email, MissionDtos.MissionResponse mission, Long requestedDriverId) {
         AppUser actor = users.findByEmailIgnoreCase(email).orElseThrow(ForbiddenOperationException::new);
         if (AUTISTA.equals(actor.getRuolo())) {
@@ -90,7 +96,7 @@ public class MapService {
         }
         Long driverId = requestedDriverId != null ? requestedDriverId : mission.autistaId();
         if (driverId == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Autista non indicato");
+            return null;
         }
         return drivers.findById(driverId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Autista non trovato"));

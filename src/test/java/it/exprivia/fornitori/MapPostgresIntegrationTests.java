@@ -1,8 +1,10 @@
 package it.exprivia.fornitori;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.never;
@@ -11,6 +13,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import it.exprivia.fornitori.common.ForbiddenOperationException;
+import it.exprivia.fornitori.common.MissionConflictException;
 import it.exprivia.fornitori.dto.MapDtos;
 import it.exprivia.fornitori.dto.MissionDtos;
 import it.exprivia.fornitori.repository.MissionRepository;
@@ -162,10 +165,53 @@ class MapPostgresIntegrationTests {
     }
 
     @Test
-    void centreMustChooseDriverForUnassignedMission() {
-        ResponseStatusException error = assertThrows(ResponseStatusException.class,
-                () -> maps.route(RESPONSABILE, repair(null, null).id(), null));
-        assertEquals(HttpStatus.BAD_REQUEST, statusOf(error));
+    void withoutDriverCentreSeesOnlyWhereCustomerIs() {
+        MissionDtos.MissionResponse mission = repair(null, null);
+
+        MapDtos.RouteResponse route = maps.route(RESPONSABILE, mission.id(), null);
+
+        assertEquals(List.of("sinistro"), route.punti().stream().map(MapDtos.RoutePoint::tipo).toList());
+        assertEquals(GEOCODED.lat(), route.punti().get(0).lat());
+        assertNull(route.kmStimati());
+        assertNull(route.geometria());
+        assertNull(savedKm(mission.id()));
+        verify(routing, never()).route(anyList());
+    }
+
+    @Test
+    void driverSeesCustomerWorkshopAndEstimateOnOpenMissionOnly() {
+        MissionDtos.MissionResponse mission = towing();
+        missions.propose(RESPONSABILE, mission.id(), new MissionDtos.ProposeMissionRequest(1L));
+
+        MissionDtos.DriverMissionDetailResponse beforeRoute = missions.driverMissionDetail(AUTISTA_1, mission.id());
+        assertEquals("Lucia Gallo", beforeRoute.cliente().nome());
+        assertEquals("PW 660 SW", beforeRoute.cliente().targa());
+        assertNotNull(beforeRoute.cliente().telefono());
+        assertNotNull(beforeRoute.officina().nome());
+        assertNull(beforeRoute.guadagnoStimato());
+
+        maps.route(AUTISTA_1, mission.id(), null);
+        missionRepository.flush();
+        MissionDtos.DriverMissionDetailResponse afterRoute = missions.driverMissionDetail(AUTISTA_1, mission.id());
+        BigDecimal day = new BigDecimal("72.15");
+        BigDecimal night = new BigDecimal("90.19");
+        assertTrue(afterRoute.guadagnoStimato().compareTo(day) == 0 || afterRoute.guadagnoStimato().compareTo(night) == 0,
+                "stima: " + afterRoute.guadagnoStimato());
+
+        missions.accept(AUTISTA_1, mission.id());
+        assertEquals("accettata", missions.driverMissionDetail(AUTISTA_1, mission.id()).missione().stato());
+
+        assertThrows(ForbiddenOperationException.class, () -> missions.driverMissionDetail(AUTISTA_2, mission.id()));
+        assertThrows(ForbiddenOperationException.class, () -> missions.driverMissionDetail(RESPONSABILE, mission.id()));
+
+        missions.complete(AUTISTA_1, mission.id(), new MissionDtos.CompleteMissionRequest(new BigDecimal("20.00")));
+        assertThrows(MissionConflictException.class, () -> missions.driverMissionDetail(AUTISTA_1, mission.id()));
+    }
+
+    @Test
+    void driverCannotReadUnassignedMission() {
+        MissionDtos.MissionResponse mission = repair(null, null);
+        assertThrows(ForbiddenOperationException.class, () -> missions.driverMissionDetail(AUTISTA_1, mission.id()));
     }
 
     @Test

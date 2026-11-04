@@ -345,6 +345,42 @@ public class MissionService {
                 .stream().map(this::toResponse).toList();
     }
 
+    /** Solo per l'autista destinatario e finché la missione è aperta: nello storico i contatti non servono più. */
+    @Transactional(readOnly = true)
+    public MissionDtos.DriverMissionDetailResponse driverMissionDetail(String email, Long missionId) {
+        Driver driver = requireDriver(requireRole(email, AUTISTA));
+        Mission mission = missions.findById(missionId)
+                .filter(candidate -> !candidate.isFixture())
+                .orElseThrow(MissionNotFoundException::new);
+        if (!driver.getId().equals(mission.getDriverId())) {
+            throw new ForbiddenOperationException();
+        }
+        if (!ACTIVE_STATES.contains(mission.getStato())) {
+            throw conflict("I dettagli sono disponibili solo per le missioni proposte o accettate");
+        }
+        Customer customer = customers.findById(mission.getCustomerId())
+                .orElseThrow(() -> new IllegalStateException("Mission customer is missing"));
+        MissionDtos.DriverWorkshopDetail workshop = mission.getWorkshopId() == null ? null
+                : workshops.findById(mission.getWorkshopId())
+                        .map(item -> new MissionDtos.DriverWorkshopDetail(
+                                item.getNome(), item.getIndirizzo(), item.getCitta(), item.getLat(), item.getLng()))
+                        .orElseThrow(() -> new IllegalStateException("Mission workshop is missing"));
+        return new MissionDtos.DriverMissionDetailResponse(
+                toResponse(mission),
+                new MissionDtos.DriverCustomerDetail(
+                        customer.getNome(), customer.getTelefono(), customer.getTarga(), customer.getModelloVeicolo()),
+                workshop,
+                estimatedEarning(mission));
+    }
+
+    private BigDecimal estimatedEarning(Mission mission) {
+        if (mission.getKmStimati() == null) {
+            return null;
+        }
+        Instant acceptedAt = mission.getAccettataIl() != null ? mission.getAccettataIl().toInstant() : clock.instant();
+        return pricing.calculate(mission.getKmStimati(), acceptedAt).amount();
+    }
+
     @Transactional(readOnly = true)
     public MissionDtos.DriverHistoryResponse driverHistory(String email) {
         Driver driver = requireDriver(requireRole(email, AUTISTA));

@@ -73,6 +73,24 @@ public final class MissionDtos {
     public record ProposalResponse(String stato, OffsetDateTime scadenzaIl, Long offertaId) {
     }
 
+    public record DriverCustomerDetail(String nome, String telefono, String targa, String modelloVeicolo) {
+    }
+
+    public record DriverWorkshopDetail(
+            String nome,
+            String indirizzo,
+            String citta,
+            BigDecimal lat,
+            BigDecimal lng) {
+    }
+
+    public record DriverMissionDetailResponse(
+            MissionResponse missione,
+            DriverCustomerDetail cliente,
+            DriverWorkshopDetail officina,
+            BigDecimal guadagnoStimato) {
+    }
+
     public record MissionNoteResponse(
             Long id,
             Long missionId,

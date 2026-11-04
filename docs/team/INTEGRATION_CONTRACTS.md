@@ -31,8 +31,8 @@ contiene 34 operation (30 implemented, 4 designed). La tabella di dettaglio è i
 | WhatsApp | Ingresso webhook e notifiche | Non implementato; due operation OpenAPI `designed` |
 | Fake backend bot | Dati sintetici per sviluppo/test | Implementato; non sostituisce API o dati runtime |
 
-Il frontend usa API operatori same-origin con sessione/CSRF, ma attualmente non
-chiama `/api/v1/maps/route`. Codice e stato OpenAPI non dimostrano un collaudo
+Il frontend usa API operatori same-origin con sessione/CSRF e chiama
+`/api/v1/maps/route` per la mappa. Codice e stato OpenAPI non dimostrano un collaudo
 browser o una prova live del provider.
 
 ## Change process

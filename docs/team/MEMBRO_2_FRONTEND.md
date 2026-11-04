@@ -24,14 +24,12 @@ Le richieste usano soltanto gli endpoint REST implementati in
 
 ## Limiti del contratto missioni
 
-La risposta missione attuale contiene gli ID di cliente e officina, ma non nome,
-telefono o indirizzo. La centrale mostra i dati disponibili interrogando le
-anagrafiche autorizzate; l'area autista mostra gli ID e segnala che i recapiti e i
-dettagli non sono forniti dall'API missioni. Non vengono effettuate chiamate alle
-API anagrafiche riservate al responsabile.
+La risposta missione contiene gli ID di cliente e officina. La centrale ricava i dati
+dalle anagrafiche autorizzate; l'autista li riceve da `GET /api/v1/autista/missioni/{id}`,
+che aggiunge anche il guadagno stimato. Nello storico l'autista vede solo l'ID cliente.
 
-La pagina non integra una vista cartografica: l'API backend `/api/v1/maps/route`
-esiste, ma `app.js` non la richiama.
+La mappa Leaflet usa `/api/v1/maps/route`: nell'area autista si carica da sola, nel
+pannello con "Mostra mappa". La centrale corregge il costo delle missioni eseguite.
 
 ## Verifica e avvio
 

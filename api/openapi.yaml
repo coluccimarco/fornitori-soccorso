@@ -436,6 +436,21 @@ paths:
         '200': {description: Missioni dell'autista, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/Mission'}}}}}
         '401': {$ref: '#/components/responses/Unauthorized'}
         '403': {$ref: '#/components/responses/Forbidden'}
+  /api/v1/autista/missioni/{id}:
+    parameters:
+      - {$ref: '#/components/parameters/MissionId'}
+    get:
+      tags: [Autisti]
+      summary: Dettaglio di una missione proposta o accettata all'autista autenticato
+      description: Aggiunge cliente, contatti e officina. guadagnoStimato è null finché non è stato calcolato il percorso. Chiusa la missione risponde 409.
+      x-implementation-status: implemented
+      x-required-role: ASSIGNED_AUTISTA
+      responses:
+        '200': {description: Dettaglio missione, content: {application/json: {schema: {$ref: '#/components/schemas/DriverMissionDetail'}}}}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
   /api/v1/autista/storico:
     get:
       tags: [Autisti]
@@ -464,7 +479,6 @@ paths:
             application/json:
               schema: {$ref: '#/components/schemas/Route'}
               example: {kmStimati: 18.4, origine: osrm, autistaId: 1, punti: [{tipo: base, descrizione: "Via Terlizzi 88, Molfetta", lat: 41.2003, lng: 16.5978}, {tipo: sinistro, descrizione: "Via Roma 10, Molfetta", lat: 41.205, lng: 16.605}], geometria: {type: LineString, coordinates: [[16.5978,41.2003],[16.601,41.202],[16.605,41.205]]}}
-        '400': {description: Nessun autista indicato o assegnato}
         '422': {description: Indirizzo non trovato dal servizio di geocodifica}
         '503': {description: Servizio esterno non disponibile; client può correggere km effettivi}
         '401': {$ref: '#/components/responses/Unauthorized'}
@@ -774,6 +788,27 @@ components:
         stato: {type: string, enum: [nuova, proposta, accettata, eseguita, non_accettata, scaduta]}
         autistaNome: {type: string, nullable: true}
         aggiornataIl: {type: string, format: date-time}
+    DriverMissionDetail:
+      type: object
+      properties:
+        missione: {$ref: '#/components/schemas/Mission'}
+        cliente:
+          type: object
+          properties:
+            nome: {type: string}
+            telefono: {type: string}
+            targa: {type: string}
+            modelloVeicolo: {type: string, nullable: true}
+        officina:
+          type: object
+          nullable: true
+          properties:
+            nome: {type: string}
+            indirizzo: {type: string}
+            citta: {type: string}
+            lat: {type: number}
+            lng: {type: number}
+        guadagnoStimato: {type: number, nullable: true}
     ChatVehicleLookupResult:
       type: object
       properties:

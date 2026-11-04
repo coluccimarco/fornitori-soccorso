@@ -274,3 +274,11 @@ body {
   .stats-grid > div { width: 100%; }
   .stat-card { min-height: 120px; }
 }
+
+.mission-map-area { margin-top: 12px; }
+.mission-map { position: relative; isolation: isolate; height: 280px; border-radius: 8px; border: 1px solid #e2e4ea; }
+.mission-map-points { margin: 8px 0 0; padding-left: 20px; }
+.mission-cost { margin-top: 12px; }
+.cost-form { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.cost-form .input-group { flex: 0 1 160px; }
+.cost-form input[name="motivo"] { flex: 1 1 220px; }

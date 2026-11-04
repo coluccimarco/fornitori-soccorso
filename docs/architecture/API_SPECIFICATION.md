@@ -22,7 +22,7 @@ provider esterno reale.
 | `/api/v1/auth/*` | Sessione, CSRF | login/me/logout/csrf | Implementato |
 | `/api/v1/{autisti,mezzi,compagnie,clienti,officine}` | RESPONSABILE; cookie e CSRF sulle mutazioni | anagrafiche e creazione cliente | Implementato |
 | `/api/v1/missioni/*` | Centrale o AUTISTA assegnato secondo use case | consultazione, proposta, accept/reject, complete, rettifica, note/intervento | Implementato |
-| `/api/v1/dashboard`, `/autista/*` | RESPONSABILE o proprio AUTISTA | report e storico personale | Implementato |
+| `/api/v1/dashboard`, `/autista/*` | RESPONSABILE o proprio AUTISTA | report, storico personale e dettaglio missione aperta con contatti cliente | Implementato |
 | `/api/v1/chat/*` | `SERVICE_CHATBOT` bearer token, stateless | lookup targa, create, stato, outbox/esito | Implementato |
 | `/api/v1/maps/route` | Sessione e ruolo/ownership missione-driver | geocodifica opzionale, percorso e km stimati | Implementato; provider esterni non garantiti |
 | `/api/v1/utenti*`, `/api/v1/webhooks/*` | Ruoli previsti | utenti, ingressi provider | Designed |

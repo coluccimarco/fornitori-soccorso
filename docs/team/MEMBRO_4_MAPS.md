@@ -8,7 +8,7 @@ Il servizio backend è implementato in `MapController`, `MapService`,
 `NominatimGeocodingClient` e `OsrmRoutingClient`. `GET /api/v1/maps/route` restituisce
 punti, geometria e km stimati; i test automatici sono inclusi nella CI
 `41656606659` su `f763d53`. L'uso reale dei provider pubblici non è stato verificato
-in questa revisione. La UI web non richiama l'endpoint e non visualizza una mappa.
+in questa revisione. La UI web mostra la mappa con Leaflet e propone i km alla chiusura.
 
 ## Contratto runtime
 
@@ -38,8 +38,6 @@ di un uso reale. Le proprietà sono documentate in
 
 ## Integrazione e verifica ancora necessarie
 
-- M2 deve integrare una vista cartografica/route nel browser, se richiesta dal
-  requisito approvato; al momento non c'è chiamata JS a `/maps/route`.
 - Etichettare chiaramente provider, unità e natura stimata dei km.
 - Non bloccare la chiusura missione quando il provider non risponde e non
   inventare distanze.
