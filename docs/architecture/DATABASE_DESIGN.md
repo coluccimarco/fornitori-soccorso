@@ -78,3 +78,16 @@ Non modificare manualmente fixture per far passare l'assertion. Il risultato del
 setup è completo solo quando tutti gli script e le verifiche terminano con
 successo; consultare [TEST_EVIDENCE.md](../quality/TEST_EVIDENCE.md). Il job CI
 usa PostgreSQL effimero e non prova l'accesso al database locale.
+
+## Aggiornamento hardening e prove del 04/11/2026
+
+`07_backend_hardening.sql` aggiunge CHECK coordinate entrambe nulle o entrambe
+valorizzate, tabella `chat_lookup_grants(session_id PK, customer_id FK, expires_at)`
+e indice expiry; `chat_mission_requests.request_fingerprint VARCHAR(64)` nullable
+consente la migrazione di richieste esistenti. `chat_mission_requests` (05/06) è
+il legame persistente requestId/sessione/destinatario/missione; `chat_sessions`
+resta inutilizzata dal bot corrente. Nessuna fixture riscritta. VALIDATE fallisce
+su coordinate legacy incomplete: richiede verifica, non correzione automatica.
+Applicare 07 dopo 01–06. Le prove locali con PostgreSQL 18.6 confermano assertion
+fixture, round-trip e lock concorrenti. Il DB personale localhost:5432 autentica,
+ma non contiene missions; nessuna migrazione vi è stata applicata.

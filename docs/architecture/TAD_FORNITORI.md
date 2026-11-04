@@ -27,7 +27,7 @@ conformità ai documenti del docente né l'idoneità alla produzione.
 | PostgreSQL 18 | servizio del workflow | Schema, seed, assertion e test CI PASS |
 | Chatbot Python >=3.10 | `chatbot/`, dipendenze stdlib | Codice e test presenti; suite locale PASS, Telegram live non verificato qui |
 | OpenAPI 3.0.3 | `api/openapi.yaml` | 34 operation: 30 implementate, 4 progettate |
-| Client web | HTML/CSS/JavaScript, Bootstrap 5.3 in `src/main/resources/static/` | Presente; browser E2E non eseguito |
+| Client web | HTML/CSS/JavaScript, Bootstrap 5.3 in `src/main/resources/static/` | Presente; 2 scenari Chromium/PostgreSQL PASS locali (04/11) |
 | Mappe | `MapController`, `MapService`, client Nominatim/OSRM | API implementata e testata in CI; non integrata nella UI; provider live non verificato |
 | WhatsApp e webhook in ingresso | operazioni OpenAPI `designed` | Non implementati |
 
@@ -61,7 +61,7 @@ Telegram long polling -> dialog engine -> outbound notification dispatcher -> Te
 | `config/`, `common/` | Security filter chain e errori API | Implementati |
 | `database/` | Schema, seed, verifiche e migrazioni additive chatbot | Implementati |
 | `chatbot/fornitori_chatbot/` | Dialogo, fake/HTTP backend, Telegram e notifiche | Implementati; limiti documentati nel README del modulo |
-| `src/main/resources/static/` | Pagina pubblica, login, dashboard centrale, anagrafiche, missioni e area autista | Presente; test browser assenti |
+| `src/main/resources/static/` | Pagina pubblica, login, dashboard centrale, anagrafiche, missioni e area autista | Presente; 2 scenari Chromium/PostgreSQL PASS locali (04/11) |
 | `MapController` / `MapService` | Geocodifica origine, route base-sinistro-officina e km stimati | API presente; non invocata dal client |
 | `NominatimGeocodingClient` / `OsrmRoutingClient` | Geocodifica e routing esterni | Implementati; soggetti a limiti e disponibilità del provider |
 
@@ -163,3 +163,15 @@ Acquisire fonti docente e convalidare l'identità; provare i flussi UI in ambien
 isolato; decidere se integrare visualizzazione mappa, rettifica costo/intervento,
 WhatsApp, persistenza conversazioni e infrastruttura. Le alternative non sono
 decisioni approvate. Questo documento non dichiara conformità a standard.
+
+## Aggiornamento hardening e prove del 04/11/2026
+
+Il monolite e i layer esistenti restano invariati. `ApiError` risiede in common,
+non nel controller auth. I DTO hanno limiti coerenti con SQL; il mapper missione
+espone contatti operativi solo negli stati live proposta/accettata. Il service
+verifica il driver corrente e la deadline anche su reject. Le chiamate provider
+restano fuori dalle transazioni; salvataggi brevi verificano lo snapshot letto.
+`ChatLookupGrantRepository` usa SQL parametrizzato nella transazione service,
+accanto ai repository JPA, per grant con upsert/expiry. Nessuna nuova dipendenza
+runtime. Liste non paginate, aggregati in memoria e service ampio restano debito
+esplicito, senza dichiarazioni di miglioramenti prestazionali non misurati.
