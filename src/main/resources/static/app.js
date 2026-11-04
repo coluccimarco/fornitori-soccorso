@@ -400,13 +400,28 @@
       pointsList.append(item);
       return [point.lat, point.lng];
     });
+    let fit;
     if (route.geometria) {
       const line = L.geoJSON(route.geometria, { style: { color: "#6d28d9", weight: 5 } }).addTo(map);
-      map.fitBounds(line.getBounds().extend(coordinates), { padding: [24, 24] });
+      const bounds = line.getBounds().extend(coordinates);
+      fit = () => map.fitBounds(bounds, { padding: [32, 32] });
       status.textContent = `Percorso stimato: ${route.kmStimati} km (fonte: OSRM). I km effettivi si confermano alla chiusura.`;
     } else {
-      map.setView(coordinates[0], 15);
+      fit = () => map.setView(coordinates[0], 15);
       status.textContent = "Scegli un autista per calcolare percorso e chilometri.";
+    }
+    fit();
+    // Il riquadro può cambiare misura dopo il disegno (scrollbar, finestra, layout): si riadatta da solo.
+    if (window.ResizeObserver) {
+      const observer = new ResizeObserver(() => {
+        if (!container.isConnected) {
+          observer.disconnect();
+          return;
+        }
+        map.invalidateSize();
+        fit();
+      });
+      observer.observe(container);
     }
   }
 
@@ -663,6 +678,7 @@
       $("#missionPendingCount").textContent = dashboard.pending;
       $("#missionDoneCount").textContent = dashboard.eseguite;
       $("#missionExpiredCount").textContent = dashboard.scadute;
+      $("#missionRejectedCount").textContent = dashboard.nonAccettate;
       $("#missionRevenue").textContent = formatEuro(dashboard.totaleEur);
       $("#driverTotals").innerHTML = dashboard.totalePerAutista.length
         ? dashboard.totalePerAutista.map((driver) =>
