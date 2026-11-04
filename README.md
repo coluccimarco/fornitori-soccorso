@@ -62,8 +62,6 @@ Eseguire tutti gli script in ordine:
 ```powershell
 psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/01_schema.sql
 psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/02_seed.sql
-psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/03_verifiche.sql
-psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/04_assert_baseline.sql
 psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/05_chat_requests.sql
 psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/06_chat_recipient.sql
 psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/07_backend_hardening.sql
@@ -113,7 +111,7 @@ src/main/java/it/exprivia/fornitori/
 ├── service/      # logica applicativa
 └── common/       # gestione condivisa degli errori
 src/main/resources/static/   # client web
-database/                    # script SQL 01..08
+database/                    # script SQL, da applicare in ordine
 chatbot/fornitori_chatbot/   # bot Telegram
 ```
 

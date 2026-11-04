@@ -1,5 +1,5 @@
 -- FORNITORI / migrazione: rimuove strutture inutilizzate e rende persistente lo stato di invio delle notifiche.
--- Da applicare dopo 01-07. Si può rieseguire. Dopo questo script non rieseguire 01_schema.sql e 02_seed.sql.
+-- Da applicare dopo gli script precedenti. Si può rieseguire. Dopo questo script non rieseguire 01_schema.sql e 02_seed.sql.
 BEGIN;
 DROP TABLE IF EXISTS chat_sessions;
 ALTER TABLE drivers DROP COLUMN IF EXISTS stato_seed;

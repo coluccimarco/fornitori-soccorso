@@ -1,7 +1,7 @@
 # Disegno del database
 
 **Codice:** FOR-DB-001 · **Versione:** 2.0 · **Data:** 04/11/2026
-Fonte schema: gli script `database/01..08`. Diagramma: [`database_er.mmd`](../diagrams/database_er.mmd).
+Fonte schema: gli script in `database/`. Diagramma: [`database_er.mmd`](../diagrams/database_er.mmd).
 
 ## Modello
 
@@ -52,8 +52,7 @@ non sostituiscono autorizzazione o validazione.
 ## Baseline del seed
 
 10 utenti, 8 autisti, 8 mezzi, 4 compagnie, 40 clienti, 6 officine e 30 missioni, con 16 eseguite,
-6 aperte, 4 scadute, 4 rifiutate e €1.509,71. `03_verifiche.sql` e `04_assert_baseline.sql` li
-controllano. Il file Excel del docente non è nel repository.
+6 aperte, 4 scadute, 4 rifiutate e €1.509,71. Il file Excel del docente non è nel repository.
 
 ## Setup locale
 
@@ -63,8 +62,6 @@ nell'ambiente. Applicare tutti gli script in ordine:
 ```powershell
 psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/01_schema.sql
 psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/02_seed.sql
-psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/03_verifiche.sql
-psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/04_assert_baseline.sql
 psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/05_chat_requests.sql
 psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/06_chat_recipient.sql
 psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/07_backend_hardening.sql

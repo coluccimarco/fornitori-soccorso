@@ -33,7 +33,7 @@ entity e le credenziali non vengono mai esposte.
 
 ## Database
 
-Applicare `database/01..08` in ordine su un DB vuoto. Su un DB già inizializzato
+Applicare gli script di `database/` in ordine su un DB vuoto. Su un DB già inizializzato
 applicare solo gli script mancanti. Hibernate resta in `validate`. Per un uso condiviso
 tenere separati l'account delle migrazioni e quello applicativo.
 

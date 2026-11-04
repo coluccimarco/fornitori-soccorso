@@ -40,7 +40,7 @@
 | `database/*.sql` | Schema e dati dimostrativi | Da applicare in ordine |
 | Specifiche PDF/Excel del docente | Fonte primaria prevista | Non presenti nel repository: requisiti da confermare |
 
-## Generazione Word
+## Word
 
-Dalla root: `python tools/build_docs.py`. I DOCX sono generati, non fonti manuali. L'indice Word è un campo
-aggiornabile: in Microsoft Word, clic destro sull'indice, **Aggiorna campo → Aggiorna intero indice**.
+L'indice dei Word è un campo aggiornabile: in Microsoft Word, clic destro sull'indice,
+**Aggiorna campo → Aggiorna intero indice**.

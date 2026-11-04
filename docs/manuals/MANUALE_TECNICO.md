@@ -26,8 +26,6 @@ Su un database nuovo applicare tutti gli script, in ordine:
 ```powershell
 psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/01_schema.sql
 psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/02_seed.sql
-psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/03_verifiche.sql
-psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/04_assert_baseline.sql
 psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/05_chat_requests.sql
 psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/06_chat_recipient.sql
 psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/07_backend_hardening.sql
@@ -95,13 +93,11 @@ condividono `FORNITORI_CHAT_TOKEN`. Il bot usa solo `/api/v1/chat/*`, mai il dat
 git diff --check
 ```
 
-Poi avviare l'applicazione e provare a mano il flusso modificato. Documenti generati: dalla root `python tools/build_docs.py`,
-controllo con `python tools/validate_docs.py` (richiede `tools/requirements-docs.txt`). Diagrammi:
-`powershell -ExecutionPolicy Bypass -File tools/build_diagrams.ps1`.
+Poi avviare l'applicazione e provare a mano il flusso modificato.
 
 ## Risoluzione dei problemi
 
-- `Schema validation: missing column`: mancano script SQL, applicare fino a 08.
+- `Schema validation: missing column`: mancano script SQL, applicare tutti quelli in `database/`.
 - `401/403`: verificare sessione, token e ruolo.
 - `400/409`: leggere il messaggio e lo stato prima di ritentare.
 - `503` mappe: servizio esterno non disponibile; i km si possono comunque inserire.

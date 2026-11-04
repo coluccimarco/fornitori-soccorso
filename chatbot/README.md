@@ -24,7 +24,7 @@ condivisa, `/esci` termina.
 
 Backend e bot devono avere lo stesso `FORNITORI_CHAT_TOKEN`: generalo una volta con
 `openssl rand -hex 32` e non scriverlo in file del repo. Il database deve avere tutti gli script
-`database/01..08` applicati in ordine: vedi il [README principale](../README.md).
+`database/` applicati in ordine: vedi il [README principale](../README.md).
 
 Nel terminale del backend, dalla radice del repo:
 

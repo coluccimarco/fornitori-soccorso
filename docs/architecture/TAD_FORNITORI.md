@@ -17,7 +17,7 @@ polling. La descrizione non certifica la conformitÃ  ai documenti del docente nÃ
 | Java 25 / Spring Boot 4.1.2 | `pom.xml` | Implementato |
 | Maven Wrapper 3.9.9 | wrapper del repository | Implementato |
 | Spring Security / JPA / Validation / WebMVC | starter e configurazione | Implementati |
-| PostgreSQL 18 | `database/01..08` | Implementato |
+| PostgreSQL 18 | Script in `database/` | Implementato |
 | Chatbot Python >=3.10 | `chatbot/`, sola libreria standard | Implementato |
 | OpenAPI 3.0.3 | `api/openapi.yaml` | 38 operazioni: 34 implementate, 4 fuori ambito |
 | Client web | HTML/CSS/JavaScript, Bootstrap 5.3, Leaflet 1.9 | Implementato |
@@ -84,7 +84,7 @@ della centrale generano righe `SKIPPED`.
 
 ## 7. Database
 
-Script in `database/01..08`; Hibernate usa `validate`. Le tabelle comprendono utenti, mezzi e autisti, clienti e compagnie, officine,
+Script in `database/`; Hibernate usa `validate`. Le tabelle comprendono utenti, mezzi e autisti, clienti e compagnie, officine,
 missioni, proposte, note, eventi, pricing, richieste chat, autorizzazioni di lookup e outbox. Importi e distanze usano `NUMERIC`,
 gli istanti `TIMESTAMPTZ`. Vedi [`DATABASE_DESIGN.md`](./DATABASE_DESIGN.md).
 
@@ -101,8 +101,8 @@ bearer token o dati personali non necessari. Centralizzazione dei log, metriche 
 
 ## 10. Build e pipeline
 
-`./mvnw clean package` produce il jar. `.github/workflows/backend-ci.yml` compila, controlla dipendenze e documenti, applica gli
-script a un PostgreSQL 18 temporaneo e verifica l'avvio con un ruolo senza privilegi di amministratore.
+`./mvnw clean package` produce il jar. `.github/workflows/backend-ci.yml` compila il progetto, applica gli script a un
+PostgreSQL 18 temporaneo e verifica l'avvio con un ruolo senza privilegi di amministratore.
 
 ## 11. Limiti e decisioni aperte
 

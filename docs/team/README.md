@@ -21,7 +21,7 @@ originali e acceptance del docente restano da confermare: non sono nel repositor
 | Area | Baseline effettiva |
 |---|---|
 | Backend | Java 25, Spring Boot 4.1.2, Maven Wrapper |
-| Database | PostgreSQL 18, script `database/01..08` |
+| Database | PostgreSQL 18, script in `database/` |
 | API | REST JSON; `api/openapi.yaml` è la fonte normativa |
 | UI | HTML/CSS/JavaScript statici serviti dall'app, mappa Leaflet |
 | Mappe | Nominatim e OSRM tramite il backend |
