@@ -1,6 +1,7 @@
 package it.exprivia.fornitori.dto;
 
 import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -20,8 +21,8 @@ public final class MissionDtos {
             @NotBlank @Size(max = 500) String origineIndirizzo,
             BigDecimal origineLat,
             BigDecimal origineLng,
-            Long officinaId,
-            BigDecimal kmStimati,
+            @Positive Long officinaId,
+            @DecimalMin("0.0") @Digits(integer = 8, fraction = 2) BigDecimal kmStimati,
             @NotBlank @Size(max = 20) String canaleOrigine) {
     }
 
@@ -33,11 +34,12 @@ public final class MissionDtos {
     public record ProposeMissionRequest(@NotNull @Positive Long autistaId) {
     }
 
-    public record CompleteMissionRequest(@NotNull @DecimalMin("0.0") BigDecimal kmEffettivi) {
+    public record CompleteMissionRequest(
+            @NotNull @DecimalMin("0.0") @Digits(integer = 8, fraction = 2) BigDecimal kmEffettivi) {
     }
 
     public record CostAdjustmentRequest(
-            @NotNull @DecimalMin("0.0") BigDecimal costoFinale,
+            @NotNull @DecimalMin("0.0") @Digits(integer = 8, fraction = 2) BigDecimal costoFinale,
             @NotBlank @Size(min = 3, max = 1000) String motivo) {
     }
 
@@ -67,7 +69,12 @@ public final class MissionDtos {
             Boolean notturno,
             BigDecimal costoCalcolato,
             BigDecimal costoFinale,
-            String rettificaMotivo) {
+            String rettificaMotivo,
+            String clienteNome,
+            String clienteTelefono,
+            String officinaNome,
+            String officinaIndirizzo,
+            String officinaCitta) {
     }
 
     public record ProposalResponse(String stato, OffsetDateTime scadenzaIl, Long offertaId) {

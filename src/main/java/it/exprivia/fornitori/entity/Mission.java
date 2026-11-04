@@ -129,9 +129,11 @@ public class Mission {
     public void changeIntervention(String tipoIntervento, Long workshopId) {
         this.tipoIntervento = tipoIntervento;
         this.workshopId = workshopId;
+        this.kmStimati = null;
     }
 
     public void propose(Long driverId, OffsetDateTime proposedAt, OffsetDateTime expiresAt) {
+        if (!java.util.Objects.equals(this.driverId, driverId)) this.kmStimati = null;
         this.driverId = driverId;
         this.stato = "proposta";
         this.propostaIl = proposedAt;

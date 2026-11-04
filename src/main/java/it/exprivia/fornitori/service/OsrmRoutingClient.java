@@ -7,12 +7,10 @@ import it.exprivia.fornitori.service.MapProviders.RouteResult;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URI;
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
@@ -25,11 +23,8 @@ public class OsrmRoutingClient implements MapProviders.RoutingClient {
     private final RestClient client;
 
     public OsrmRoutingClient(@Value("${fornitori.maps.osrm-url:https://router.project-osrm.org}") String baseUrl) {
-        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-        factory.setConnectTimeout(Duration.ofSeconds(3));
-        factory.setReadTimeout(Duration.ofSeconds(8));
         this.baseUrl = baseUrl.replaceAll("/+$", "");
-        this.client = RestClient.builder().requestFactory(factory).build();
+        this.client = ProviderHttp.client(baseUrl).build();
     }
 
     @Override

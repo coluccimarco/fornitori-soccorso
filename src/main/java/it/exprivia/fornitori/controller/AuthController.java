@@ -1,6 +1,8 @@
 package it.exprivia.fornitori.controller;
 
 import it.exprivia.fornitori.dto.AuthDtos;
+import it.exprivia.fornitori.common.ApiError;
+import it.exprivia.fornitori.service.RequestRateLimiter;
 import it.exprivia.fornitori.service.AuthService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -16,6 +18,7 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.security.web.csrf.CsrfToken;
+import org.springframework.security.web.csrf.CsrfTokenRepository;
 import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -29,15 +32,21 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final SecurityContextRepository securityContextRepository;
     private final AuthService authService;
+    private final CsrfTokenRepository csrfTokens;
+    private final RequestRateLimiter rateLimiter;
     private final SecurityContextLogoutHandler logoutHandler = new SecurityContextLogoutHandler();
 
     public AuthController(
             AuthenticationManager authenticationManager,
             SecurityContextRepository securityContextRepository,
-            AuthService authService) {
+            AuthService authService,
+            CsrfTokenRepository csrfTokens,
+            RequestRateLimiter rateLimiter) {
         this.authenticationManager = authenticationManager;
         this.securityContextRepository = securityContextRepository;
         this.authService = authService;
+        this.csrfTokens = csrfTokens;
+        this.rateLimiter = rateLimiter;
     }
 
     @PostMapping("/login")
@@ -46,6 +55,7 @@ public class AuthController {
             HttpServletRequest servletRequest,
             HttpServletResponse servletResponse) {
         Authentication authentication;
+        rateLimiter.check("login:" + servletRequest.getRemoteAddr(), 20);
         try {
             authentication = authenticationManager.authenticate(
                     UsernamePasswordAuthenticationToken.unauthenticated(request.email(), request.password()));
@@ -58,6 +68,7 @@ public class AuthController {
         if (existingSession != null) {
             servletRequest.changeSessionId();
         }
+        csrfTokens.saveToken(null, servletRequest, servletResponse);
         SecurityContext context = SecurityContextHolder.createEmptyContext();
         context.setAuthentication(authentication);
         SecurityContextHolder.setContext(context);
@@ -84,6 +95,4 @@ public class AuthController {
         return ResponseEntity.noContent().build();
     }
 
-    public record ApiError(int status, String error) {
-    }
 }

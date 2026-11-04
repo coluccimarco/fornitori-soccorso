@@ -10,6 +10,7 @@ public final class AuthDtos {
     public record LoginRequest(
             @NotBlank @Email String email,
             @NotBlank String password) {
+        @Override public String toString() { return "LoginRequest[redacted]"; }
     }
 
     public record CurrentUser(Long id, String nome, String email, String ruolo, Long autistaId) {

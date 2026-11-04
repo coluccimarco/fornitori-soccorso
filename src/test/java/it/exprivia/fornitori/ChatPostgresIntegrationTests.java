@@ -66,6 +66,11 @@ class ChatPostgresIntegrationTests {
     }
 
     private ResultActions create(String requestId, long customerId, String chat) throws Exception {
+        lookup(SESSION, PLATE).andExpect(status().isOk());
+        return createWithoutLookup(requestId, customerId, chat);
+    }
+
+    private ResultActions createWithoutLookup(String requestId, long customerId, String chat) throws Exception {
         return mockMvc.perform(asBot(post("/api/v1/chat/missioni"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
@@ -100,6 +105,29 @@ class ChatPostgresIntegrationTests {
 
     private long notificationIdFor(String eventKey) {
         return outbox.findByEventKey(eventKey).orElseThrow().getId();
+    }
+
+
+    @Test
+    void creationRequiresLookupAndMatchingRecipientOnRetry() throws Exception {
+        createWithoutLookup("request-no-lookup-01", 1L, CHAT).andExpect(status().isForbidden());
+        create("request-with-grant-01", 1L, CHAT).andExpect(status().isCreated());
+        createWithoutLookup("request-with-grant-01", 1L, "another-chat").andExpect(status().isConflict());
+        jdbcTemplate.update("update chat_lookup_grants set expires_at = now() - interval '1 minute'");
+        createWithoutLookup("request-expired-01", 1L, CHAT).andExpect(status().isForbidden());
+    }
+
+    @Test
+    void changedPayloadOnRetryIsConflict() throws Exception {
+        create("request-payload-01", 1L, CHAT).andExpect(status().isCreated());
+        mockMvc.perform(asBot(post("/api/v1/chat/missioni")).contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                    {"sessionId":"sessione-di-prova-01","requestId":"request-payload-01","clienteId":1,
+                     "tipoIntervento":"riparazione_sul_posto","descrizioneProblema":"Changed",
+                     "origineIndirizzo":"Via Roma 1, Molfetta","origineLat":41.2,"origineLng":16.6,
+                     "canaleOrigine":"telegram","destinatario":"chat-di-prova"}
+                    """))
+                .andExpect(status().isConflict());
     }
 
     @Test

@@ -27,6 +27,7 @@ class MapProviderClientsTests {
     private String body = "[]";
     private String requestUri;
     private String userAgent;
+    private String redirect;
 
     @BeforeEach
     void startServer() throws IOException {
@@ -36,6 +37,7 @@ class MapProviderClientsTests {
             userAgent = exchange.getRequestHeaders().getFirst("User-Agent");
             byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
             exchange.getResponseHeaders().add("Content-Type", "application/json");
+            if (redirect != null) exchange.getResponseHeaders().add("Location", redirect);
             exchange.sendResponseHeaders(status, bytes.length == 0 ? -1 : bytes.length);
             if (bytes.length > 0) {
                 exchange.getResponseBody().write(bytes);
@@ -53,6 +55,29 @@ class MapProviderClientsTests {
 
     private NominatimGeocodingClient nominatim() {
         return new NominatimGeocodingClient(baseUrl, "agente-di-prova");
+    }
+
+    @Test void redirectsAreNotFollowed() {
+        status = 302;
+        redirect = baseUrl + "/redirected";
+        assertThrows(ProviderUnavailableException.class, () -> nominatim().geocode("Via Roma"));
+        assertTrue(requestUri.startsWith("/search?"));
+    }
+
+    @Test void oversizedResponseIsRejected() {
+        body = " ".repeat(1_048_577);
+        assertThrows(ProviderUnavailableException.class, () -> nominatim().geocode("Via Roma"));
+    }
+
+    @Test void impossibleProviderCoordinatesAreRejected() {
+        body = "[{\"lat\":\"91\",\"lon\":\"16\"}]";
+        assertThrows(ProviderUnavailableException.class, () -> nominatim().geocode("Via Roma"));
+    }
+
+    @Test void negativeProviderDistanceIsRejected() {
+        body = "{\"code\":\"Ok\",\"routes\":[{\"distance\":-100,\"geometry\":{}}]}";
+        assertThrows(ProviderUnavailableException.class, () -> new OsrmRoutingClient(baseUrl).route(List.of(
+                new GeoPoint(BigDecimal.ONE, BigDecimal.ONE), new GeoPoint(BigDecimal.TWO, BigDecimal.TWO))));
     }
 
     @Test

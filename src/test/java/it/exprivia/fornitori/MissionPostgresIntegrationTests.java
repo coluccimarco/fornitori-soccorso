@@ -170,6 +170,35 @@ class MissionPostgresIntegrationTests {
                         new BigDecimal("16.590000"), null, new BigDecimal("18.00"), "centrale"));
     }
 
+    @Test
+    void concurrentAcceptanceCommitsOnce() throws Exception {
+        MissionDtos.MissionResponse mission = createMission();
+        missions.propose("responsabile@demo.it", mission.id(), new MissionDtos.ProposeMissionRequest(1L));
+        var executor = Executors.newFixedThreadPool(2);
+        var start = new CountDownLatch(1);
+        var ready = new CountDownLatch(2);
+        java.util.concurrent.Callable<Boolean> attempt = () -> {
+            ready.countDown();
+            if (!start.await(10, TimeUnit.SECONDS)) throw new IllegalStateException("No start");
+            try { missions.accept("autista1@demo.it", mission.id()); return true; }
+            catch (MissionConflictException expected) { return false; }
+        };
+        try {
+            var first = executor.submit(attempt);
+            var second = executor.submit(attempt);
+            assertTrue(ready.await(10, TimeUnit.SECONDS));
+            start.countDown();
+            assertNotEquals(first.get(20, TimeUnit.SECONDS), second.get(20, TimeUnit.SECONDS));
+            assertEquals(1, jdbcTemplate.queryForObject(
+                    "select count(*) from notifications_outbox where mission_id=? and event_key=?", Integer.class,
+                    mission.id(), "MISSION_ACCEPTED:" + mission.id()));
+            assertEquals("accettata", jdbcTemplate.queryForObject("select stato from missions where id=?", String.class, mission.id()));
+        } finally {
+            start.countDown(); executor.shutdownNow(); executor.awaitTermination(10, TimeUnit.SECONDS);
+            deleteMission(mission.id());
+        }
+    }
+
     private boolean tryPropose(long missionId, CountDownLatch ready, CountDownLatch start) throws Exception {
         ready.countDown();
         if (!start.await(10, TimeUnit.SECONDS)) {

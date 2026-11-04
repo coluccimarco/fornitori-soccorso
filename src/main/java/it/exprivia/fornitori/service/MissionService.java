@@ -179,9 +179,14 @@ public class MissionService {
 
     /** I km proposti alla chiusura restano quelli dell'autista assegnato, non di chi è solo stato valutato. */
     @Transactional
-    public void saveEstimatedKm(Long missionId, BigDecimal km, Long driverId) {
-        missions.lockLiveById(missionId)
+    public void saveEstimatedKm(MissionDtos.MissionResponse snapshot, BigDecimal km, Long driverId) {
+        validateNonNegative(km, "kmStimati");
+        missions.lockLiveById(snapshot.id())
                 .filter(mission -> !ESEGUITA.equals(mission.getStato()))
+                .filter(mission -> java.util.Objects.equals(mission.getDriverId(), snapshot.autistaId()))
+                .filter(mission -> java.util.Objects.equals(mission.getPropostaIl(), snapshot.propostaIl()))
+                .filter(mission -> java.util.Objects.equals(mission.getWorkshopId(), snapshot.officinaId()))
+                .filter(mission -> mission.getTipoIntervento().equals(snapshot.tipoIntervento()))
                 .filter(mission -> mission.getDriverId() == null || mission.getDriverId().equals(driverId))
                 .ifPresent(mission -> mission.setEstimatedKm(km));
     }
@@ -242,7 +247,7 @@ public class MissionService {
         return toResponse(mission);
     }
 
-    @Transactional
+    @Transactional(noRollbackFor = MissionConflictException.class)
     public MissionDtos.MissionResponse reject(String email, Long missionId) {
         AppUser actor = requireRole(email, AUTISTA);
         Driver driver = requireDriver(actor);
@@ -255,6 +260,10 @@ public class MissionService {
         }
         OffsetDateTime respondedAt = now();
         MissionProposal proposal = currentProposal(missionId, PROPOSTA);
+        if (!respondedAt.isBefore(proposal.getScadenzaIl())) {
+            expire(mission, proposal, respondedAt);
+            throw conflict("La proposta è scaduta");
+        }
         proposal.respond(NON_ACCETTATA, respondedAt);
         mission.reject();
         proposals.save(proposal);
@@ -279,6 +288,7 @@ public class MissionService {
         validateNonNegative(request.kmEffettivi(), "kmEffettivi");
         Instant acceptedAt = mission.getAccettataIl().toInstant();
         PricingService.Price price = pricing.calculate(request.kmEffettivi(), acceptedAt);
+        validateNonNegative(price.amount(), "costoCalcolato");
         OffsetDateTime closedAt = now();
         mission.complete(request.kmEffettivi(), price.amount(), price.night(), closedAt);
         MissionProposal proposal = currentProposal(missionId, ACCETTATA);
@@ -305,6 +315,7 @@ public class MissionService {
             throw badRequest("La motivazione deve contenere almeno 3 caratteri");
         }
         BigDecimal previousCost = mission.getCostoFinale();
+        validateNonNegative(request.costoFinale(), "costoFinale");
         mission.adjustCost(request.costoFinale().setScale(2, java.math.RoundingMode.HALF_UP),
                 reason, actor.getId());
         missions.save(mission);
@@ -507,8 +518,7 @@ public class MissionService {
             throw new ForbiddenOperationException();
         }
         Driver driver = requireDriver(actor);
-        if (!driver.getId().equals(mission.getDriverId())
-                && !proposals.existsByMissionIdAndDriverIdAndFixtureFalse(mission.getId(), driver.getId())) {
+        if (!driver.getId().equals(mission.getDriverId())) {
             throw new ForbiddenOperationException();
         }
     }
@@ -548,6 +558,10 @@ public class MissionService {
     }
 
     private void validateNonNegative(BigDecimal value, String field) {
+        if (value != null && (value.compareTo(new BigDecimal("99999999.99")) > 0
+                || value.stripTrailingZeros().scale() > 2)) {
+            throw badRequest(field + " fuori precisione NUMERIC(10,2)");
+        }
         if (value != null && value.signum() < 0) {
             throw badRequest(field + " non può essere negativo");
         }
@@ -577,6 +591,10 @@ public class MissionService {
     }
 
     private MissionDtos.MissionResponse toResponse(Mission mission) {
+        boolean operational = !mission.isFixture() && ACTIVE_STATES.contains(mission.getStato());
+        Customer customer = operational ? customers.findById(mission.getCustomerId()).orElseThrow() : null;
+        var workshop = operational && mission.getWorkshopId() != null
+                ? workshops.findById(mission.getWorkshopId()).orElseThrow() : null;
         return new MissionDtos.MissionResponse(
                 mission.getId(), mission.getCodice(), mission.getStato(), mission.getCustomerId(),
                 mission.getDriverId(), mission.getTipoIntervento(), mission.getCanaleOrigine(),
@@ -585,7 +603,10 @@ public class MissionService {
                 mission.getKmStimati(), mission.getKmEffettivi(), mission.getCreataIl(),
                 mission.getPropostaIl(), mission.getScadenzaIl(), mission.getAccettataIl(),
                 mission.getChiusaIl(), mission.getNotturno(), mission.getCostoCalcolato(),
-                mission.getCostoFinale(), mission.getRettificaMotivo());
+                mission.getCostoFinale(), mission.getRettificaMotivo(),
+                customer == null ? null : customer.getNome(), customer == null ? null : customer.getTelefono(),
+                workshop == null ? null : workshop.getNome(), workshop == null ? null : workshop.getIndirizzo(),
+                workshop == null ? null : workshop.getCitta());
     }
 
     private MissionDtos.MissionNoteResponse toNoteResponse(MissionNote note) {
