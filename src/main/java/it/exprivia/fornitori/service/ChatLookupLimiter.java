@@ -33,10 +33,6 @@ public class ChatLookupLimiter {
                 (current, ignored) -> new Failures(current.count() + 1, current.expiresAt()));
     }
 
-    public void reset(String sessionId) {
-        failures.remove(sessionId);
-    }
-
     private record Failures(int count, Instant expiresAt) {
     }
 }

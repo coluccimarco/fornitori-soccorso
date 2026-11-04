@@ -60,5 +60,5 @@ class FakeBackend:
     def claim_notifications(self, channel: str) -> List[Notification]:
         return []
 
-    def report_notification(self, notification_id: int, sent: bool, error: Optional[str] = None) -> None:
+    def report_notification(self, notification_id: int, attempt: int, sent: bool, error: Optional[str] = None) -> None:
         pass

@@ -3,6 +3,8 @@ package it.exprivia.fornitori.config;
 import it.exprivia.fornitori.enums.UserRole;
 import it.exprivia.fornitori.service.DatabaseUserDetailsService;
 import java.io.IOException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -23,12 +25,23 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository;
+import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
+import org.springframework.security.web.header.writers.StaticHeadersWriter;
 import org.springframework.security.web.csrf.CsrfTokenRepository;
 import jakarta.servlet.http.HttpServletResponse;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
+    private static final Logger logger = LoggerFactory.getLogger(SecurityConfig.class);
+    /** Bootstrap e Leaflet arrivano dalle CDN, i tile dalla mappa; gli stili inline servono a Leaflet e Bootstrap. */
+    private static final String CONTENT_SECURITY_POLICY = "default-src 'self'; "
+            + "script-src 'self' https://cdn.jsdelivr.net https://unpkg.com; "
+            + "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com; "
+            + "img-src 'self' data: https://tile.openstreetmap.org https://unpkg.com; "
+            + "font-src 'self' data: https://cdn.jsdelivr.net; "
+            + "connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'";
+
     @Bean
     PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
@@ -90,6 +103,12 @@ public class SecurityConfig {
             CsrfTokenRepository csrfTokenRepository) throws Exception {
         http
                 .authenticationProvider(authenticationProvider)
+                .headers(headers -> headers
+                        .contentSecurityPolicy(policy -> policy.policyDirectives(CONTENT_SECURITY_POLICY))
+                        .referrerPolicy(referrer -> referrer.policy(
+                                ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
+                        .addHeaderWriter(new StaticHeadersWriter(
+                                "Permissions-Policy", "geolocation=(), camera=(), microphone=()")))
                 .securityContext(context -> context
                         .securityContextRepository(securityContextRepository)
                         .requireExplicitSave(true))
@@ -123,8 +142,10 @@ public class SecurityConfig {
                 .exceptionHandling(exceptions -> exceptions
                         .authenticationEntryPoint((request, response, exception) ->
                                 writeError(response, 401, "unauthorized"))
-                        .accessDeniedHandler((request, response, exception) ->
-                                writeError(response, 403, "forbidden")))
+                        .accessDeniedHandler((request, response, exception) -> {
+                            logger.warn("Accesso negato: {} {}", request.getMethod(), request.getRequestURI());
+                            writeError(response, 403, "forbidden");
+                        }))
                 .requestCache(cache -> cache.disable())
                 .formLogin(form -> form.disable())
                 .httpBasic(basic -> basic.disable())

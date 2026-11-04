@@ -82,18 +82,19 @@ class HttpBackend:
         try:
             return [
                 Notification(
-                    item["id"], item["tipo"], item["destinatario"], item["codice"], item.get("autistaNome")
+                    item["id"], item["tipo"], item["destinatario"], item["codice"], item.get("autistaNome"),
+                    item["tentativo"],
                 )
                 for item in body["notifiche"]
             ]
         except (KeyError, TypeError) as exc:
             raise BackendUnavailable("risposta notifiche incompleta") from exc
 
-    def report_notification(self, notification_id: int, sent: bool, error: Optional[str] = None) -> None:
+    def report_notification(self, notification_id: int, attempt: int, sent: bool, error: Optional[str] = None) -> None:
         self._call(
             "POST",
             f"/api/v1/chat/notifiche/{quote(str(notification_id), safe='')}/esito",
-            {"inviata": sent, "errore": error},
+            {"inviata": sent, "errore": error, "tentativo": attempt},
         )
 
     def _call(self, method: str, path: str, payload: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:

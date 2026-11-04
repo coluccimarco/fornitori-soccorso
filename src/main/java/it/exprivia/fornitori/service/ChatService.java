@@ -43,6 +43,8 @@ public class ChatService {
             List.of("nuova", "proposta", "accettata", "non_accettata", "scaduta");
     private static final String DRIVER_VISIBLE_STATE = "accettata";
     private static final int MAX_NOTIFICATION_ATTEMPTS = 5;
+    private static final int MAX_LOOKUPS_PER_MINUTE = 100;
+    private static final int MAX_LOOKUPS_PER_MINUTE_BY_SESSION = 10;
     private static final int NOTIFICATION_LEASE_MINUTES = 5;
     private static final int NOTIFICATION_RETRY_SECONDS = 30;
 
@@ -91,7 +93,8 @@ public class ChatService {
 
     @Transactional
     public ChatDtos.VehicleLookupResponse lookup(ChatDtos.VehicleLookupRequest request) {
-        globalLimiter.check("chat-lookup", 100);
+        globalLimiter.check("chat-lookup", MAX_LOOKUPS_PER_MINUTE);
+        globalLimiter.check("chat-lookup-session:" + request.sessionId(), MAX_LOOKUPS_PER_MINUTE_BY_SESSION);
         if (limiter.isBlocked(request.sessionId())) {
             throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "Too many lookup attempts");
         }
@@ -102,7 +105,6 @@ public class ChatService {
             limiter.recordFailure(request.sessionId());
             return ChatDtos.VehicleLookupResponse.notVerified();
         }
-        limiter.reset(request.sessionId());
         grants.grant(request.sessionId(), customer.get().getId(), now().plusMinutes(15), now());
         String company = companies.findById(customer.get().getCompanyId())
                 .map(InsuranceCompany::getNome)
@@ -114,6 +116,11 @@ public class ChatService {
     /** La ricerca dell'officina chiama un servizio esterno: resta fuori dalla transazione che blocca il cliente. */
     public ChatDtos.MissionCreatedResponse createMission(ChatDtos.CreateMissionRequest request) {
         String channel = validChannel(request.canaleOrigine());
+        // Prima di chiamare il geocoder esterno: senza un lookup valido la richiesta non ha motivo di costare nulla.
+        if (!requests.existsById(request.requestId())
+                && !grants.permits(request.sessionId(), request.clienteId(), now())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Lookup richiesto o scaduto");
+        }
         ChatDtos.CreateMissionRequest resolved = needsNearestWorkshop(request)
                 ? workshopResolver.withNearestWorkshop(request)
                 : request;
@@ -169,6 +176,8 @@ public class ChatService {
                 request.requestId(), created.id(), request.sessionId(), request.destinatario().trim(), now());
         stored.setRequestFingerprint(requestFingerprint);
         requests.save(stored);
+        // Un lookup autorizza una sola pratica; il retry con lo stesso requestId passa dal ramo sopra.
+        grants.revoke(request.sessionId());
         return new ChatDtos.MissionCreatedResponse(created.id(), created.codice(), created.stato());
     }
 
@@ -216,7 +225,8 @@ public class ChatService {
         NotificationOutbox notification = outbox.lockById(id)
                 .filter(candidate -> CHAT_CHANNELS.contains(candidate.getChannel()))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Notification not found"));
-        if (!List.of("PENDING", "SENDING").contains(notification.getStato())) {
+        // Il tentativo lega l'esito alla riserva: un dispatcher in ritardo non può cambiare quella successiva.
+        if (!"SENDING".equals(notification.getStato()) || notification.getTentativi() != result.tentativo()) {
             return;
         }
         if (result.inviata()) {
@@ -234,7 +244,8 @@ public class ChatService {
                 (String) payload.get("eventType"),
                 notification.getDestinatario(),
                 (String) payload.get("codice"),
-                (String) payload.get("autistaNome"));
+                (String) payload.get("autistaNome"),
+                notification.getTentativi());
     }
 
     private OffsetDateTime now() {

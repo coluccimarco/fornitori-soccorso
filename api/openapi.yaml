@@ -3,7 +3,7 @@ info:
   title: FORNITORI REST API
   version: 1.0.0
   description: >
-    Contratto condiviso per FORNITORI. Auth, anagrafiche, missioni, dashboard,
+    Contratto condiviso per FORNITORI. Il corpo delle richieste ha un limite di 64 KiB (413) e deve dichiarare la lunghezza (411). Auth, anagrafiche, missioni, dashboard,
     chatbot e API di geocodifica/percorso sono implementati; gestione utenti e
     webhook in ingresso sono fuori ambito (status designed). Lo stato di ogni operation
     è indicato da x-implementation-status.
@@ -539,7 +539,7 @@ paths:
     post:
       tags: [Chat]
       summary: Riconosce il cliente dalla targa
-      description: Risponde con nome e compagnia se la targa è di un cliente con polizza valida, come previsto dai dialoghi del docente. Altrimenti verificato è false. Dopo 5 targhe non trovate nella stessa sessione in 15 minuti risponde 429.
+      description: Risponde con nome e compagnia se la targa è di un cliente con polizza valida, come previsto dai dialoghi del docente. Altrimenti verificato è false. Dopo 5 targhe non trovate nella stessa sessione in 15 minuti, o 10 ricerche al minuto, risponde 429.
       x-implementation-status: implemented
       x-required-role: SERVICE_CHATBOT
       security:
@@ -617,7 +617,7 @@ paths:
     post:
       tags: [Chat]
       summary: Registra l'esito dell'invio di una notifica
-      description: Un invio fallito torna disponibile dopo 30 secondi; dopo 5 tentativi la notifica passa a FAILED. Una notifica già chiusa ignora gli esiti successivi.
+      description: Un invio fallito torna disponibile dopo 30 secondi; dopo 5 tentativi la notifica passa a FAILED. Vale solo per la riserva in corso; una notifica già chiusa o un tentativo non più attuale vengono ignorati.
       x-implementation-status: implemented
       x-required-role: SERVICE_CHATBOT
       security:
@@ -700,8 +700,8 @@ components:
       type: object
       required: [email, password]
       properties:
-        email: {type: string, format: email}
-        password: {type: string, minLength: 1}
+        email: {type: string, format: email, maxLength: 200}
+        password: {type: string, minLength: 1, maxLength: 128}
     CurrentUser:
       type: object
       properties:
@@ -971,6 +971,7 @@ components:
         destinatario: {type: string}
         codice: {type: string}
         autistaNome: {type: string, nullable: true}
+        tentativo: {type: integer, description: Da rimandare con l'esito; lega l'esito a questa riserva}
     ChatNotifications:
       type: object
       properties:
@@ -984,10 +985,11 @@ components:
         canale: {type: string, enum: [telegram, whatsapp]}
     ChatNotificationResult:
       type: object
-      required: [inviata]
+      required: [inviata, tentativo]
       properties:
         inviata: {type: boolean}
         errore: {type: string, maxLength: 200, nullable: true}
+        tentativo: {type: integer, minimum: 0}
     Mission:
       type: object
       properties:
@@ -1071,7 +1073,7 @@ components:
       properties:
         status: {type: integer}
         error: {type: string, description: Codice stabile, per esempio conflict}
-        message: {type: string, nullable: true, description: Testo per l'utente scritto dal servizio; presente su alcuni 400, 404, 409 e 422}
+        message: {type: string, nullable: true, description: Testo per l'utente scritto dal servizio; presente su alcuni 400, 404, 409 e 422 e sui 500 con il riferimento}
     CsrfToken:
       type: object
       properties:

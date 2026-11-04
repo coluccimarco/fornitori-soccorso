@@ -28,6 +28,21 @@ public class RequestRateLimiter {
         window.count++;
     }
 
+    /** Come check, ma non conta la richiesta: per i limiti che contano solo gli esiti negativi. */
+    public synchronized void requireBelow(String key, int limit) {
+        Instant now = clock.instant();
+        windows.entrySet().removeIf(entry -> !entry.getValue().until.isAfter(now));
+        Window window = windows.get(key);
+        if (window != null && window.count >= limit) throw limited();
+    }
+
+    public synchronized void record(String key) {
+        Instant now = clock.instant();
+        windows.entrySet().removeIf(entry -> !entry.getValue().until.isAfter(now));
+        if (windows.size() >= 10000 && !windows.containsKey(key)) return;
+        windows.computeIfAbsent(key, ignored -> new Window(now.plusSeconds(60))).count++;
+    }
+
     private static ResponseStatusException limited() {
         return new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS);
     }

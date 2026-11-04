@@ -18,6 +18,10 @@ import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class RegistryService {
+    private static final int MAX_SEARCH_LENGTH = 100;
+    private static final int MIN_PLATE_LENGTH = 5;
+    private static final int MAX_PLATE_LENGTH = 10;
+
     private final DriverRepository drivers;
     private final VehicleRepository vehicles;
     private final InsuranceCompanyRepository companies;
@@ -67,8 +71,11 @@ public class RegistryService {
     @Transactional(readOnly = true)
     public List<RegistryDtos.CustomerDto> customers(String search) {
         String term = search == null ? "" : search.trim();
+        if (term.length() > MAX_SEARCH_LENGTH) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Testo di ricerca troppo lungo");
+        }
         String normalizedPlate = term.toUpperCase(Locale.ROOT).replaceAll("[^A-Z0-9]", "");
-        return customers.search(term, normalizedPlate).stream()
+        return customers.search(escapeLike(term), normalizedPlate).stream()
                 .map(customer -> new RegistryDtos.CustomerDto(
                         customer.getId(), customer.getNome(), customer.getTelefono(), customer.getTarga(),
                         customer.getModelloVeicolo(), customer.getCompagniaId(), customer.getCompagniaNome(),
@@ -81,7 +88,8 @@ public class RegistryService {
         InsuranceCompany company = companies.findById(request.compagniaId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Compagnia assicurativa inesistente"));
         String normalizedPlate = request.targa().toUpperCase(Locale.ROOT).replaceAll("[^A-Z0-9]", "");
-        if (normalizedPlate.isBlank()) {
+        // Stesso formato accettato dal chatbot: una targa diversa non sarebbe mai riconosciuta.
+        if (normalizedPlate.length() < MIN_PLATE_LENGTH || normalizedPlate.length() > MAX_PLATE_LENGTH) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Targa non valida");
         }
         if (customers.existsByTargaNorm(normalizedPlate)) {
@@ -92,15 +100,24 @@ public class RegistryService {
                 request.telefono().trim(),
                 request.targa().trim(),
                 normalizedPlate,
-                request.modelloVeicolo(),
+                blankToNull(request.modelloVeicolo()),
                 company.getId(),
                 request.numeroPolizza().trim(),
                 request.scadenzaPolizza(),
-                request.cittaResidenza()));
+                blankToNull(request.cittaResidenza())));
         return new RegistryDtos.CustomerDto(
                 saved.getId(), saved.getNome(), saved.getTelefono(), saved.getTarga(), saved.getModelloVeicolo(),
                 company.getId(), company.getNome(), saved.getNumeroPolizza(), saved.getScadenzaPolizza(),
                 saved.getCittaResidenza());
+    }
+
+    /** % e _ sono caratteri come gli altri: cercarli non deve restituire tutti i clienti. */
+    private static String escapeLike(String term) {
+        return term.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
+    }
+
+    private static String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value.trim();
     }
 
     @Transactional(readOnly = true)

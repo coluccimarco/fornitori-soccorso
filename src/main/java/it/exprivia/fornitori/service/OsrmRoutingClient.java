@@ -40,6 +40,9 @@ public class OsrmRoutingClient implements MapProviders.RoutingClient {
                 throw new ProviderUnavailableException("Percorso non trovato");
             }
             Route route = response.routes().get(0);
+            if (route.distance().signum() < 0) {
+                throw new ProviderUnavailableException("Percorso non valido");
+            }
             return new RouteResult(route.distance().divide(METERS_PER_KM, 2, RoundingMode.HALF_UP), route.geometry());
         } catch (RestClientException | NullPointerException exception) {
             throw new ProviderUnavailableException("Calcolo percorso non disponibile");

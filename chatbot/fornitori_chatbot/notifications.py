@@ -42,10 +42,10 @@ class NotificationDispatcher:
             if notification.id not in self._sent_unreported:
                 error = self._deliver(notification)
                 if error is not None:
-                    self._backend.report_notification(notification.id, False, error)
+                    self._backend.report_notification(notification.id, notification.tentativo, False, error)
                     continue
                 self._sent_unreported.add(notification.id)
-            self._backend.report_notification(notification.id, True)
+            self._backend.report_notification(notification.id, notification.tentativo, True)
             self._sent_unreported.discard(notification.id)
 
     def _deliver(self, notification: Notification) -> Optional[str]:

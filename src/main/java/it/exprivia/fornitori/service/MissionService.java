@@ -35,6 +35,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,6 +44,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class MissionService {
+    private static final Logger logger = LoggerFactory.getLogger(MissionService.class);
     private static final String RESPONSABILE = UserRole.RESPONSABILE.name().toLowerCase();
     private static final String AUTISTA = UserRole.AUTISTA.name().toLowerCase();
     private static final String NUOVA = "nuova";
@@ -496,6 +499,9 @@ public class MissionService {
         if (mission.isFixture()) {
             throw conflict("Le missioni dello storico di riferimento non accettano note");
         }
+        if (AUTISTA.equals(actor.getRuolo()) && !ACCETTATA.equals(mission.getStato())) {
+            throw conflict("Le segnalazioni si inviano sulla missione in corso");
+        }
         String text = request.testo().trim();
         if (text.isEmpty()) {
             throw badRequest("La nota non può essere vuota");
@@ -514,7 +520,13 @@ public class MissionService {
                     || mission.getScadenzaIl() == null || mission.getScadenzaIl().isAfter(currentTime)) {
                 continue;
             }
-            MissionProposal proposal = currentProposal(missionId, PROPOSTA);
+            // Una riga incoerente non deve bloccare le altre scadenze a ogni giro dello scheduler.
+            MissionProposal proposal = proposals
+                    .findFirstByMissionIdAndFixtureFalseAndStatoOrderByIdDesc(missionId, PROPOSTA)
+                    .orElse(null);
+            if (proposal == null) {
+                logger.warn("Missione {} in stato proposta senza proposta aperta", missionId);
+            }
             expire(mission, proposal, currentTime);
             expired++;
         }
@@ -522,12 +534,19 @@ public class MissionService {
     }
 
     private void expire(Mission mission, MissionProposal proposal, OffsetDateTime when) {
-        proposal.respond(SCADUTA, when);
+        Map<String, Object> detail = new HashMap<>();
+        detail.put("scadutaIl", when.toString());
+        if (mission.getDriverId() != null) {
+            detail.put("autistaId", mission.getDriverId());
+        }
+        if (proposal != null) {
+            proposal.respond(SCADUTA, when);
+            proposals.save(proposal);
+            detail.put("offertaId", proposal.getId());
+        }
         mission.expire();
-        proposals.save(proposal);
         missions.save(mission);
-        events.save(new MissionEvent(mission.getId(), null, "MISSION_EXPIRED",
-                Map.of("offertaId", proposal.getId(), "scadutaIl", when.toString())));
+        events.save(new MissionEvent(mission.getId(), null, "MISSION_EXPIRED", detail));
     }
 
     private void addOutboxEvent(

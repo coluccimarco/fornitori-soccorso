@@ -18,7 +18,7 @@ public interface CustomerRepository extends JpaRepository<Customer, Long> {
                    c.scadenza_polizza AS "scadenzaPolizza", c.citta_residenza AS "cittaResidenza"
             FROM customers c
             JOIN insurance_companies co ON co.id = c.company_id
-            WHERE lower(c.nome) LIKE concat('%', lower(:search), '%')
+            WHERE lower(c.nome) LIKE concat('%', lower(:search), '%') ESCAPE '\\'
                OR (:plate <> '' AND c.targa_norm LIKE concat('%', :plate, '%'))
             ORDER BY c.id
             """, nativeQuery = true)

@@ -84,6 +84,7 @@ class Notification:
     destinatario: str
     codice: str
     autista_nome: Optional[str] = None
+    tentativo: int = 0
 
 
 class BackendClient(Protocol):
@@ -99,5 +100,5 @@ class BackendClient(Protocol):
     def claim_notifications(self, channel: str) -> List[Notification]:
         ...
 
-    def report_notification(self, notification_id: int, sent: bool, error: Optional[str] = None) -> None:
+    def report_notification(self, notification_id: int, attempt: int, sent: bool, error: Optional[str] = None) -> None:
         ...
