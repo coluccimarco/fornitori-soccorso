@@ -16,12 +16,25 @@
     maps: new Map(),
     alerts: [],
     alertTimer: null,
+    driverPollTimer: null,
+    driverPollPending: false,
+    driverSignature: "",
     deadlineTimer: null,
     deadlineRefreshAt: 0,
     deadlineRefreshPending: false
   };
 
   const ALERT_POLL_MS = 15000;
+  const DRIVER_POLL_MS = 15000;
+  const ERROR_TEXTS = {
+    invalid_request: "Controlla i dati inseriti e riprova.",
+    not_found: "Elemento non trovato: aggiorna la pagina.",
+    conflict: "L'operazione è in conflitto con lo stato attuale dei dati. Aggiorna e riprova.",
+    address_not_found: "Indirizzo non trovato.",
+    rate_limited: "Troppe richieste. Attendi un minuto e riprova.",
+    service_unavailable: "Servizio esterno non disponibile: riprova più tardi.",
+    internal_error: "Errore interno del server. Riprova più tardi."
+  };
   const alertStorageKey = (user) => `fornitori.avvisiLetti.${user?.id ?? "x"}`;
 
   const viewConfig = {
@@ -111,10 +124,10 @@
   function errorMessage(status, payload) {
     if (status === 401) return "Sessione scaduta o credenziali non valide. Accedi di nuovo.";
     if (status === 403) return "Non hai i permessi necessari per questa operazione.";
-    if (payload && typeof payload === "object" && payload.message) return payload.message;
-    if (status === 429) return "Troppe richieste. Attendi un minuto e riprova.";
-    if (status === 400) return "Controlla i dati inseriti e riprova.";
-    if (status === 409) return "L'operazione è in conflitto con lo stato attuale dei dati. Aggiorna e riprova.";
+    if (payload && typeof payload === "object") {
+      if (payload.message) return payload.message;
+      if (ERROR_TEXTS[payload.error]) return ERROR_TEXTS[payload.error];
+    }
     return `Richiesta non riuscita (errore ${status}). Riprova.`;
   }
 
@@ -131,6 +144,7 @@
   }
 
   function showLogin(message = "") {
+    stopDriverPolling();
     state.user = null;
     state.csrf = null;
     publicView.classList.add("d-none");
@@ -154,18 +168,21 @@
     document.querySelectorAll("[data-manager-only]").forEach((item) => item.classList.toggle("d-none", !manager));
     document.querySelectorAll("[data-driver-only]").forEach((item) => item.classList.toggle("d-none", manager));
     if (manager) {
+      stopDriverPolling();
       state.currentView = "dashboard";
       void loadRegistries();
       startAlertPolling();
     } else {
       stopAlertPolling();
       state.currentView = "autista";
+      startDriverPolling();
     }
     goToView(state.currentView);
   }
 
   function showPublic() {
     stopAlertPolling();
+    stopDriverPolling();
     state.user = null;
     state.csrf = null;
     loginView.classList.add("d-none");
@@ -520,6 +537,36 @@
     $("#alertBadge")?.classList.add("d-none");
   }
 
+  function driverSignature(missions) {
+    return missions.map((mission) => `${mission.id}:${mission.stato}:${mission.scadenzaIl}`).sort().join("|");
+  }
+
+  /** Controlla solo se è cambiato qualcosa: ridisegnare ricalcolerebbe il percorso e perderebbe il testo scritto. */
+  async function pollDriverMissions() {
+    if (state.user?.ruolo !== "autista" || state.currentView !== "autista" || state.driverPollPending) return;
+    state.driverPollPending = true;
+    try {
+      const missions = await request("/api/v1/autista/missioni");
+      if (driverSignature(missions) !== state.driverSignature) await loadDriverMissions();
+    } catch (error) {
+      if (error.status === 401) stopDriverPolling();
+      else console.error("Proposte non aggiornate:", error);
+    } finally {
+      state.driverPollPending = false;
+    }
+  }
+
+  function startDriverPolling() {
+    stopDriverPolling();
+    state.driverPollTimer = window.setInterval(() => void pollDriverMissions(), DRIVER_POLL_MS);
+  }
+
+  function stopDriverPolling() {
+    if (state.driverPollTimer) window.clearInterval(state.driverPollTimer);
+    state.driverPollTimer = null;
+    state.driverSignature = "";
+  }
+
   async function openMissionFromAlert(missionId) {
     $("#alertPanel").classList.add("d-none");
     $("#alertButton").setAttribute("aria-expanded", "false");
@@ -527,7 +574,7 @@
     $("#missionMode").value = "live";
     $("#missionStatus").value = "";
     goToView("missioni");
-    await loadMissions();
+    await loadMissions(true);
     const card = document.querySelector(`[data-mission-card="${CSS.escape(String(missionId))}"]`);
     if (!card) return;
     card.classList.add("highlight");
@@ -543,11 +590,19 @@
     return `<section class="mission-cost">${note}<form class="cost-form" data-cost-form="${safe(mission.id)}"><label class="visually-hidden" for="cost-${safe(mission.id)}">Nuovo costo</label><div class="input-group input-group-sm"><input class="form-control" id="cost-${safe(mission.id)}" name="costoFinale" type="number" min="0" step="0.01" value="${safe(mission.costoFinale)}" required><span class="input-group-text">€</span></div><label class="visually-hidden" for="reason-${safe(mission.id)}">Motivo della correzione</label><input class="form-control form-control-sm" id="reason-${safe(mission.id)}" name="motivo" minlength="3" maxlength="1000" placeholder="Motivo della correzione" required><button class="btn btn-sm btn-outline-primary" type="submit">Correggi costo</button></form></section>`;
   }
 
+  function resetRegistrySearch() {
+    $("#registrySearch").value = "";
+    window.clearTimeout(state.searchTimer);
+    state.customerResults = state.data.clienti;
+  }
+
   function goToView(view) {
+    const previousView = state.currentView;
     const permitted = state.user?.ruolo === "responsabile"
       ? ["dashboard", "missioni", ...Object.keys(viewConfig)]
       : ["autista", "storico"];
     state.currentView = permitted.includes(view) ? view : (state.user?.ruolo === "responsabile" ? "dashboard" : "autista");
+    if (state.currentView !== previousView) resetRegistrySearch();
     const pages = {
       dashboard: "#dashboardPage",
       missioni: "#missionPage",
@@ -566,8 +621,8 @@
     document.querySelectorAll("[data-view-link]").forEach((button) => {
       button.classList.toggle("active", button.dataset.viewLink === state.currentView);
     });
-    if (state.currentView === "missioni") void loadMissions();
-    if (state.currentView === "autista") void loadDriverMissions();
+    if (state.currentView === "missioni") void loadMissions(true);
+    if (state.currentView === "autista") void loadDriverMissions(true);
     if (state.currentView === "storico") void loadDriverHistory();
     $("#sidebar").classList.remove("sidebar-open");
     $("#menuButton").setAttribute("aria-expanded", "false");
@@ -676,9 +731,17 @@
     alert.textContent = message;
   }
 
-  async function loadMissions() {
+  function loadingMarkup(text) {
+    return `<div class="empty-state" role="status"><span class="spinner-border spinner-border-sm text-secondary" aria-hidden="true"></span><p class="small text-secondary mb-0 mt-2">${safe(text)}</p></div>`;
+  }
+
+  async function loadMissions(showLoading = false) {
     const alert = $("#missionAlert");
     alert.classList.add("d-none");
+    if (showLoading) {
+      removeMaps();
+      $("#missionList").innerHTML = loadingMarkup("Caricamento missioni…");
+    }
     const mode = $("#missionMode").value;
     const status = $("#missionStatus").value;
     const params = new URLSearchParams({ mode });
@@ -712,11 +775,11 @@
 
   function renderMissionList() {
     const list = $("#missionList");
+    removeMaps();
     if (!state.missions.length) {
       list.innerHTML = '<div class="empty-state"><span class="empty-icon">↗</span><h2 class="h6">Nessuna missione</h2><p class="small text-secondary mb-0">Crea una missione o modifica i filtri.</p></div>';
       return;
     }
-    removeMaps();
     list.innerHTML = state.missions.map((mission) => {
       const canPropose = $("#missionMode").value === "live"
         && ["nuova", "non_accettata", "scaduta"].includes(mission.stato);
@@ -744,7 +807,12 @@
           <button class="btn btn-link btn-sm px-0" type="button" data-mission-map="${safe(mission.id)}" aria-expanded="false">Mostra mappa</button>
           ${missionMapMarkup(mission.id, true)}
         </section>
+        <section class="mission-notes">
+          <button class="btn btn-link btn-sm px-0" type="button" data-mission-proposals="${safe(mission.id)}" aria-expanded="false" aria-controls="mission-proposals-${safe(mission.id)}">Mostra storico proposte</button>
+          <div class="note-list d-none" id="mission-proposals-${safe(mission.id)}"></div>
+        </section>
         ${costCorrectionMarkup(mission)}
+        ${canPropose ? interventionFormMarkup(mission) : ""}
         ${canPropose ? `<div class="mission-propose"><label class="visually-hidden" for="driver-${safe(mission.id)}">Seleziona autista</label><select class="form-select form-select-sm" id="driver-${safe(mission.id)}"><option value="">Seleziona autista</option>${driverOptions}</select><button class="btn btn-sm btn-outline-primary" type="button" data-propose="${safe(mission.id)}">Invia proposta</button><button class="btn btn-sm btn-primary" type="button" data-propose-nearest="${safe(mission.id)}">Proponi al più vicino</button></div>` : ""}
       </article>`;
     }).join("");
@@ -754,15 +822,32 @@
   function statusLabel(status) {
     return ({
       nuova: "Nuova", proposta: "Proposta", accettata: "Accettata", eseguita: "Eseguita",
-      non_accettata: "Rifiutata", scaduta: "Scaduta"
+      non_accettata: "Rifiutata", scaduta: "Scaduta", chiusa: "Chiusa"
     })[status] || status;
   }
 
-  async function loadDriverMissions() {
+  function interventionFormMarkup(mission) {
+    const id = safe(mission.id);
+    const workshops = state.data.officine.map((item) =>
+      `<option value="${safe(item.id)}"${item.id === mission.officinaId ? " selected" : ""}>${safe(item.nome)} · ${safe(item.citta)}</option>`
+    ).join("");
+    return `<section class="mission-cost"><form class="cost-form" data-intervention-form="${id}"><label class="visually-hidden" for="intervention-${id}">Tipo intervento</label><select class="form-select form-select-sm w-auto" id="intervention-${id}" name="tipoIntervento"><option value="traino"${mission.tipoIntervento === "traino" ? " selected" : ""}>Traino</option><option value="riparazione_sul_posto"${mission.tipoIntervento === "traino" ? "" : " selected"}>Riparazione sul posto</option></select><label class="visually-hidden" for="workshop-${id}">Officina</label><select class="form-select form-select-sm w-auto" id="workshop-${id}" name="officinaId"><option value="">Nessuna officina</option>${workshops}</select><button class="btn btn-sm btn-outline-primary" type="submit">Aggiorna intervento</button></form></section>`;
+  }
+
+  function proposalHistoryMarkup(proposals) {
+    if (!proposals.length) return '<p class="small text-secondary mb-0">Nessuna proposta inviata.</p>';
+    return proposals.map((proposal) =>
+      `<article class="note-item"><div><strong>${safe(proposal.autistaNome || `Autista #${proposal.autistaId}`)}</strong><time>${safe(formatDateTime(proposal.propostaIl))}</time></div><p>${safe(statusLabel(proposal.stato))}${proposal.rispostaIl ? ` il ${safe(formatDateTime(proposal.rispostaIl))}` : ""}</p></article>`
+    ).join("");
+  }
+
+  async function loadDriverMissions(showLoading = false) {
     const alert = $("#driverAlert");
     alert.classList.add("d-none");
+    if (showLoading) $("#driverMissions").innerHTML = loadingMarkup("Caricamento missioni…");
     try {
       const missions = await request("/api/v1/autista/missioni");
+      state.driverSignature = driverSignature(missions);
       const accepted = missions.find((mission) => mission.stato === "accettata");
       state.driverMission = accepted || null;
       state.driverDetails = {};
@@ -839,6 +924,7 @@
 
   async function loadDriverHistory() {
     $("#historyAlert").classList.add("d-none");
+    $("#driverHistory").innerHTML = loadingMarkup("Caricamento storico…");
     try {
       const result = await request("/api/v1/autista/storico");
       $("#driverTotal").textContent = formatEuro(result.totaleEur);
@@ -987,6 +1073,7 @@
       });
       formElement.reset();
       bootstrap.Modal.getOrCreateInstance($("#customerModal")).hide();
+      $("#registrySearch").value = "";
       await loadRegistries();
       goToView("clienti");
       showPageAlert("Cliente aggiunto correttamente.", "success");
@@ -998,8 +1085,8 @@
     }
   });
 
-  $("#missionMode").addEventListener("change", () => void loadMissions());
-  $("#missionStatus").addEventListener("change", () => void loadMissions());
+  $("#missionMode").addEventListener("change", () => void loadMissions(true));
+  $("#missionStatus").addEventListener("change", () => void loadMissions(true));
   $("#missionList").addEventListener("click", async (event) => {
     const mapButton = event.target.closest("[data-mission-map]");
     if (mapButton) {
@@ -1050,6 +1137,27 @@
       }
       return;
     }
+    const proposalsButton = event.target.closest("[data-mission-proposals]");
+    if (proposalsButton) {
+      const list = document.getElementById(proposalsButton.getAttribute("aria-controls"));
+      if (!list) return;
+      if (!list.classList.contains("d-none")) {
+        list.classList.add("d-none");
+        proposalsButton.setAttribute("aria-expanded", "false");
+        proposalsButton.textContent = "Mostra storico proposte";
+        return;
+      }
+      list.classList.remove("d-none");
+      list.innerHTML = '<p class="small text-secondary mb-0">Caricamento storico…</p>';
+      proposalsButton.setAttribute("aria-expanded", "true");
+      proposalsButton.textContent = "Nascondi storico proposte";
+      try {
+        list.innerHTML = proposalHistoryMarkup(await request(`/api/v1/missioni/${proposalsButton.dataset.missionProposals}/proposte`));
+      } catch (error) {
+        list.textContent = error.message;
+      }
+      return;
+    }
     const nearestButton = event.target.closest("[data-propose-nearest]");
     if (nearestButton) {
       nearestButton.disabled = true;
@@ -1062,7 +1170,6 @@
         showInlineAlert("#missionAlert", `Proposta inviata a ${proposal.autistaNome} (base a ${proposal.distanzaKm} km).`, "success");
       } catch (error) {
         showInlineAlert("#missionAlert", ({
-          409: "Nessun autista libero che non abbia già risposto a questa missione.",
           422: "Indirizzo non trovato: scegli l'autista a mano.",
           503: "Servizio mappe non disponibile: scegli l'autista a mano."
         })[error.status] || error.message);
@@ -1155,7 +1262,33 @@
   });
 
   document.addEventListener("submit", async (event) => {
-    if (event.target.matches("[data-cost-form]")) {
+    if (event.target.matches("[data-intervention-form]")) {
+      event.preventDefault();
+      const form = new FormData(event.target);
+      const type = form.get("tipoIntervento");
+      const workshopId = form.get("officinaId");
+      if (type === "traino" && !workshopId) {
+        showInlineAlert("#missionAlert", "Seleziona l'officina per una missione di traino.");
+        return;
+      }
+      const button = event.target.querySelector("button");
+      button.disabled = true;
+      try {
+        await request(`/api/v1/missioni/${event.target.dataset.interventionForm}/intervento`, {
+          method: "PATCH",
+          mutating: true,
+          body: JSON.stringify({
+            tipoIntervento: type,
+            ...(type === "traino" ? { officinaId: Number(workshopId) } : {})
+          })
+        });
+        await loadMissions();
+        showInlineAlert("#missionAlert", "Intervento aggiornato.", "success");
+      } catch (error) {
+        showInlineAlert("#missionAlert", error.message);
+        button.disabled = false;
+      }
+    } else if (event.target.matches("[data-cost-form]")) {
       event.preventDefault();
       const form = new FormData(event.target);
       const button = event.target.querySelector("button");
@@ -1228,7 +1361,7 @@
     }
   });
 
-  $("#driverRefreshButton").addEventListener("click", () => void loadDriverMissions());
+  $("#driverRefreshButton").addEventListener("click", () => void loadDriverMissions(true));
   $("#refreshButton").addEventListener("click", () => {
     void loadRegistries();
     if (state.currentView === "missioni") void loadMissions();

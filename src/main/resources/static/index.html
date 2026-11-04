@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#ffffff">
   <title>Soccorso stradale — RecuVeicol</title>
+  <link rel="icon" href="./images/favicon.svg" type="image/svg+xml">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
         integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
@@ -136,7 +137,7 @@
       </a>
       <p class="nav-caption">WORKSPACE</p>
       <nav class="side-nav" aria-label="Navigazione principale">
-        <button class="nav-link active" type="button" data-view-link="dashboard">
+        <button class="nav-link active" type="button" data-manager-only data-view-link="dashboard">
           <span class="nav-icon">⌂</span><span>Panoramica</span>
         </button>
         <button class="nav-link" type="button" data-manager-only data-view-link="clienti">
@@ -415,11 +416,11 @@
               <div class="col-md-6"><label class="form-label" for="customerName">Nome e cognome *</label><input id="customerName" name="nome" class="form-control" required maxlength="150"></div>
               <div class="col-md-6"><label class="form-label" for="customerPhone">Telefono *</label><input id="customerPhone" name="telefono" class="form-control" required maxlength="32"></div>
               <div class="col-md-6"><label class="form-label" for="customerPlate">Targa *</label><input id="customerPlate" name="targa" class="form-control text-uppercase" required maxlength="20"></div>
-              <div class="col-md-6"><label class="form-label" for="customerVehicle">Modello veicolo</label><input id="customerVehicle" name="modelloVeicolo" class="form-control" maxlength="120"></div>
+              <div class="col-md-6"><label class="form-label" for="customerVehicle">Modello veicolo</label><input id="customerVehicle" name="modelloVeicolo" class="form-control" maxlength="150"></div>
               <div class="col-md-6"><label class="form-label" for="customerCompany">Compagnia assicurativa *</label><select id="customerCompany" name="compagniaId" class="form-select" required><option value="">Seleziona compagnia</option></select></div>
               <div class="col-md-6"><label class="form-label" for="customerPolicy">Numero polizza *</label><input id="customerPolicy" name="numeroPolizza" class="form-control" required maxlength="100"></div>
               <div class="col-md-6"><label class="form-label" for="customerExpiry">Scadenza polizza *</label><input id="customerExpiry" name="scadenzaPolizza" type="date" class="form-control" required></div>
-              <div class="col-md-6"><label class="form-label" for="customerCity">Città di residenza</label><input id="customerCity" name="cittaResidenza" class="form-control" maxlength="120"></div>
+              <div class="col-md-6"><label class="form-label" for="customerCity">Città di residenza</label><input id="customerCity" name="cittaResidenza" class="form-control" maxlength="150"></div>
             </div>
             <p class="small text-secondary mt-3 mb-0">I campi contrassegnati con * sono obbligatori.</p>
           </div>
