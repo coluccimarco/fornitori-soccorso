@@ -130,23 +130,12 @@ table.t td:first-child{font-weight:800;color:${C.blue}}
 .ghead .gs{color:${C.blue};font-weight:800;font-size:13px}.ghead .gn{margin-left:auto;font-weight:800;color:${C.ink};font-size:12px;white-space:nowrap}
 .gslide{width:640px;height:360px;margin:0 auto 7px;overflow:hidden;outline:1px solid #c6cedb;flex:none}
 .gslide .slide{zoom:.5;page-break-after:auto;break-after:auto}
-.notes{flex:1;min-height:0;column-count:2;column-gap:16px;column-fill:auto;font-size:var(--nf,12.2px);line-height:1.34;overflow:hidden}
-.notes h4{margin:7px 0 2px;font-size:1em;font-weight:800;color:${C.blue};break-after:avoid}
+.notes{flex:1;min-height:0;font-size:var(--nf,15.5px);line-height:1.42;overflow:hidden}
+.notes h4{margin:14px 0 3px;font-size:1em;font-weight:800;color:${C.blue};break-after:avoid}
 .notes h4:first-child{margin-top:0}
 .notes p{margin:0 0 3px}
 .notes code{font-weight:400;font-family:JetBrains,monospace;font-size:.86em;background:${C.canvas};padding:0 2px;border-radius:2px;overflow-wrap:anywhere}
 .notes .q{font-weight:700;margin-top:3px}
 .notes ul{margin:0 0 3px;padding-left:13px}
-.gapp{width:210mm;height:297mm;overflow:hidden;padding:10mm 12mm;page-break-after:always;break-after:page;font-size:13.4px;line-height:1.36}
-.gapp h1{font-size:23px;font-weight:800;margin:0 0 4px;color:${C.blue}}
-.gapp h2{font-size:15.5px;font-weight:800;margin:12px 0 3px;color:${C.ink};border-bottom:2px solid ${C.yellow};padding-bottom:2px;break-after:avoid}
-.gapp p{margin:0 0 4px}.gapp .q{font-weight:700;margin-top:6px;break-after:avoid}
-.gapp .intro{color:${C.muted};font-weight:500;margin-bottom:7px}
-.gapp dl{margin:0;column-count:2;column-gap:18px;font-size:11.8px;line-height:1.3}.gapp dt{font-weight:800;margin-top:6px;color:${C.blue};break-after:avoid}.gapp dd{margin:0 0 2px;break-inside:avoid}
-.gapp table{width:100%;border-collapse:collapse;font-size:12.4px;margin-top:5px}
-.gapp th{background:${C.blue};color:#fff;text-align:left;padding:4px 6px}
-.gapp td{padding:4px 6px;border-bottom:1px solid #d9dfe8;vertical-align:top}
-.gapp tr{break-inside:avoid}
-.gapp code{font-weight:400;font-family:JetBrains,monospace;font-size:.88em}
 @page{margin:0}
 `;

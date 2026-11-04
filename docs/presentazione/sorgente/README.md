@@ -5,10 +5,9 @@ Non fa parte dell'applicazione e non aggiunge dipendenze al progetto.
 
 | File | Contenuto |
 |---|---|
-| `slides_*.mjs` | Testo delle slide, diagrammi e note, nell'ordine di presentazione |
-| `slides_4_chiusura_appendice.mjs` | Anche glossario, domande per membro e alternative (solo nella guida) |
+| `slides.mjs` | Testo delle slide, diagrammi e note, nell'ordine di presentazione |
 | `lib.mjs` | Colori presi dal CSS del sito, stile e componenti dei diagrammi |
-| `build.mjs` | Genera i due PDF e controlla note, durata del testo a voce e testo fuori dai riquadri |
+| `build.mjs` | Genera i due PDF e controlla note, lunghezza del testo a voce e testo fuori dai riquadri |
 | `fonts/` | Inter e JetBrains Mono, con le rispettive licenze OFL |
 
 Le immagini stanno in `../img/`. Screenshot e dialogo sono stati catturati dall'app reale su un database temporaneo, con i soli dati di `database/02_seed.sql`.
