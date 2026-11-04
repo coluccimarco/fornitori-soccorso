@@ -100,3 +100,25 @@ su `f1f84fc`: entrambi i job PASS, incluso browser con commit PostgreSQL.
 Il successivo merge di `origin/main` nel backend integra il merge esterno della
 PR #5, senza modificare src/api/database/tools/workflow rispetto al codice
 collaudato. L'ultimo SHA documentale e il suo run sono indicati nella PR finale.
+
+### Verifiche aggiornate — 04/11/2026
+
+| Controllo | Evidenza | Esito |
+|---|---|---|
+| Sincronizzazione Git | `origin/main=69ead57` (merge esterno di `origin/feature/backend`); integrato in `feature/backend`; merge locale con un conflitto test risolto | PASS; nessun push |
+| CI su main | Run `41811689974`, commit `69ead57`, workflow `Backend CI` | PASS, ma antecedente alle modifiche locali al workflow |
+| Maven Java 25 locale | `clean verify`, Temurin 25.0.5+8 e datasource locale `fornitori`; 145 test, 0 failure/error/skip | PASS |
+| PostgreSQL/Playwright | Runner isolato su cluster PostgreSQL 18 temporaneo; ordine standard e inverso | PASS storico: 2/2 per ordine; non rieseguito in questo controllo senza frontend |
+| Privacy driver | Nome/telefono/targa assenti prima dell'accettazione; dati visibili al driver assegnato dopo; altro driver riceve 403 | PASS storico nei due flussi browser; non rieseguito |
+| Frontend | Controlli frontend esclusi da questa sessione come richiesto | NOT RUN |
+| Chatbot | `python -m unittest discover` dalla directory `chatbot/` | PASS: 74 test |
+| Documentazione | `python tools/validate_docs.py` dopo gli aggiornamenti | PASS; rendering visivo Word NOT RUN |
+| CI ruoli DB | Workflow YAML aggiornato a runtime non-superuser e password casuali mascherate | NON VERIFICATO su GitHub Actions; richiede una nuova run |
+| Database personale | PostgreSQL 18.6 su localhost:5432, ruolo `fornitori_app` non-superuser; 15 tabelle, 30 missioni, 16 foreign key | PASS; assertion baseline passata prima e dopo `clean verify` |
+| Docker Desktop | `docker info` restituisce HTTP 500 | UNAVAILABLE; test browser usano PostgreSQL locale temporaneo, non Docker |
+
+Il run `41809611044` aveva Java/PostgreSQL PASS e browser FAIL sul codice
+precedente; il run successivo `41811689974` su main è PASS. Non attribuire
+quest'ultimo run alle modifiche del workflow non ancora pubblicate. In questo
+controllo `mvnw clean verify` ha collegato l'app al database locale; la verifica
+della baseline dopo i test conferma che i dati demo attesi sono rimasti coerenti.

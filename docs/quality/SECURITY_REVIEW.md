@@ -61,3 +61,24 @@ Prima del rilascio risolvere SEC-03, concordare le garanzie di consegna SEC-12,
 collaudare HTTPS/configurazione e raccogliere approvazioni docente/consumer.
 Evidenze riproducibili e limiti in [BACKEND_E2E_AUDIT.md](BACKEND_E2E_AUDIT.md)
 e [TEST_EVIDENCE.md](TEST_EVIDENCE.md).
+
+## Evidenza aggiornata — 04/11/2026
+
+Il test browser PostgreSQL verifica che nome, telefono e targa non siano esposti
+all'autista prima dell'accettazione; dopo l'accettazione sono restituiti solo al
+driver assegnato, mentre un altro autista riceve `403`. Entrambi i flussi E2E
+passano in ordine normale e inverso su database PostgreSQL 18 temporanei.
+
+La revisione del workflow CI ha rilevato che il precedente servizio PostgreSQL
+creava `fornitori_app` come superuser, rendendo i test meno rappresentativi dei
+privilegi applicativi. La modifica locale esegue schema/seed con l'admin effimero
+e assegna al runtime solo `USAGE` sullo schema, DML sulle tabelle e uso delle
+sequenze; i ruoli E2E sono separati e non-superuser. Password applicative
+generate a runtime e mascherate nei log. Il workflow YAML è stato validato, ma
+la sua esecuzione su GitHub Actions è **NON VERIFICATA**; il run verde
+`41811689974` precede la modifica. Non dichiarare quindi superata la verifica
+remota del nuovo modello di privilegi.
+
+SEC-03 e SEC-12 restano aperti; i test sintetici non dimostrano autorizzazione
+reale del cliente, consegna exactly-once, configurazione HTTPS operativa o
+protezione dei dati reali.

@@ -1,11 +1,13 @@
 # FORNITORI — gestione del soccorso stradale
 
 Project work ITS Developer 4.0 per coordinare richieste di soccorso stradale,
-centrale operativa, autisti e integrazioni esterne. La baseline `main` integrata
-fino a `f763d53` comprende backend Java/Spring, client web statico, workflow
-missioni, chatbot Telegram e API di geocodifica/percorso. La UI non visualizza
-ancora mappe e WhatsApp resta pianificato. CI e controlli locali sulla baseline
-integrata sono completati; i limiti browser/provider sono esplicitati nei report.
+centrale operativa, autisti e integrazioni esterne. `main` remoto è arrivato a
+`69ead57` e comprende backend Java/Spring, client web statico, workflow missioni,
+chatbot Telegram e API di geocodifica/percorso. La UI non visualizza ancora mappe
+e WhatsApp resta pianificato. Il run CI `41811689974` su questo SHA è verde;
+le modifiche locali successive e il relativo workflow in corso non hanno ancora
+un run GitHub associato. Limiti browser/provider e prove locali sono esplicitati
+nei report.
 
 Apri la [documentazione aggiornata](./docs/README.md) o l'[indice generale](./docs/00_INDICE_GENERALE.md)
 per audit, BUR/FUD/TAD, guide, test e Word modificabili. Il PDF e l'Excel originali
@@ -27,7 +29,7 @@ riassume evidenze, deliverable e attività ancora bloccate.
 | Notifiche al cliente | Outbox/backend e dispatcher Telegram presenti; prova reale dichiarata nel README del modulo; WhatsApp **PIANIFICATO** |
 | UI web | **PRESENTE** in `src/main/resources/static/`: pagina pubblica, login, centrale e area autista; 2 scenari browser/DB **PASS** locali; copertura limitata ai flussi descritti |
 | API mappe | **PRESENTE** per geocodifica, percorso e distanza stimata; la UI non mostra ancora la mappa |
-| CI Java 25 | Build, test, OpenAPI e PostgreSQL baseline/integration **PASS storico** (run `41656606659`, commit `f763d53`); nuovo run da consultare nella PR |
+| CI Java 25 | GitHub Actions **PASS** su `main` `69ead57` (run `41811689974`); workflow aggiornato localmente per ruoli PostgreSQL non-superuser, da rieseguire dopo la pubblicazione |
 
 ## Requisiti locali
 
@@ -116,7 +118,9 @@ web di sicurezza non accedono al database.
 
 La pipeline [backend-ci.yml](./.github/workflows/backend-ci.yml) verifica Java 25
 e, in un job separato, inizializza un PostgreSQL effimero con schema, seed e
-assertion di baseline.
+assertion di baseline. L'applicazione nei job PostgreSQL usa un ruolo DML
+non-superuser; le migrazioni sono applicate dall'admin effimero del container.
+Questa modifica locale va ancora verificata da una nuova esecuzione GitHub Actions.
 
 ## API backend
 
