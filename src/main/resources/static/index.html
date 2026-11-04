@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#ffffff">
-  <title>Soccorso stradale — Fornitori</title>
+  <title>Soccorso stradale — RecuVeicol</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
         integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
@@ -13,81 +13,90 @@
 </head>
 <body>
   <div id="publicView" class="public-site">
-    <div class="utility-bar">
-      <div class="utility-left">
-        <a href="#servizi">Servizi <span class="utility-chevron">⌄</span></a>
-        <a href="#chi-siamo">Lavora con noi</a>
-      </div>
-      <div class="utility-right">
-        <a href="#contatti">CONTATTI</a>
-        <a class="assistance-link" href="#contatti">ASSISTENZA STRADALE</a>
-      </div>
-    </div>
     <header class="public-header">
       <div class="public-brand-row">
-        <a class="public-brand" href="/" aria-label="Fornitori Soccorso, home">
+        <a class="public-brand" href="/" aria-label="RecuVeicol Soccorso, home">
           <span class="public-brand-symbol" aria-hidden="true">
             <svg viewBox="0 0 42 48" role="img" width="36" height="46" fill="#f2bf00">
               <path d="M27 3 9 10 5 17l18 1-12 8 4 7 15-7-2 17 7-2 4-24-8-7 6-4-3-7-8 4-2-7Z"/>
               <path class="brand-road-cut" fill="#fff" d="m23 10-5 8 8 1-7 8 4 2 9-11-8-2 4-7Z"/>
             </svg>
           </span>
-          <span class="public-brand-copy"><strong>fornitori</strong><small>SOCCORSO STRADALE</small></span>
+          <span class="public-brand-copy"><strong>RecuVeicol</strong><small>SOCCORSO STRADALE</small></span>
         </a>
         <div class="header-tools">
-          <div class="social-links" aria-label="Social">
-            <a href="#contatti" aria-label="LinkedIn">in</a>
-            <a href="#contatti" aria-label="Facebook">f</a>
-            <a href="#contatti" aria-label="Instagram">◎</a>
-            <a href="#contatti" aria-label="YouTube">▶</a>
-          </div>
-          <div class="text-size-tools" aria-label="Dimensione testo"><span>A</span><span>A</span><strong>A</strong></div>
-          <span class="language-label">IT <span>⌄</span></span>
           <a class="operator-link" href="#accesso" data-show-login>Area operatori <span>↗</span></a>
         </div>
       </div>
-      <nav class="public-nav" aria-label="Navigazione principale">
-        <button class="public-nav-toggle" type="button" data-bs-toggle="collapse" data-bs-target="#publicNavLinks" aria-expanded="false" aria-controls="publicNavLinks">☰ <span>Menu</span></button>
-        <div class="collapse public-nav-links" id="publicNavLinks">
-          <a href="#chi-siamo">Chi siamo</a>
-          <a href="#servizi">I servizi</a>
-          <a href="#soccorso">Soccorso stradale</a>
-          <a href="#fornitori">Fornitori</a>
-          <a href="#sicurezza">Sicurezza</a>
-          <a href="#viabilita">Viabilità</a>
-          <a href="#contatti">Contatti</a>
-          <a class="public-search" href="#servizi" aria-label="Cerca">⌕</a>
-        </div>
-      </nav>
     </header>
 
     <main class="public-content" id="soccorso">
-      <nav class="public-breadcrumb" aria-label="Percorso">
-        <a href="/">Home</a><span>›</span><a href="#servizi">Servizi</a><span>›</span><span>Soccorso stradale</span>
-      </nav>
-      <h1>Soccorso stradale</h1>
-      <div class="hero-illustration" role="img" aria-label="Illustrazione di un carro attrezzi che soccorre un'automobile">
-        <img src="./images/soccorso-stradale.svg" alt="">
-      </div>
+      <header class="page-title">
+        <h1>I nostri servizi</h1>
+        <p>Se il tuo veicolo si ferma, ti aiutiamo a ripartire. Scrivi al nostro assistente su Telegram: in pochi messaggi raccoglie le informazioni necessarie e la tua richiesta viene affidata a un autista disponibile vicino a te.</p>
+      </header>
 
-      <section class="service-copy" id="servizi">
-        <p>Il servizio di soccorso stradale ti aiuta a ripartire in sicurezza in caso di guasto o incidente. Se il veicolo non può proseguire, spostati in un luogo sicuro e richiedi assistenza tramite i riferimenti del gestore della strada.</p>
-        <p>Sulle strade extraurbane la scelta dell’operatore può dipendere dalle condizioni del tratto. In autostrada e sui raccordi, invece, è necessario rivolgersi agli operatori autorizzati per quel percorso.</p>
+      <figure class="hero-illustration">
+        <img src="./images/carro-attrezzi.svg" alt="Carro attrezzi giallo che trasporta un'automobile blu sul pianale">
+      </figure>
+
+      <section class="service-copy" id="servizi" aria-label="Tipi di intervento">
+        <div class="service-cards">
+          <article class="service-card">
+            <h2>Riparazione sul posto</h2>
+            <p class="service-when">Per i guasti che si possono risolvere senza spostare il veicolo.</p>
+            <p>Un autista raggiunge il punto in cui ti trovi e prova a sistemare il problema direttamente lì, così puoi rimetterti in viaggio.</p>
+          </article>
+          <article class="service-card">
+            <h2>Traino</h2>
+            <p class="service-when">Quando il veicolo non può ripartire.</p>
+            <p>Un carro attrezzi raggiunge il veicolo e lo porta all'officina più vicina. La scegliamo noi in automatico: non devi cercarla tu.</p>
+          </article>
+        </div>
+
         <h2>Come richiedere assistenza</h2>
-        <p>Comunica la tua posizione, la direzione di marcia, il modello del veicolo e il tipo di problema. Se ti trovi in una situazione di pericolo, allontanati dalla carreggiata e contatta i servizi di emergenza.</p>
+        <ol class="request-steps">
+          <li><strong>Apri l'assistente su Telegram.</strong> Lo trovi con il pulsante in fondo alla pagina.</li>
+          <li><strong>Scrivi la targa del veicolo.</strong> Serve a riconoscerlo tra i veicoli assicurati coperti dal servizio.</li>
+          <li><strong>Indica dove ti trovi.</strong> Condividi la posizione oppure scrivi via e città.</li>
+          <li><strong>Scegli l'intervento.</strong> Premi “Riparazione sul posto” oppure “Traino”.</li>
+          <li><strong>Descrivi il problema.</strong> Bastano poche parole.</li>
+        </ol>
+        <p>Se sbagli qualcosa, scrivi <strong>ANNULLA</strong> e ricominci da capo.</p>
+
+        <h2>Cosa succede dopo</h2>
+        <ul class="after-steps">
+          <li>Ricevi subito il <strong>codice della tua richiesta</strong>.</li>
+          <li>Quando un autista accetta l'intervento, ti scriviamo il suo <strong>nome</strong>.</li>
+          <li>Puoi controllare a che punto è la richiesta in qualsiasi momento: basta scrivere <strong>STATO</strong>.</li>
+          <li>A intervento concluso ricevi un messaggio di conferma.</li>
+        </ul>
+
+        <aside class="safety-note">
+          <h2>Prima di tutto, la tua sicurezza</h2>
+          <p>Se puoi, spostati in un luogo sicuro lontano dalla carreggiata. In caso di pericolo o se ci sono feriti, chiama subito il <strong>112</strong>.</p>
+        </aside>
+
+        <h2>Chi siamo</h2>
+        <p>RecuVeicol mette in contatto gli automobilisti con il soccorso stradale. Una sola chat per chiedere aiuto, sapere chi si occupa della tua richiesta e seguirla fino alla fine.</p>
       </section>
 
       <section class="contact-section" id="contatti">
         <div>
           <p class="contact-eyebrow">HAI BISOGNO DI AIUTO?</p>
-          <h2>Contatti e assistenza</h2>
-          <p>Per conoscere il numero corretto, fai riferimento alla segnaletica presente sulla tratta o al gestore stradale competente.</p>
+          <h2>Scrivici su Telegram</h2>
+          <p>Tieni a portata di mano la targa del veicolo: l'assistente ti guida passo dopo passo.</p>
         </div>
-        <a class="contact-button" href="#viabilita">Informazioni sulla viabilità <span>→</span></a>
+        <div class="contact-actions">
+          <a class="contact-button" href="https://t.me/Fornitori_Soccorso_Bot" target="_blank" rel="noopener noreferrer">Apri il chatbot su Telegram <span>→</span></a>
+        </div>
       </section>
-      <div class="public-bottom-links" id="chi-siamo"><a id="fornitori" href="#soccorso">Fornitori</a><a id="sicurezza" href="#soccorso">Sicurezza stradale</a><a id="viabilita" href="#contatti">Viabilità e contatti</a></div>
     </main>
-    <footer class="public-footer"><span>Fornitori Soccorso Stradale</span><span>Informazioni e assistenza</span></footer>
+
+    <a class="chatbot-float" href="https://t.me/Fornitori_Soccorso_Bot" target="_blank" rel="noopener noreferrer" aria-label="Apri il chatbot su Telegram">
+      <img src="./images/chatbot-icona.svg" alt="">
+      <span class="chatbot-float-label">Chatta con noi</span>
+    </a>
   </div>
 
   <div id="loginView" class="login-shell d-none">

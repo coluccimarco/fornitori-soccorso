@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#2468c2"/>
+      <stop offset="1" stop-color="#123f83"/>
+    </linearGradient>
+    <linearGradient id="head" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#d9e5f3"/>
+    </linearGradient>
+  </defs>
+  <rect width="120" height="120" fill="url(#bg)"/>
+
+  <!-- Antenna -->
+  <path d="M60 37V24" stroke="#ffffff" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="60" cy="20" r="6" fill="#f2bf00"/>
+
+  <!-- Orecchie -->
+  <rect x="18" y="54" width="10" height="24" rx="5" fill="#f2bf00"/>
+  <rect x="92" y="54" width="10" height="24" rx="5" fill="#f2bf00"/>
+
+  <!-- Testa -->
+  <rect x="25" y="36" width="70" height="56" rx="18" fill="url(#head)"/>
+
+  <!-- Visiera, occhi e sorriso -->
+  <rect x="34" y="47" width="52" height="34" rx="14" fill="#123f83"/>
+  <circle cx="49" cy="60" r="5.5" fill="#ffffff"/>
+  <circle cx="71" cy="60" r="5.5" fill="#ffffff"/>
+  <path d="M51 70Q60 77 69 70" fill="none" stroke="#f2bf00" stroke-width="3.5" stroke-linecap="round"/>
+
+  <!-- Corpo -->
+  <path d="M42 98Q42 92 48 92H72Q78 92 78 98V106H42Z" fill="#ffffff" opacity=".9"/>
+</svg>

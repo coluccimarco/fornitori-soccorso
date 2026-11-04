@@ -1,0 +1,257 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 520" role="img" aria-labelledby="t d">
+  <title id="t">Carro attrezzi con una piccola utilitaria blu sul pianale</title>
+  <desc id="d">Illustrazione: un carro attrezzi giallo percorre una strada della campagna trasportando sul pianale una piccola utilitaria blu a tre porte dei primi anni Duemila.</desc>
+  <defs>
+    <linearGradient id="sky" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#a9d3f5"/>
+      <stop offset=".72" stop-color="#e8f4fc"/>
+      <stop offset="1" stop-color="#fbf6e6"/>
+    </linearGradient>
+    <radialGradient id="sun">
+      <stop offset="0" stop-color="#fff6c9"/>
+      <stop offset=".35" stop-color="#ffefa8" stop-opacity=".9"/>
+      <stop offset="1" stop-color="#fff3b8" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="hill-far" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#b9d7c4"/>
+      <stop offset="1" stop-color="#d5e6d3"/>
+    </linearGradient>
+    <linearGradient id="hill-near" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#a5cc8f"/>
+      <stop offset="1" stop-color="#83b171"/>
+    </linearGradient>
+    <linearGradient id="road" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#55606e"/>
+      <stop offset="1" stop-color="#39434f"/>
+    </linearGradient>
+    <linearGradient id="cab" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#ffdb4d"/>
+      <stop offset=".6" stop-color="#f5c20d"/>
+      <stop offset="1" stop-color="#dfa800"/>
+    </linearGradient>
+    <linearGradient id="deck" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#ffd83f"/>
+      <stop offset="1" stop-color="#e3ad00"/>
+    </linearGradient>
+    <linearGradient id="skirt" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#dbe2e9"/>
+    </linearGradient>
+    <linearGradient id="car" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#2f86e0"/>
+      <stop offset="1" stop-color="#14529f"/>
+    </linearGradient>
+    <linearGradient id="glass" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#eef8fe"/>
+      <stop offset=".55" stop-color="#a9cfe6"/>
+      <stop offset="1" stop-color="#6f9dbc"/>
+    </linearGradient>
+    <radialGradient id="rim-large">
+      <stop offset="0" stop-color="#f4f6f8"/>
+      <stop offset="1" stop-color="#aab5bf"/>
+    </radialGradient>
+    <radialGradient id="rim-small">
+      <stop offset="0" stop-color="#eef1f4"/>
+      <stop offset="1" stop-color="#9eaab5"/>
+    </radialGradient>
+    <g id="wheel-large">
+      <circle r="44" fill="#1a222c"/>
+      <circle r="40" fill="none" stroke="#333e4a" stroke-width="2"/>
+      <circle r="27" fill="url(#rim-large)"/>
+      <circle r="18" fill="#7f8c98"/>
+      <circle r="9" fill="#2a343f"/>
+      <g fill="#e6ebef">
+        <circle cy="-14" r="2.4"/><circle cy="14" r="2.4"/><circle cx="-14" r="2.4"/><circle cx="14" r="2.4"/>
+        <circle cx="-10" cy="-10" r="2.4"/><circle cx="10" cy="-10" r="2.4"/><circle cx="-10" cy="10" r="2.4"/><circle cx="10" cy="10" r="2.4"/>
+      </g>
+    </g>
+    <g id="wheel-small">
+      <circle r="27" fill="#1a222c"/>
+      <circle r="24.5" fill="none" stroke="#333e4a" stroke-width="1.5"/>
+      <circle r="17" fill="url(#rim-small)"/>
+      <circle r="10" fill="#c8d0d7"/>
+      <circle r="4" fill="#4d5863"/>
+      <g fill="#6b7782">
+        <circle cy="-13.5" r="1.5"/><circle cx="12.8" cy="-4.2" r="1.5"/><circle cx="7.9" cy="10.9" r="1.5"/><circle cx="-7.9" cy="10.9" r="1.5"/><circle cx="-12.8" cy="-4.2" r="1.5"/>
+      </g>
+    </g>
+    <g id="tree">
+      <rect x="-5" y="-30" width="10" height="44" rx="2" fill="#6b5a45"/>
+      <ellipse cy="-52" rx="31" ry="38" fill="#5f9368"/>
+      <ellipse cx="-9" cy="-60" rx="18" ry="22" fill="#74a97b"/>
+    </g>
+    <g id="cloud" fill="#fff">
+      <ellipse rx="66" ry="16"/>
+      <ellipse cx="-22" cy="-11" rx="28" ry="17"/>
+      <ellipse cx="18" cy="-17" rx="36" ry="23"/>
+    </g>
+  </defs>
+
+  <!-- Cielo e paesaggio -->
+  <rect width="1200" height="520" fill="url(#sky)"/>
+  <circle cx="1050" cy="96" r="112" fill="url(#sun)"/>
+  <circle cx="1050" cy="96" r="38" fill="#fff4b8"/>
+  <use href="#cloud" x="190" y="92"/>
+  <use href="#cloud" x="640" y="66" opacity=".85"/>
+  <use href="#cloud" x="905" y="150" opacity=".6"/>
+
+  <path d="M0 292C110 236 236 240 368 280S620 238 780 268 1056 226 1200 286V420H0Z" fill="url(#hill-far)"/>
+  <g fill="#c6d5dc" opacity=".9" transform="translate(-370 0)">
+    <rect x="474" y="266" width="24" height="30"/>
+    <rect x="502" y="254" width="30" height="42"/>
+    <rect x="536" y="270" width="22" height="26"/>
+    <path d="M562 296V246l10-16 10 16v50Z"/>
+    <rect x="586" y="264" width="30" height="32"/>
+    <rect x="620" y="274" width="24" height="22"/>
+  </g>
+  <path d="M0 356C176 302 382 344 604 338S1006 300 1200 350V420H0Z" fill="url(#hill-near)"/>
+  <g stroke="#94bd80" stroke-width="3" fill="none" opacity=".7">
+    <path d="M30 392C150 366 262 372 390 386"/>
+    <path d="M812 372C920 352 1050 358 1176 384"/>
+  </g>
+  <use href="#tree" x="62" y="396"/>
+  <use href="#tree" x="1146" y="396"/>
+  <use href="#tree" x="1096" y="392" opacity=".75" transform="translate(110 40) scale(.9)"/>
+
+  <!-- Guardrail -->
+  <g fill="#8d98a3">
+    <rect x="24" y="394" width="5" height="24"/><rect x="124" y="394" width="5" height="24"/><rect x="224" y="394" width="5" height="24"/>
+    <rect x="324" y="394" width="5" height="24"/><rect x="424" y="394" width="5" height="24"/><rect x="524" y="394" width="5" height="24"/>
+    <rect x="624" y="394" width="5" height="24"/><rect x="724" y="394" width="5" height="24"/><rect x="824" y="394" width="5" height="24"/>
+    <rect x="924" y="394" width="5" height="24"/><rect x="1024" y="394" width="5" height="24"/><rect x="1124" y="394" width="5" height="24"/>
+  </g>
+  <rect y="392" width="1200" height="10" fill="#c3ccd4"/>
+  <rect y="396" width="1200" height="2" fill="#99a4ae"/>
+
+  <!-- Strada -->
+  <rect y="416" width="1200" height="104" fill="url(#road)"/>
+  <rect y="416" width="1200" height="5" fill="#c9d0d7"/>
+  <rect y="429" width="1200" height="3" fill="#f2f4f6" opacity=".8"/>
+  <g fill="#f5f7f9">
+    <rect x="30" y="476" width="110" height="8" rx="2"/><rect x="230" y="476" width="110" height="8" rx="2"/>
+    <rect x="430" y="476" width="110" height="8" rx="2"/><rect x="630" y="476" width="110" height="8" rx="2"/>
+    <rect x="830" y="476" width="110" height="8" rx="2"/><rect x="1030" y="476" width="110" height="8" rx="2"/>
+  </g>
+
+  <g transform="translate(50 0)">
+    <ellipse cx="552" cy="434" rx="478" ry="11" fill="#10161d" opacity=".45"/>
+
+    <!-- Telaio -->
+    <rect x="150" y="350" width="846" height="14" fill="#1c2530"/>
+    <rect x="470" y="358" width="110" height="24" rx="6" fill="#39444f"/>
+    <rect x="478" y="363" width="94" height="3" fill="#6d7884"/>
+    <rect x="620" y="360" width="60" height="20" rx="3" fill="#2d3946"/>
+    <path d="M278 362A57 57 0 0 1 382 362Z" fill="#141b23"/>
+    <path d="M808 362A57 57 0 0 1 912 362Z" fill="#141b23"/>
+
+    <!-- Fiancata sotto il pianale -->
+    <path d="M150 304H745V350H376A58 58 0 0 0 284 350H150Z" fill="url(#skirt)"/>
+    <rect x="150" y="304" width="595" height="5" fill="#b4bfc9"/>
+    <rect x="155" y="316" width="26" height="15" rx="2" fill="#d8352b"/>
+    <rect x="186" y="316" width="11" height="15" rx="2" fill="#f28c1a"/>
+    <g fill="#f28c1a">
+      <rect x="420" y="342" width="9" height="4" rx="1"/><rect x="540" y="342" width="9" height="4" rx="1"/><rect x="660" y="342" width="9" height="4" rx="1"/>
+    </g>
+    <path d="M284 350A58 58 0 0 1 376 350" fill="none" stroke="#2d3946" stroke-width="5"/>
+    <text x="566" y="335" fill="#154a99" font-family="Arial, Helvetica, sans-serif" font-size="21" font-weight="700" letter-spacing="1" text-anchor="middle">SOCCORSO STRADALE</text>
+
+    <!-- Paratia dietro la cabina -->
+    <rect x="706" y="168" width="30" height="112" rx="3" fill="#2d3946"/>
+    <g fill="#5f6d7c">
+      <rect x="712" y="178" width="18" height="9" rx="1"/><rect x="712" y="192" width="18" height="9" rx="1"/>
+      <rect x="712" y="206" width="18" height="9" rx="1"/><rect x="712" y="220" width="18" height="9" rx="1"/>
+      <rect x="712" y="234" width="18" height="9" rx="1"/><rect x="712" y="248" width="18" height="9" rx="1"/>
+    </g>
+    <rect x="688" y="226" width="20" height="16" rx="3" fill="#1c2530"/>
+    <path d="M688 234H618" stroke="#28323d" stroke-width="3"/>
+    <path d="M622 227V241" stroke="#28323d" stroke-width="4" stroke-linecap="round"/>
+
+    <!-- Utilitaria blu a tre porte -->
+    <g transform="translate(30 0)">
+      <ellipse cx="414" cy="277" rx="178" ry="5" fill="#6b5100" opacity=".45"/>
+      <path d="M263 254A35 35 0 0 1 333 254ZM496 254A35 35 0 0 1 566 254Z" fill="#0b1d35"/>
+
+      <!-- Carrozzeria -->
+      <path d="M244 232C242 205 246 178 258 150 262 134 272 124 290 123L410 122C425 122 434 127 442 136L482 183 556 197C574 201 586 212 588 232V254H566A35 35 0 0 0 496 254H333A35 35 0 0 0 263 254H244Z" fill="url(#car)"/>
+      <path d="M258 150C262 134 272 124 290 123L410 122C425 122 434 127 442 136L439 137C431 130 423 127 410 127L291 128C276 129 267 137 263 151Z" fill="#6cb2f0" opacity=".75"/>
+      <path d="M484 188 555 201C568 204 577 210 582 219L486 201Z" fill="#62abef" opacity=".55"/>
+
+      <!-- Vetri con cornice scura -->
+      <path d="M266 188 277 150C281 139 286 134 296 134H364V188Z" fill="#15202c"/>
+      <path d="M372 134H416C426 134 432 138 438 145L474 188H372Z" fill="#15202c"/>
+      <path d="M272 184 281 152C284 142 288 138 297 138H360V184Z" fill="url(#glass)"/>
+      <path d="M376 138H416C424 138 429 141 434 147L466 184H376Z" fill="url(#glass)"/>
+      <path d="M296 184 322 138H340L314 184ZM390 184 416 138H426L400 184Z" fill="#fff" opacity=".4"/>
+      <path d="M446 142 482 184 470 184 438 146Z" fill="#a5cbe2"/>
+
+      <!-- Portiera lunga, linee e maniglia -->
+      <path d="M368 134V252M480 190C484 216 482 238 474 252" fill="none" stroke="#0e3c78" stroke-width="2.4"/>
+      <path d="M368 252H474" fill="none" stroke="#0e3c78" stroke-width="2"/>
+      <rect x="378" y="197" width="26" height="6" rx="3" fill="#1b2631"/>
+      <path d="M250 194H478" stroke="#7fbdf3" stroke-width="2.5" opacity=".55"/>
+
+      <!-- Paracolpi e fascioni in plastica nera -->
+      <path d="M244 224H271M325 224H504M558 224H588" stroke="#1b2631" stroke-width="13"/>
+      <path d="M240 232Q238 244 243 256H263Q266 240 272 232Z" fill="#1b2631"/>
+      <path d="M564 232H592Q595 244 589 256H566Q566 242 564 232Z" fill="#1b2631"/>
+      <path d="M333 250H496V258H333Z" fill="#1b2631"/>
+      <path d="M263 254A35 35 0 0 1 333 254" fill="none" stroke="#0e2a4f" stroke-width="3"/>
+      <path d="M496 254A35 35 0 0 1 566 254" fill="none" stroke="#0e2a4f" stroke-width="3"/>
+
+      <!-- Fari, frecce e specchietto -->
+      <path d="M556 201C572 204 583 212 586 222H564C559 216 556 209 556 201Z" fill="#fff6c8" stroke="#a7b4c0" stroke-width="1.5"/>
+      <rect x="500" y="208" width="13" height="5" rx="2.5" fill="#f28c1a"/>
+      <path d="M246 214C246 200 248 186 252 172L262 174C258 188 257 202 257 214Z" fill="#d8352b" stroke="#7c1f19" stroke-width="1"/>
+      <path d="M246 214C246 206 247 200 248 194L259 196C258 202 257 208 257 214Z" fill="#f28c1a"/>
+      <path d="M465 176H482Q486 176 486 180V186H470Z" fill="#1b2631"/>
+
+      <use href="#wheel-small" x="298" y="251"/>
+      <use href="#wheel-small" x="531" y="251"/>
+
+      <!-- Cinghie di fissaggio -->
+      <path d="M268 278 287 254M328 278 309 254M501 278 520 254M561 278 542 254" stroke="#d8352b" stroke-width="4.5" stroke-linecap="round"/>
+    </g>
+
+    <!-- Pianale -->
+    <path d="M100 304 140 278H745V304Z" fill="url(#deck)"/>
+    <path d="M140 278H745V282H143L113 304H100Z" fill="#ffe680"/>
+    <rect x="100" y="300" width="645" height="6" fill="#8f6b00"/>
+    <g fill="#8f6b00">
+      <rect x="230" y="289" width="16" height="5" rx="2"/><rect x="330" y="289" width="16" height="5" rx="2"/>
+      <rect x="430" y="289" width="16" height="5" rx="2"/><rect x="530" y="289" width="16" height="5" rx="2"/>
+      <rect x="630" y="289" width="16" height="5" rx="2"/>
+    </g>
+    <path d="M150 300 168 285H182L164 300ZM186 300 204 285H218L200 300Z" fill="#d8352b"/>
+
+    <!-- Cabina -->
+    <path d="M745 350V165Q745 150 760 150H850Q866 150 876 162L925 232 972 248Q992 254 992 276V350H906A58 58 0 0 0 814 350Z" fill="url(#cab)"/>
+    <path d="M754 158H850Q862 158 869 167L874 174Q866 164 852 164H754Z" fill="#fff1a8" opacity=".85"/>
+    <path d="M925 234 972 250Q988 255 990 272L936 256Z" fill="#fff1a8" opacity=".55"/>
+    <path d="M764 172Q764 168 768 168H846Q856 168 862 176L906 236H764Z" fill="#1a2530"/>
+    <path d="M769 173H845Q853 173 858 180L897 232H769Z" fill="url(#glass)"/>
+    <path d="M792 232 830 173H850L812 232ZM822 232 860 181 866 190 836 232Z" fill="#fff" opacity=".42"/>
+    <path d="M766 240H894Q898 240 898 244V322H770Q766 322 766 318Z" fill="none" stroke="#a97f00" stroke-width="2.5"/>
+    <rect x="775" y="250" width="32" height="8" rx="4" fill="#28323d"/>
+    <text x="832" y="294" fill="#154a99" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="700" text-anchor="middle">RecuVeicol</text>
+    <path d="M766 332H812L806 350H766Z" fill="#28323d"/>
+    <path d="M814 350A58 58 0 0 1 906 350" fill="none" stroke="#28323d" stroke-width="5"/>
+
+    <!-- Specchietto, faro e paraurti -->
+    <path d="M912 232 930 206" stroke="#28323d" stroke-width="4"/>
+    <rect x="925" y="186" width="15" height="34" rx="4" fill="#1c2530"/>
+    <path d="M952 266H988Q992 282 978 286H960Q950 280 952 266Z" fill="#fff8d2" stroke="#a97f00" stroke-width="2"/>
+    <rect x="938" y="298" width="50" height="4" rx="2" fill="#a97f00"/>
+    <rect x="938" y="307" width="50" height="4" rx="2" fill="#a97f00"/>
+    <path d="M930 322H1004Q1008 322 1008 326V346Q1008 350 1004 350H930Z" fill="#2d3946"/>
+    <rect x="982" y="328" width="22" height="9" rx="2" fill="#f28c1a"/>
+
+    <!-- Lampeggiante -->
+    <rect x="782" y="143" width="66" height="8" rx="2" fill="#2d3946"/>
+    <path d="M794 143V131Q794 123 802 123H828Q836 123 836 131V143Z" fill="#f28c1a"/>
+    <path d="M802 130H828" stroke="#ffd9a3" stroke-width="4" stroke-linecap="round"/>
+
+    <!-- Ruote -->
+    <use href="#wheel-large" x="330" y="386"/>
+    <use href="#wheel-large" x="860" y="386"/>
+  </g>
+</svg>
