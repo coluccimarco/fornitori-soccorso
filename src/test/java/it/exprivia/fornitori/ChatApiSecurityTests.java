@@ -37,6 +37,9 @@ class ChatApiSecurityTests {
         MockMvc mockMvc;
 
         @MockitoBean
+        it.exprivia.fornitori.service.RequestRateLimiter rateLimiter;
+
+        @MockitoBean
         AuthenticationManager authenticationManager;
 
         @MockitoBean

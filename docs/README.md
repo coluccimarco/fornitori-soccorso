@@ -46,3 +46,12 @@ Gli stati sono riferiti alla revisione indicata nel documento:
 **PARZIALE**, **PIANIFICATO**, **BLOCCATO** e **DA CONFERMARE** qualificano i limiti.
 Codice, contratto e prova sono fonti distinte. L'assenza degli elaborati originali
 del docente è registrata nell'audit, non compensata da requisiti inventati.
+
+## Revisione backend 04/11/2026
+
+- [Audit iniziale](quality/BACKEND_INITIAL_AUDIT.md): fotografia della fase 1.
+- [Audit end-to-end](quality/BACKEND_E2E_AUDIT.md): correzioni, matrice flussi, prove e limiti.
+- [Security review](quality/SECURITY_REVIEW.md): gravità, mitigazioni e gate aperti.
+
+Gli aggiornamenti datati 04/11 nei canonici prevalgono sulle descrizioni della
+baseline 03/11 per i soli componenti modificati. Le fonti docente restano assenti.

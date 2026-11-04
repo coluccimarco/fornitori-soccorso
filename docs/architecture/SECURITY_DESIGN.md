@@ -37,3 +37,15 @@ Questi controlli sono requisiti futuri, non funzionalità già implementate.
 `ApiSecurityTests`, `ChatApiSecurityTests`, test chatbot e CI Java/PostgreSQL
 verificano soltanto i casi codificati. La CI non è un audit indipendente. Consultare
 [test](../quality/TEST_PLAN.md) e [rischi](../management/RISK_REGISTER.md).
+
+## Aggiornamento hardening e prove del 04/11/2026
+
+CSRF invalidato esplicitamente al login e ricaricato dal client; timeout sessione
+30 minuti, cookie Secure nel profilo prod. GET `/maps/route` richiede CSRF per
+le scritture legacy. Accesso missione/note/route limitato al driver corrente;
+una proposta passata non dà accesso dopo riassegnazione. Limite login20/minuto/IP
+remoto, lookup chat100/minuto/istanza, memoria limitata; non usare X-Forwarded-For
+non attendibile. Lookup positivo autorizza una pratica per15 minuti, non prova
+identità. Fingerprint nuovi requestId protegge retry difformi. Provider senza
+redirect, timeout3/8s, body1MiB e range verificati. Dettagli, gravità e residui
+in [SECURITY_REVIEW.md](../quality/SECURITY_REVIEW.md).

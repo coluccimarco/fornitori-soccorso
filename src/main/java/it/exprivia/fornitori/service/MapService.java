@@ -75,7 +75,7 @@ public class MapService {
         }
 
         RouteResult route = routeThrough(points);
-        missions.saveEstimatedKm(missionId, route.km(), driver.getId());
+        missions.saveEstimatedKm(mission, route.km(), driver.getId());
         return new MapDtos.RouteResponse(route.km(), ROUTING_SOURCE, driver.getId(), points, route.geometry());
     }
 

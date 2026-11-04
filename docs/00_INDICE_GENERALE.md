@@ -58,3 +58,12 @@ Da root: `python tools/build_docs.py`. I DOCX sono output generati, non fonti
 manuali. L'indice Word è un campo aggiornabile: aprire il DOCX in Microsoft Word,
 fare clic destro sull'indice, scegliere **Aggiorna campo → Aggiorna intero indice**.
 Il contenuto generato non dichiara che Word abbia già ricalcolato pagine o indice.
+
+## Revisione backend 04/11/2026
+
+- [Audit iniziale](quality/BACKEND_INITIAL_AUDIT.md): fotografia della fase 1.
+- [Audit end-to-end](quality/BACKEND_E2E_AUDIT.md): correzioni, matrice flussi, prove e limiti.
+- [Security review](quality/SECURITY_REVIEW.md): gravità, mitigazioni e gate aperti.
+
+Gli aggiornamenti datati 04/11 nei canonici prevalgono sulle descrizioni della
+baseline 03/11 per i soli componenti modificati. Le fonti docente restano assenti.

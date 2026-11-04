@@ -75,7 +75,13 @@ def build() -> Path:
     workbook = Workbook()
     workbook.remove(workbook.active)
     docs = ROOT / "docs"
-    add_markdown_sheet(workbook, "Requisiti", docs / "requirements" / "BUR_FORNITORI.md")
+    # BUR begins with a stakeholder table: select requirement IDs, never the first table.
+    requirements = workbook.create_sheet("Requisiti")
+    requirements.append(["ID", "Requisito", "Priorita / verifica", "Stato", "Acceptance"])
+    for line in (docs / "requirements" / "BUR_FORNITORI.md").read_text(encoding="utf-8").splitlines():
+        if line.startswith("| BR-") or line.startswith("| NFR-"):
+            cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+            requirements.append(cells + [""] * (5 - len(cells)))
     add_markdown_sheet(workbook, "Tracciabilita", docs / "requirements" / "REQUIREMENTS_TRACEABILITY.md")
     add_markdown_sheet(workbook, "Backlog", docs / "agile" / "PRODUCT_BACKLOG.md")
     add_markdown_sheet(workbook, "Rischi", docs / "management" / "RISK_REGISTER.md")
@@ -108,11 +114,7 @@ def build() -> Path:
                     test_file.relative_to(ROOT).as_posix(),
                     language,
                     test_file.stem,
-                    (
-                        "Suite chatbot completa: 64 test PASS locale; non inclusa nel workflow CI."
-                        if language == "Python"
-                        else "Suite Maven completa: JDK 25 BUILD SUCCESS; 31 pass/29 skip locali. PostgreSQL CI run 41656606659 PASS."
-                    ),
+                    "Inventario sorgente, non esito: vedere docs/quality/TEST_EVIDENCE.md e report del run.",
                 ]
             )
 

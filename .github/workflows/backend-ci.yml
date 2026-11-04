@@ -25,6 +25,25 @@ jobs:
           cache: maven
       - name: Verify build and tests
         run: ./mvnw --batch-mode --no-transfer-progress clean verify
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Python chatbot regression
+        working-directory: chatbot
+        run: python -m unittest discover
+      - name: Frontend regression
+        run: node --test tools/test_frontend.cjs
+      - name: Dependency advisory gate
+        run: |
+          ./mvnw --batch-mode --no-transfer-progress dependency:list -DoutputFile=target/dependencies.txt
+          python tools/check_dependencies.py
+      - name: Documentation consistency
+        run: |
+          python -m pip install -r tools/requirements-docs.txt
+          python tools/validate_docs.py
       - name: Check Java release and package layout
         run: |
           python - <<'PY'
@@ -114,8 +133,57 @@ jobs:
         env:
           PGPASSWORD: ci-only-password
         run: |
-          for script in database/01_schema.sql database/02_seed.sql database/03_verifiche.sql database/04_assert_baseline.sql database/05_chat_requests.sql database/06_chat_recipient.sql; do
+          for script in database/*.sql; do
             psql --host localhost --username fornitori_app --dbname fornitori --set ON_ERROR_STOP=1 --file "$script"
           done
       - name: Verify application and tests against PostgreSQL
         run: ./mvnw --batch-mode --no-transfer-progress clean verify
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+      - name: Browser tools
+        run: |
+          python -m pip install -r tools/requirements-e2e.txt
+          python -m playwright install --with-deps chromium
+      - name: Browser to committed PostgreSQL flow
+        env:
+          PGHOST: localhost
+          PGPORT: '5432'
+          PGUSER: fornitori_app
+          PGPASSWORD: ci-only-password
+          PGDATABASE: fornitori_e2e
+          E2E_ISOLATED: '1'
+          E2E_BASE_URL: http://127.0.0.1:58880
+          E2E_OUTPUT: target/e2e
+        run: |
+          createdb fornitori_e2e
+          for script in database/*.sql; do
+            psql --set ON_ERROR_STOP=1 --file "$script" > /dev/null
+          done
+          export E2E_PASSWORD="$(python -c 'import secrets; print(secrets.token_urlsafe(24))')"
+          echo "::add-mask::$E2E_PASSWORD"
+          python - <<'PY'
+          import os, psycopg
+          with psycopg.connect(autocommit=True) as db:
+              db.execute('CREATE EXTENSION IF NOT EXISTS pgcrypto')
+              db.execute("UPDATE app_users SET password_hash=crypt(%s, gen_salt('bf', 10))", (os.environ['E2E_PASSWORD'],))
+          PY
+          export SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/fornitori_e2e
+          export SERVER_ADDRESS=127.0.0.1 SERVER_PORT=58880 DEBUG=false
+          java -jar target/fornitori-0.0.1-SNAPSHOT.jar > target/e2e-app.log 2>&1 &
+          app_pid=$!
+          trap 'kill "$app_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 60); do
+            if curl --silent --fail http://127.0.0.1:58880/api/v1/auth/csrf > /dev/null; then break; fi
+            sleep 1
+          done
+          python tools/browser_e2e.py
+      - name: Test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-evidence
+          path: |
+            target/surefire-reports/*.xml
+            target/e2e/*.png
+          retention-days: 7

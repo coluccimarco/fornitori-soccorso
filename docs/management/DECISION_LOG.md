@@ -131,3 +131,19 @@ H-006 sul canale outbox è stato aggiornato dal successivo H-009.
   non si inventano km e la chiusura resta possibile.
 - **Stato aggiornato:** API backend implementata e testata in CI; provider live
   e visualizzazione mappa browser non verificati.
+
+## Aggiornamento hardening e prove del 04/11/2026
+
+**D-HARD-01 è implementata, autorizzazione nella richiesta 04/11:** conservare
+monolite/layer e API condivise; correzioni mirate, migrazione 07 additiva e niente
+nuove infrastrutture. Commit/push solo feature/backend; PR senza merge finale.
+**D-HARD-02 è implementata, consumer da revisionare:** CSRF rinnovato al login e
+richiesto anche su GET route con effetti legacy; pratica chat vincolata a lookup
+15 minuti e fingerprint retry. Il grant non è una prova di identità.
+**D-HARD-03 è criterio operativo esplicitato dal committente, fonte docente da
+convalidare:** notte20:00 inclusa–08:00 esclusa, Europe/Rome, ora di accettazione,
+BigDecimal/HALF_UP. Supera l'ambiguità testuale storica H002 per questa revisione,
+non costituisce approvazione del docente sul PDF/Excel assente.
+**D-HARD-04 è gate aperto:** pubblicare Draft PR per titolarità chatbot/outbox e
+configurazione produzione non risolte. Non dichiarare il progetto completato
+soltanto sulla base dei test verdi.

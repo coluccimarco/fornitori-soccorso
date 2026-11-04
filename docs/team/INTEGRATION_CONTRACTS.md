@@ -16,7 +16,7 @@ contiene 34 operation (30 implemented, 4 designed). La tabella di dettaglio è i
 | Da → a | Contratto/dato | Stato |
 |---|---|---|
 | M2 → M1 | Sessione cookie + CSRF; auth e GET anagrafiche | Implementato |
-| M2 → M1 | Mission create, proposal, driver view, dashboard | API e client statico presenti; browser E2E non eseguito |
+| M2 → M1 | Mission create, proposal, driver view, dashboard | API e client statico presenti; 2 scenari Chromium/PostgreSQL PASS locali (04/11) |
 | M3 → M1 | Lookup targa e create mission via servizio | API chatbot implementate; la targa non prova identità |
 | M3 ↔ M5 | Conversazione, dispatcher Telegram e notifiche | Console/Telegram e notifiche presenti; webhook/WhatsApp pianificati |
 | M4 → M1/M2 | Coordinate veicolo/origine/officina, route e km suggeriti | API `/maps/route` implementata e testata in CI; nessuna vista mappa nel client |
@@ -48,3 +48,19 @@ Contract test/fixture JSON condivise, ruoli verificati server-side, no segreti,
 error behavior documentato e feature status aggiornato.<br>
 **Dipendenze:** ownership componenti e API YAML.<br>
 **Riferimenti:** [Git](../07_GIT_WORKFLOW.md), [backlog](../agile/PRODUCT_BACKLOG.md).
+
+## Aggiornamento hardening e prove del 04/11/2026
+
+Valeriano Francesco e Cangellosi Giuseppe: solo maxlength150/32, gestione CSRF e
+sessione persa, refresh countdown/disponibilità, campi contatto nel markup
+esistente; CSS/layout/navigazione preservati. JSON economici numerici, dateISO,
+stati lowercase. La vista missioni rilegge /autisti per non conservare occupazioni
+obsolete dopo azioni da un'altra sessione.
+Colucci Marco: nomi endpoint/payload invariati. Una nuova creazione richiede lookup
+positivo negli ultimi15 minuti con medesimi sessionId/clienteId e polizza valida;
+403 richiede un nuovo lookup e conferma. Retry identico 201; mismatch 409. Le prove
+Python correnti non certificano provider Telegram live né tutti i casi TTL nella UX.
+M4: GET /maps/route richiede X-CSRF-TOKEN, pur mantenendo URL e metodo legacy.
+M5: consegna almeno-una-volta; lease/ripresa dopo crash da concordare.
+Queste variazioni sono documentate e sottoposte alla revisione della PR; non si
+attribuisce approvazione preventiva ai colleghi né si inviano messaggi al team.

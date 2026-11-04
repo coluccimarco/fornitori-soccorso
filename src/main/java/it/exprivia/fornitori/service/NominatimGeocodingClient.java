@@ -6,10 +6,8 @@ import it.exprivia.fornitori.service.MapProviders.ProviderUnavailableException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URI;
-import java.time.Duration;
 import java.util.Optional;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
@@ -27,12 +25,8 @@ public class NominatimGeocodingClient implements MapProviders.GeocodingClient {
     public NominatimGeocodingClient(
             @Value("${fornitori.maps.nominatim-url:https://nominatim.openstreetmap.org}") String baseUrl,
             @Value("${fornitori.maps.user-agent:FORNITORI-project-work}") String userAgent) {
-        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-        factory.setConnectTimeout(Duration.ofSeconds(3));
-        factory.setReadTimeout(Duration.ofSeconds(8));
         this.baseUrl = baseUrl;
-        this.client = RestClient.builder()
-                .requestFactory(factory)
+        this.client = ProviderHttp.client(baseUrl)
                 .defaultHeader("User-Agent", userAgent)
                 .build();
     }

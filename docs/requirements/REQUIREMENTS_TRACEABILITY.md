@@ -18,7 +18,7 @@ ID di ticket o user story originali. Modificare la matrice con le fonti docente.
 | BR-010 | ST-010 — notifica Telegram | Outbox + `NotificationDispatcher` | `/chat/notifiche`, `/esito` | `test_notifications.py`, `ChatPostgresIntegrationTests` | PARZIALE; CI non è prova provider reale |
 | BR-011 | ST-011 — routing | M4/mappe/backend | `/api/v1/maps/route` | `MapProviderClientsTests`, `MapPostgresIntegrationTests`; CI `41656606659`; provider live NOT RUN | API IMPLEMENTATA; vista UI non integrata |
 | BR-012 | ST-012 — canale WhatsApp | M5/provider | webhook designed | Nessun test runtime nel repo | PIANIFICATO |
-| BR-013 | ST-013 — interfaccia web | M2/frontend | `src/main/resources/static/` | Nessun test browser/E2E nel workflow | UI PRESENTE NEL CODICE; runtime/UX da validare |
+| BR-013 | ST-013 — interfaccia web | M2/frontend | `src/main/resources/static/` | tools/browser_e2e.py; runner locale e CI | 2 scenari browser/DB PASS locali; UX completa da validare |
 
 ## Interpretazione della prova
 
@@ -36,3 +36,14 @@ approvati senza PDF/Excel.
 - Acceptance di UI, mappa visuale, WhatsApp e identità del richiedente restano DA CONFERMARE.
 - Aggiornare la matrice insieme a casi di test identificati e link a run/commit.
 - Workbook filtrabile in [`../quality/registri.xlsx`](../quality/registri.xlsx).
+
+## Evidenze della revisione backend 04/11/2026
+
+La matrice precedente conserva la baseline 03/11. Stato corrente e percorso per
+ogni BR/NFR in [BACKEND_E2E_AUDIT.md](../quality/BACKEND_E2E_AUDIT.md).
+BR-001/002/003/004/005/006/008/013: prova browser con commit SQL; BR-007: rettifica
+HTTP/DB, UI assente; BR-009: grant e retry HTTP/PG, identità parziale; BR-010:
+outbox/API testati, delivery concorrente aperto; BR-011: API/PG/provider simulati,
+mappa UI assente; BR-012: progettato. NFR-001/002/003/004/005 hanno regression
+automatiche specifiche; NFR-006 resta parziale per produzione e governance.
+Le fonti originali del docente e il sign-off non sono stati acquisiti.
