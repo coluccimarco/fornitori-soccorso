@@ -625,8 +625,9 @@ public class MissionService {
     }
 
     private MissionDtos.MissionNoteResponse toNoteResponse(MissionNote note) {
+        String authorName = users.findById(note.getUserId()).map(AppUser::getNome).orElse(null);
         return new MissionDtos.MissionNoteResponse(
-                note.getId(), note.getMissionId(), note.getUserId(), note.getTesto(), note.getCreatedAt());
+                note.getId(), note.getMissionId(), note.getUserId(), authorName, note.getTesto(), note.getCreatedAt());
     }
 
     private static final class DriverAggregate {

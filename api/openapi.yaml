@@ -774,6 +774,7 @@ components:
         id: {type: integer, format: int64}
         missionId: {type: integer, format: int64}
         userId: {type: integer, format: int64}
+        autoreNome: {type: string, nullable: true, description: Nome dell'utente che ha scritto la nota}
         testo: {type: string}
         createdAt: {type: string, format: date-time}
     DriverHistory:

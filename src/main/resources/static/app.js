@@ -714,7 +714,7 @@
     const notes = await request(`/api/v1/missioni/${missionId}/notes`);
     if (!noteList) return;
     noteList.innerHTML = notes.length ? notes.map((note) =>
-      `<article class="note-item"><div><strong>Utente #${safe(note.userId)}</strong><time>${safe(formatDateTime(note.createdAt))}</time></div><p>${safe(note.testo)}</p></article>`
+      `<article class="note-item"><div><strong>${safe(note.autoreNome || `Utente #${note.userId}`)}</strong><time>${safe(formatDateTime(note.createdAt))}</time></div><p>${safe(note.testo)}</p></article>`
     ).join("") : '<p class="small text-secondary mb-0">Nessuna segnalazione inviata.</p>';
   }
 

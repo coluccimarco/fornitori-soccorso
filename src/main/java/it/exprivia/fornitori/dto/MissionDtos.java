@@ -95,6 +95,7 @@ public final class MissionDtos {
             Long id,
             Long missionId,
             Long userId,
+            String autoreNome,
             String testo,
             OffsetDateTime createdAt) {
     }
