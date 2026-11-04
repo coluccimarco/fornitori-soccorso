@@ -1,93 +1,78 @@
 # Disegno del database
 
-**Codice:** FOR-DB-001 · **Versione:** 1.0 · **Data:** 03/11/2026
-Fonte schema: [`database/01_schema.sql`](../../database/01_schema.sql); modifiche chatbot:
-[`05_chat_requests.sql`](../../database/05_chat_requests.sql) e
-[`06_chat_recipient.sql`](../../database/06_chat_recipient.sql).
+**Codice:** FOR-DB-001 · **Versione:** 2.0 · **Data:** 04/11/2026
+Fonte schema: gli script `database/01..08`. Diagramma: [`database_er.mmd`](../diagrams/database_er.mmd).
 
 ## Modello
 
-Gli account sono in `app_users`; un `drivers` collega un account a un mezzo.
-`customers` fa riferimento a una compagnia assicurativa. Una `missions` appartiene
-a un cliente e può riferirsi ad autista e officina. `mission_proposals` conserva
-i tentativi; note ed eventi sono separati per auditabilità; pricing è una
-configurazione singola; `notifications_outbox` conserva invio/esito.
-`chat_sessions` persiste metadati di canale lato backend ma non rimuove il fatto
-che il motore conversazionale Python dichiara stato in RAM.
-
-Diagramma generato da sorgente SQL: [`database_er.mmd`](../diagrams/database_er.mmd).
+Gli account sono in `app_users`; un `drivers` collega un account a un mezzo. `customers` fa
+riferimento a una compagnia assicurativa. Una `missions` appartiene a un cliente e può riferirsi ad
+autista e officina. `mission_proposals` conserva i tentativi; note ed eventi sono separati per
+l'audit; il pricing è una configurazione singola; `notifications_outbox` conserva invio ed esito.
 
 | Tabella | Scopo e relazioni principali |
 |---|---|
-| `app_users` | Utenti autenticabili, email univoca, hash password BCrypt e ruolo |
-| `drivers` | Autista legato a un solo utente e a un solo mezzo; `stato_seed` è solo il valore importato |
-| `vehicles` | Targa univoca, tipologia, portata e coordinate della base operativa |
-| `insurance_companies` | Compagnie assicurative referenziate dai clienti |
+| `app_users` | Utenti autenticabili, email univoca, hash BCrypt e ruolo |
+| `drivers` | Autista legato a un solo utente e a un solo mezzo |
+| `vehicles` | Targa univoca, tipologia, portata e coordinate della base |
+| `insurance_companies` | Compagnie assicurative dei clienti |
 | `customers` | Cliente, targa normalizzata univoca, compagnia e scadenza polizza |
 | `workshops` | Officine e coordinate |
-| `missions` | Cliente/autista/officina FK, stato, località, date, chilometri, costi e flag fixture |
+| `missions` | Cliente, autista e officina, stato, località, date, chilometri, costi e flag fixture |
 | `mission_proposals` | Tentativi di proposta e scadenza, con storico |
-| `mission_notes` | Note collegate alla missione e all'utente |
+| `mission_notes` | Note collegate a missione e utente |
 | `mission_events` | Audit della missione con dettagli JSON |
 | `pricing_config` | Parametri tariffari e durata della proposta |
-| `chat_sessions` | Metadati di canale/chat; non rende persistente lo stato del motore Python in RAM |
-| `notifications_outbox` | Eventi da inviare e stato dei tentativi di notifica |
+| `notifications_outbox` | Eventi da inviare, stato di invio e tentativi |
+| `chat_mission_requests` | Legame requestId, sessione, destinatario e missione; impronta anti-duplicati |
+| `chat_lookup_grants` | Autorizzazione sessione-cliente di 15 minuti dopo un lookup positivo |
 
-## Integrità e comportamento
+## Integrità
 
 - PK identity, FK e chiavi uniche per email, targa, `targa_norm`.
-- Check su ruolo, stati, tipi di intervento, coordinate, costo, chilometri e note.
-- `missions.is_fixture` distingue i 30 dati storici dalle operazioni live; il
-  numero 30 proviene da report preesistenti, non da ricalcolo Excel durante audit.
-- Indici parziali limitano autista live attivo e proposta corrente.
-- `NUMERIC` per moneta/distanze, `TIMESTAMPTZ` per gli istanti, `JSONB` per dettagli
-  evento/outbox.
-- Gli script di schema non sono una migrazione versionata; modifiche future vanno
-  applicate con un processo di migrazione esplicito, non con Hibernate update.
+- Check su ruolo, stati, tipi di intervento, coordinate (entrambe nulle o entrambe valorizzate),
+  costo, chilometri e note.
+- `missions.is_fixture` distingue i 30 dati storici dalle operazioni live.
+- Indici parziali limitano autista attivo e proposta corrente.
+- `NUMERIC` per moneta e distanze, `TIMESTAMPTZ` per gli istanti, `JSONB` per eventi e outbox.
+
+## Stato di invio delle notifiche
+
+`notifications_outbox.stato` vale `PENDING`, `SENDING`, `SENT`, `FAILED` o `SKIPPED`.
+`prossimo_tentativo_il` indica la fine della riserva o il momento del nuovo tentativo. Le missioni
+della centrale generano righe `SKIPPED` senza telefono. Vedi
+[guida notifiche](../team/MEMBRO_5_NOTIFICATIONS.md).
 
 ## Transazioni e concorrenza
 
-Le transizioni di missione e l'outbox sono implementate a livello service; repository
-specifici eseguono lock pessimistici. Il vincolo DB è ulteriore protezione, non
-sostituisce authorization o validazione applicativa. I test CI PostgreSQL verificano
-scenari di concorrenza dichiarati nei report.
+Transizioni di missione e outbox sono nei service; i repository eseguono lock pessimistici e la
+riserva delle notifiche usa `FOR UPDATE SKIP LOCKED`. I vincoli DB sono una protezione ulteriore e
+non sostituiscono autorizzazione o validazione.
 
-## Baseline docente e limiti
+## Baseline del seed
 
-Il report storico documenta 10 utenti, 8 autisti, 8 mezzi, 4 compagnie, 40 clienti,
-6 officine e 30 missioni, con 16 missioni eseguite e €1.509,71. Il file Excel non
-è incluso nell'audit corrente; questi valori sono citazioni della documentazione
-esistente, non una conferma indipendente. L'assert SQL della CI verifica il seed
-presente nel repository.
+10 utenti, 8 autisti, 8 mezzi, 4 compagnie, 40 clienti, 6 officine e 30 missioni, con 16 eseguite,
+6 aperte, 4 scadute, 4 rifiutate e €1.509,71. `03_verifiche.sql` e `04_assert_baseline.sql` li
+controllano. Il file Excel del docente non è nel repository.
 
 ## Setup locale
 
-Usare PostgreSQL 18+ compatibile, `psql` e un database vuoto e isolato con
-credenziali autorizzate configurate nell'ambiente. Schema e seed sono script,
-non una migrazione versionata; lo schema applicativo usa Hibernate `validate`,
-non `ddl-auto=update`.
+Usare PostgreSQL 18 e un database vuoto, di proprietà dell'utente applicativo, con le credenziali
+nell'ambiente. Applicare tutti gli script in ordine:
 
 ```powershell
 psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/01_schema.sql
 psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/02_seed.sql
 psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/03_verifiche.sql
 psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/04_assert_baseline.sql
+psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/05_chat_requests.sql
+psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/06_chat_recipient.sql
+psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/07_backend_hardening.sql
+psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/08_cleanup_and_delivery.sql
 ```
 
-Non modificare manualmente fixture per far passare l'assertion. Il risultato del
-setup è completo solo quando tutti gli script e le verifiche terminano con
-successo; consultare [TEST_EVIDENCE.md](../quality/TEST_EVIDENCE.md). Il job CI
-usa PostgreSQL effimero e non prova l'accesso al database locale.
-
-## Aggiornamento hardening e prove del 04/11/2026
-
-`07_backend_hardening.sql` aggiunge CHECK coordinate entrambe nulle o entrambe
-valorizzate, tabella `chat_lookup_grants(session_id PK, customer_id FK, expires_at)`
-e indice expiry; `chat_mission_requests.request_fingerprint VARCHAR(64)` nullable
-consente la migrazione di richieste esistenti. `chat_mission_requests` (05/06) è
-il legame persistente requestId/sessione/destinatario/missione; `chat_sessions`
-resta inutilizzata dal bot corrente. Nessuna fixture riscritta. VALIDATE fallisce
-su coordinate legacy incomplete: richiede verifica, non correzione automatica.
-Applicare 07 dopo 01–06. Le prove locali con PostgreSQL 18.6 confermano assertion
-fixture, round-trip e lock concorrenti. Il DB personale localhost:5432 autentica,
-ma non contiene missions; nessuna migrazione vi è stata applicata.
+Hibernate usa `validate`: senza tutti gli script l'applicazione non parte. Su un database esistente
+applicare solo gli script mancanti, dopo un backup. `08_cleanup_and_delivery.sql` rimuove
+`chat_sessions` e `drivers.stato_seed`: dopo di esso non rieseguire 01 e 02. Se fallisce la
+validazione di `missions_origin_pair` in 07, verificare i dati: non inventare coordinate. Non
+modificare le fixture per far passare l'assertion.

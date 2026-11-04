@@ -342,14 +342,14 @@
           <h2>Backend Spring a layer</h2>
           <p>Il percorso delle richieste implementate, dalla REST API fino a PostgreSQL, con i confini delle integrazioni esterne.</p>
         </div>
-        <a class="button" href="../.github/modernize/assessment/engines/facts/architecture-diagram.md">Diagramma tecnico dettagliato</a>
+        <a class="button" href="architecture/TAD_FORNITORI.md">Diagramma tecnico dettagliato</a>
       </div>
 
       <div class="stats" aria-label="Stato backend">
         <article class="stat"><span class="stat-label">Runtime</span><strong class="stat-value">Java 25</strong><span class="stat-note">Temurin verificato</span></article>
         <article class="stat"><span class="stat-label">Framework</span><strong class="stat-value">Spring Boot</strong><span class="stat-note">4.1.2 · MVC · Security · JPA</span></article>
-        <article class="stat"><span class="stat-label">Database</span><strong class="stat-value">PostgreSQL 18</strong><span class="stat-note">CI baseline verde</span></article>
-        <article class="stat"><span class="stat-label">Contratto REST</span><strong class="stat-value">30 / 34</strong><span class="stat-note">implemented / totali; 4 designed</span></article>
+        <article class="stat"><span class="stat-label">Database</span><strong class="stat-value">PostgreSQL 18</strong><span class="stat-note">script 01..08</span></article>
+        <article class="stat"><span class="stat-label">Contratto REST</span><strong class="stat-value">34 / 38</strong><span class="stat-note">implementate / totali; 4 fuori ambito</span></article>
       </div>
 
       <div class="architecture-flow" aria-label="Flusso dei layer Spring">
@@ -385,7 +385,7 @@
           <h3>PostgreSQL</h3>
           <span class="component">Utenti e anagrafiche</span>
           <span class="component">Schema + seed</span>
-          <span class="component">Assertion CI PASS</span>
+          <span class="component">Assertion baseline</span>
         </article>
       </div>
 
@@ -395,12 +395,11 @@
       </div>
 
       <div class="planned-strip">
-        <strong>Non integrato o non verificato:</strong>
+        <strong>Fuori ambito o da confermare:</strong>
         <div class="planned-items">
-          <span>Browser E2E e accessibilità · NOT RUN</span>
-          <span>Visualizzazione mappe nel client · non integrata</span>
-          <span>Provider Nominatim/OSRM live · NOT RUN</span>
-          <span>WhatsApp e webhook · non implementati</span>
+          <span>WhatsApp e webhook · fuori ambito</span>
+          <span>Gestione utenti · fuori ambito</span>
+          <span>Solo targa per il cliente · limite noto della demo</span>
           <span>Requisiti/acceptance docente · da confermare</span>
         </div>
       </div>
@@ -443,9 +442,9 @@
 
       <div class="stats" aria-label="Riepilogo backlog">
         <article class="stat"><span class="stat-label">Storie</span><strong class="stat-value" id="total-count">13</strong><span class="stat-note">snapshot del backlog</span></article>
-        <article class="stat"><span class="stat-label">Implementate</span><strong class="stat-value" id="done-count">5</strong><span class="stat-note">verificate nei test backend CI</span></article>
-        <article class="stat"><span class="stat-label">Da validare</span><strong class="stat-value" id="inprogress-count">6</strong><span class="stat-note">codice presente, limiti aperti</span></article>
-        <article class="stat"><span class="stat-label">Pianificate</span><strong class="stat-value" id="planned-count">2</strong><span class="stat-note">non implementate</span></article>
+        <article class="stat"><span class="stat-label">Implementate</span><strong class="stat-value" id="done-count">11</strong><span class="stat-note">presenti nel codice</span></article>
+        <article class="stat"><span class="stat-label">Da validare</span><strong class="stat-value" id="inprogress-count">1</strong><span class="stat-note">demo e acceptance da chiudere</span></article>
+        <article class="stat"><span class="stat-label">Pianificate</span><strong class="stat-value" id="planned-count">1</strong><span class="stat-note">fuori ambito</span></article>
       </div>
 
       <div class="toolbar">
@@ -486,10 +485,10 @@
       <details class="card sprint-notes">
         <summary>Obiettivi Sprint e criteri di passaggio</summary>
         <ul>
-          <li><strong>Sprint 1:</strong> fondazioni Spring, autenticazione, anagrafiche, DB e CI. Codice e CI completati; PR baseline integrata. Vedi <a href="agile/SPRINT_1.md">Sprint 1</a>.</li>
-          <li><strong>Sprint 2:</strong> backend missioni, timeout, pricing e dashboard verificati in CI; browser UI NOT RUN. Vedi <a href="agile/SPRINT_2.md">Sprint 2</a>.</li>
-          <li><strong>Sprint 3:</strong> chatbot/Telegram e API mappe presenti; provider live, visualizzazione mappa e WhatsApp non verificati/non implementati. Vedi <a href="agile/SPRINT_3.md">Sprint 3</a>.</li>
-          <li><strong>Sprint 4:</strong> CI backend PASS; acceptance docente e collaudi browser/provider non conclusi. Vedi <a href="agile/SPRINT_4.md">Sprint 4</a>.</li>
+          <li><strong>Sprint 1:</strong> fondazioni Spring, autenticazione, anagrafiche, DB e pipeline. Vedi <a href="agile/SPRINT_1.md">Sprint 1</a>.</li>
+          <li><strong>Sprint 2:</strong> missioni, timeout, tariffe e dashboard. Vedi <a href="agile/SPRINT_2.md">Sprint 2</a>.</li>
+          <li><strong>Sprint 3:</strong> chatbot Telegram, notifiche, mappe e client web. WhatsApp fuori ambito. Vedi <a href="agile/SPRINT_3.md">Sprint 3</a>.</li>
+          <li><strong>Sprint 4:</strong> correzioni finali, documentazione e demo; acceptance del docente da acquisire. Vedi <a href="agile/SPRINT_4.md">Sprint 4</a>.</li>
         </ul>
         <p><strong>CSV Jira:</strong> importa le storie come Task e mappa Summary, Description, Priority e Labels. Le etichette riportano ID, sprint, owner e stato iniziale; colonne e workflow Jira non vengono modificati automaticamente.</p>
       </details>
@@ -497,7 +496,7 @@
 
     <footer>
       Snapshot derivato dal <a href="agile/PRODUCT_BACKLOG.md">PRODUCT_BACKLOG.md</a>.
-      Nessuna sincronizzazione live con Jira. Ultimo aggiornamento: 03/11/2026.
+      Nessuna sincronizzazione live con Jira. Ultimo aggiornamento: 04/11/2026.
     </footer>
   </main>
 
@@ -505,19 +504,19 @@
     "use strict";
 
     const issues = [
-      { key: "B-01", title: "Seed, schema, auth e anagrafiche Sprint 1", description: "Backend, schema e seed sono presenti; baseline e test PostgreSQL verificati in CI.", priority: "P0", owner: "M1", sprint: "s1", status: "done", component: "Backend" },
-      { key: "B-02", title: "Java 25, CI e contratti condivisi", description: "Java 25, OpenAPI e job CI Java/PostgreSQL verificati nel run 41656606659.", priority: "P0", owner: "M1", sprint: "s1", status: "done", component: "Platform" },
-      { key: "B-03", title: "Login e anagrafiche web", description: "Client statico presente e integrato con sessione/API; browser E2E NOT RUN.", priority: "P1", owner: "M2", sprint: "s1", status: "inprogress", component: "Frontend" },
-      { key: "B-04", title: "API backend missione e dettaglio centrale", description: "Workflow missioni backend presente e testato in PostgreSQL CI; alcuni flussi UI non esposti.", priority: "P0", owner: "M1", sprint: "s2", status: "done", component: "Missions" },
-      { key: "B-05", title: "Proposta, accettazione, rifiuto e timeout", description: "Transizioni e concorrenza backend verificate nei test PostgreSQL CI.", priority: "P0", owner: "M1", sprint: "s2", status: "done", component: "Missions" },
-      { key: "B-06", title: "Chiusura, pricing e dashboard backend", description: "Chiusura e calcolo lato server; test backend CI passati, acceptance tariffa docente aperta.", priority: "P0", owner: "M1", sprint: "s2", status: "done", component: "Missions" },
-      { key: "B-07", title: "Chatbot guidato e richiesta via API", description: "Chatbot/API presenti; 64 test Python locali passano. Verifica titolarità via targa non idonea per produzione.", priority: "P1", owner: "M3/M1", sprint: "s3", status: "inprogress", component: "Chatbot" },
-      { key: "B-08", title: "API geocodifica e routing", description: "API backend implementata e testata in CI; provider live NOT RUN e nessuna mappa nel client.", priority: "P1", owner: "M4/M1", sprint: "s3", status: "inprogress", component: "Maps" },
-      { key: "B-09", title: "Outbox e notifiche Telegram", description: "Dispatcher presente; prova provider reale non coperta dalla CI e non ripetuta qui.", priority: "P1", owner: "M5/M1/M3", sprint: "s3", status: "inprogress", component: "Notifications" },
-      { key: "B-10", title: "QA integrata, sicurezza e demo", description: "CI backend PASS; browser E2E, acceptance e demo end-to-end non verificati.", priority: "P0", owner: "Tutti", sprint: "s4", status: "inprogress", component: "QA" },
-      { key: "B-11", title: "UI browser centrale e autista", description: "UI presente; mancano alcuni flussi e test browser.", priority: "P1", owner: "M2", sprint: "backlog", status: "inprogress", component: "Frontend" },
-      { key: "B-12", title: "Visualizzazione mappe nel client", description: "Il client non invoca /api/v1/maps/route; in attesa di scope/acceptance.", priority: "P1", owner: "M4/M1/M2", sprint: "backlog", status: "planned", component: "Maps" },
-      { key: "B-13", title: "Webhook e provider WhatsApp", description: "Webhook in ingresso e provider WhatsApp non implementati.", priority: "P2", owner: "M5/M1/M3", sprint: "backlog", status: "planned", component: "Notifications" }
+      { key: "B-01", title: "Seed, schema, auth e anagrafiche Sprint 1", description: "Backend, schema e seed presenti.", priority: "P0", owner: "V. Minervini", sprint: "s1", status: "done", component: "Backend" },
+      { key: "B-02", title: "Java 25, pipeline e contratti condivisi", description: "Java 25, OpenAPI e pipeline GitHub Actions.", priority: "P0", owner: "V. Minervini", sprint: "s1", status: "done", component: "Platform" },
+      { key: "B-03", title: "Login e anagrafiche web", description: "Client statico integrato con sessione e API.", priority: "P1", owner: "F. Valeriano, G. Cangellosi, M. Sancilio", sprint: "s1", status: "done", component: "Frontend" },
+      { key: "B-04", title: "API backend missione e dettaglio centrale", description: "Workflow missioni presente.", priority: "P0", owner: "V. Minervini", sprint: "s2", status: "done", component: "Missions" },
+      { key: "B-05", title: "Proposta, accettazione, rifiuto e timeout", description: "Transizioni e concorrenza gestite da service e DB.", priority: "P0", owner: "V. Minervini", sprint: "s2", status: "done", component: "Missions" },
+      { key: "B-06", title: "Chiusura, pricing e dashboard backend", description: "Chiusura e calcolo lato server; regola da confermare col docente.", priority: "P0", owner: "V. Minervini", sprint: "s2", status: "done", component: "Missions" },
+      { key: "B-07", title: "Chatbot guidato e richiesta via API", description: "Chatbot e API presenti; la sola targa è un limite noto della demo.", priority: "P1", owner: "M. Colucci", sprint: "s3", status: "done", component: "Chatbot" },
+      { key: "B-08", title: "API geocodifica e routing", description: "Nominatim e OSRM tramite il backend.", priority: "P1", owner: "M. Colucci", sprint: "s3", status: "done", component: "Maps" },
+      { key: "B-09", title: "Outbox e notifiche Telegram", description: "Dispatcher con riserva persistente.", priority: "P1", owner: "M. Sancilio, F. Valeriano, G. Cangellosi", sprint: "s3", status: "done", component: "Notifications" },
+      { key: "B-10", title: "Sicurezza, allineamento e demo", description: "Prova Telegram da telefono e acceptance del docente da chiudere.", priority: "P0", owner: "Tutti", sprint: "s4", status: "inprogress", component: "Delivery" },
+      { key: "B-11", title: "UI browser centrale e autista", description: "UI completa: avvisi, rettifica, correzione officina, storico proposte.", priority: "P1", owner: "F. Valeriano, G. Cangellosi, M. Sancilio", sprint: "s3", status: "done", component: "Frontend" },
+      { key: "B-12", title: "Visualizzazione mappe nel client", description: "Mappa Leaflet in centrale e area autista.", priority: "P1", owner: "M. Colucci", sprint: "s3", status: "done", component: "Maps" },
+      { key: "B-13", title: "Webhook e provider WhatsApp", description: "Fuori ambito.", priority: "P2", owner: "M. Sancilio, F. Valeriano, G. Cangellosi", sprint: "backlog", status: "planned", component: "Notifications" }
     ];
 
     const sprintNames = {
@@ -560,7 +559,7 @@
         for (const issue of list) {
           const card = document.createElement("article");
           card.className = "issue";
-          const statusLabel = issue.status === "done" ? "Implementato · CI PASS" : issue.status === "inprogress" ? "Da validare" : "Pianificato";
+          const statusLabel = issue.status === "done" ? "Implementato" : issue.status === "inprogress" ? "Da chiudere" : "Fuori ambito";
           const statusClass = issue.status === "done" ? "tag tag-done" : issue.status === "inprogress" ? "tag tag-planned" : "tag tag-planned";
           card.innerHTML = `
             <div class="issue-top"><span class="issue-key">${escapeHtml(issue.key)}</span><span>${escapeHtml(sprintNames[issue.sprint])}</span></div>
@@ -582,7 +581,7 @@
       const rows = issues.map((issue) => [
         "Task",
         issue.title,
-        `${issue.key}: ${issue.description} Owner: ${issue.owner}. Stato iniziale: ${issue.status === "done" ? "implementato, CI PASS" : issue.status === "inprogress" ? "da validare" : "pianificato"}. Sprint: ${sprintNames[issue.sprint]}.`,
+        `${issue.key}: ${issue.description} Owner: ${issue.owner}. Stato iniziale: ${issue.status === "done" ? "implementato" : issue.status === "inprogress" ? "da validare" : "pianificato"}. Sprint: ${sprintNames[issue.sprint]}.`,
         issue.priority,
         [issue.key.toLowerCase(), issue.sprint, `owner-${issue.owner.toLowerCase().replaceAll("/", "-")}`, issue.status, issue.component.toLowerCase()].join(" ")
       ]);

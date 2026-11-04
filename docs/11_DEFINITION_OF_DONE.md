@@ -1,33 +1,18 @@
 # Definition of Done
 
-**Versione:** 1.0 · **Data:** 03/11/2026 · **Responsabile:** Team Lead — Membro 1<br>
-**Indice:** task · codice · API/DB · test · review · release
+**Versione:** 2.0 · **Data:** 04/11/2026 · **Responsabile:** Vincenzo Minervini (Membro 1)
 
-## Scopo
+## Criteri
 
-Checklist di completamento comune; adattare i test al tipo di deliverable senza
-marcare come completi controlli non eseguiti.
+- Requisito e acceptance soddisfatti e tracciabili.
+- Implementazione coerente con package e responsabilità; errori espliciti, nessun fallback ingannevole,
+  nessun dato sensibile nei log.
+- DTO e OpenAPI aggiornati; consumer informati dei cambi incompatibili.
+- Dati e migrazioni preservano fixture e vincoli; gli script hanno una strategia di rollback.
+- `./mvnw clean package` riuscito su Java 25, applicazione avviata e flusso provato a mano; `git diff --check`
+  pulito.
+- Documentazione aggiornata.
+- PR con diff controllato, nessun segreto, review approvata e pipeline verde.
+- Demo preparata per la review.
 
-## Criteri obbligatori
-
-- Requisito/issue e acceptance criteria sono soddisfatti e tracciabili.
-- Implementazione rispetta package e ownership; errori sono espliciti, nessun
-  fallback ingannevole o dato sensibile nei log.
-- DTO e OpenAPI aggiornati; consumer informati su breaking changes.
-- Dati/migrazioni preservano fixture e vincoli; script hanno strategia di rollback.
-- Test pertinenti passano su Java 25; `clean verify`, lint/quality e `git diff --check`
-  passano. DB/servizi esterni testati o dichiarati BLOCKED con motivazione.
-- Documentazione aggiornata; PASS/FAIL/BLOCKED/NOT RUN distinti.
-- PR ha diff controllato, nessun segreto, review approvata e CI verde.
-- Demo o evidenza verificabile preparata per la review.
-
-## Stato iniziale
-
-Sprint 1: baseline applicativa implementata; Java 25 `clean verify` PASS; test DB
-locale BLOCKED. La CI aggiunta non è considerata PASS finché non termina su GitHub.
-La review esterna/PR è da eseguire.
-
-**Dipendenze:** CI, code owner e criteri specifici della story.<br>
-**Completamento:** ogni checkbox applicabile è soddisfatta e documentata.<br>
-**Riferimenti:** [Piano test](./quality/TEST_PLAN.md),
-[Git workflow](./07_GIT_WORKFLOW.md).
+**Riferimenti:** [Git workflow](./07_GIT_WORKFLOW.md).

@@ -1,6 +1,6 @@
 # Manuale utente FORNITORI
 
-**Codice:** FOR-USER-001 · **Versione:** 1.1 · **Data:** 03/11/2026
+**Codice:** FOR-USER-001 · **Versione:** 2.0 · **Data:** 04/11/2026
 **Destinatari:** responsabile centrale, autista e cliente
 
 ## Prima di iniziare
@@ -9,9 +9,7 @@ Il client web è presente in `src/main/resources/static/` ed è servito dal back
 Spring Boot. Per usare l'area riservata occorrono un ambiente avviato, database
 caricato e credenziali autorizzate fornite dall'amministratore. Non sono incluse
 credenziali demo in questa guida. Il percorso cliente usa il chatbot Telegram,
-separato dalla pagina pubblica informativa. La prova su browser e l'invio Telegram
-non sono stati ripetuti in questa revisione; le istruzioni descrivono i controlli
-presenti nel codice.
+separato dalla pagina pubblica informativa.
 
 ## Responsabile centrale
 
@@ -33,9 +31,9 @@ presenti nel codice.
 - Per registrare un cliente aprire **Clienti → Nuovo cliente**. Compilare i campi
   obbligatori: nome e cognome, telefono, targa, compagnia assicurativa, numero e
   scadenza della polizza. Modello veicolo e città sono facoltativi. Premere
-  **Salva**; se il server accetta la richiesta la finestra si chiude e compare
-  **Cliente aggiunto correttamente**. In caso di errore, correggere i dati indicati
-  dal messaggio o chiedere all'amministratore.
+  **Salva cliente**; se il server accetta la richiesta la finestra si chiude e compare
+  **Cliente aggiunto correttamente**. In caso di errore, il messaggio indica il problema, per esempio
+  **Targa già presente**.
 
 ### Creare e proporre una missione
 
@@ -48,30 +46,39 @@ presenti nel codice.
 4. Premere **Crea missione**. Se i dati sono accettati, la missione appare nella
    lista e il messaggio conferma che si può inviare una proposta.
 5. Nella scheda missione scegliere un autista disponibile e premere
-   **Invia proposta**. La scheda mostra lo stato e il conto alla rovescia; il
-   risultato dipende dalla risposta dell'autista e dalla scadenza.
+   **Invia proposta**, oppure **Proponi al più vicino** per lasciare la scelta al
+   sistema. La scheda mostra lo stato e il conto alla rovescia.
 
-Usare i filtri **Operativa / Storico di riferimento** e **Tutti gli stati** per
-consultare le missioni. **Mostra segnalazioni** carica le note registrate per la
-missione. Il client attuale non espone la modifica tipo intervento/rettifica costo
-né una mappa; questi flussi non vanno eseguiti tramite schermate inventate.
+### Consultare e correggere una missione
+
+- I filtri **Operativa / Storico di riferimento** e **Tutti gli stati** selezionano le missioni.
+- **Mostra segnalazioni** carica le note dell'autista.
+- **Mostra mappa** apre il percorso e i km stimati dell'autista scelto o assegnato.
+- **Mostra storico proposte** elenca autista, esito e data di ogni tentativo.
+- **Aggiorna intervento** corregge tipo e officina, finché la missione è nuova, rifiutata o scaduta.
+- **Correggi costo** rettifica una missione eseguita: serve un motivo, il costo calcolato resta visibile.
+
+### Avvisi
+
+La campanella in alto segnala le proposte rifiutate o scadute e si aggiorna ogni 15 secondi. **Apri missione**
+porta alla scheda, **Segna come letti** azzera il contatore solo in questo browser.
 
 ## Autista
 
 1. Accedere con un account autorizzato al ruolo autista.
-2. In **Le mie missioni**, consultare proposta, luogo, tipo intervento, dettagli
-   disponibili e tempo residuo.
+2. In **Le mie missioni**, consultare proposta, luogo, tipo intervento, mappa,
+   guadagno stimato e tempo residuo. Le nuove proposte compaiono da sole entro 15 secondi.
 3. Premere **Accetta** oppure **Rifiuta**. Se accettata, la missione attiva compare
-   nella stessa pagina; se la proposta scade, aggiornare la vista.
+   nella stessa pagina, con nome e telefono del cliente.
 4. Per informare la centrale, compilare **Segnala alla centrale** e premere
    **Invia segnalazione**. L'esito è visibile nella lista delle note.
-5. Per chiudere l'intervento, inserire i chilometri effettivamente percorsi e
+5. Per chiudere l'intervento, controllare i chilometri, proposti dalla stima del percorso, e
    premere **Chiudi missione · OK**. Solo dopo l'accettazione del server la scheda
    si aggiorna con conferma di chiusura.
 6. Aprire **Storico e guadagni** per consultare le missioni completate e il totale.
 
-Il client non mostra indirizzo/telefono del cliente oltre ai dati restituiti
-dall'API; non cercare di aggirare i permessi o recuperare recapiti da altre aree.
+Nome e telefono del cliente compaiono solo dopo l'accettazione. Se il servizio mappe non risponde, i
+chilometri si possono inserire comunque.
 
 ## Cliente e chatbot
 
@@ -80,14 +87,15 @@ richiesta al backend. Per il flusso bot occorre il canale Telegram predisposto d
 team:
 
 1. Aprire il bot corretto e premere **Avvia**.
-2. Inserire la targa e seguire le domande del dialogo su luogo e problema.
+2. Inserire la targa e seguire le domande del dialogo: luogo, tipo di intervento e problema.
 3. Usare `AIUTO` per le indicazioni, `ANNULLA` per uscire e `STATO` per consultare
    la richiesta associata alla chat, se presente.
 4. Se il bot segnala indisponibilità, non inviare richieste ripetute; seguire le
    indicazioni ricevute o contattare la centrale.
 
-Il bot basato sulla targa non verifica la titolarità del veicolo e non è un servizio
-di emergenza o un canale production certificato. Consultare
+Quando un autista accetta e quando l'intervento è concluso, il bot avvisa nella stessa chat. Il
+riconoscimento basato sulla sola targa è un limite noto della demo: non verifica la titolarità del veicolo.
+Il bot non è un servizio di emergenza. Consultare
 [`chatbot/README.md`](../../chatbot/README.md) per prerequisiti e limiti del bot.
 
 ## Errori e sicurezza

@@ -1,53 +1,52 @@
-# Membro 5 — Chat ingress e notifiche
+# Membro 5 — Notifiche
 
-**Versione:** 1.0 · **Data:** 03/11/2026 · **Responsabile:** Membro 5<br>
-**Indice:** obiettivo · provider · eventi · webhook · retry · test
+**Responsabili:** Marika Sancilio, Francesco Valeriano, Giuseppe Cangellosi ·
+**Versione:** 2.0 · **Data:** 04/11/2026
 
-## Scopo e stato
+## Scopo
 
-Gestire ingresso richieste chatbot e messaggi di stato. Il backend scrive gli
-eventi `MISSION_ACCEPTED` e `MISSION_COMPLETED` in `notifications_outbox` nella
-stessa transazione delle transizioni. Il bot in `chatbot/` riceve richieste
-Telegram e invia notifiche supportate (**IMPLEMENTATO**, vedi
-[D-009](../management/DECISION_LOG.md)); WhatsApp e webhook in ingresso sono **PIANIFICATI**.
-La CI verifica il software, non il provider Telegram dal vivo.
+Avvisare il cliente su Telegram quando un autista prende in carico la richiesta e quando
+l'intervento è concluso. WhatsApp e webhook in ingresso sono **fuori ambito**.
 
-## Provider e funzioni
+## Eventi
 
-Valutare WhatsApp Business API/Twilio; Telegram solo se autorizzato dalla traccia.
-Funzioni target: ricezione richiesta chatbot, notifica missione presa in carico con
-nome autista, notifica completamento, logging esito e retry senza duplicati.
-Implementare interfaccia adapter per non legare il dominio a un provider.
+Il backend scrive `MISSION_ACCEPTED` e `MISSION_COMPLETED` in `notifications_outbox` nella
+stessa transazione delle transizioni. La chiave `event_key` è univoca e impedisce duplicati.
+Il payload contiene evento, codice missione e nome autista, non dati del cliente.
 
-## Eventi e idempotenza
+| Origine missione | Canale | Destinatario | Stato iniziale |
+|---|---|---|---|
+| Chat | Canale di origine | Chat del cliente | `PENDING` |
+| Centrale | `internal` | Nessuno | `SKIPPED`: non viene inviata |
 
-Eventi outbox implementati: `MISSION_ACCEPTED`, `MISSION_COMPLETED`. Il payload
-identifica evento, missione e autista. Per le missioni create da chat `channel` è il
-canale di origine e il destinatario è la chat; per quelle della centrale `channel` è
-`internal` e il destinatario è il telefono cliente. Il bot legge la coda, invia e
-registra l'esito con retry limitati; event key univoca impedisce duplicati.
-Payload limita PII e include id missione/canale/destinatario e template parametri.
+La chat del cliente non è nota per le missioni create dalla centrale, quindi queste non
+generano messaggi e non conservano il telefono.
 
-Esempio concettuale, non credenziale:
+## Stato di invio
 
-```json
-{"eventKey":"mission-42-completed","type":"MISSION_COMPLETED",
- "missionId":42,"channel":"telegram","recipient":"<opaque-recipient>"}
+```text
+PENDING → SENDING → SENT
+             ↓
+          PENDING (fallimento: riprova dopo 30 secondi)
+             ↓
+          FAILED (dopo 5 tentativi)
 ```
 
-Webhook provider deve verificare firma/secret, timestamp, replay e idempotenza prima
-di accettare aggiornamenti. I POST `/api/v1/webhooks/telegram|whatsapp` in OpenAPI
-sono **PIANIFICATI**.
+1. Il dispatcher del bot chiama `POST /api/v1/chat/notifiche/claim`: il backend riserva fino
+   a 20 righe con `FOR UPDATE SKIP LOCKED`, quindi due dispatcher non ricevono la stessa riga.
+2. Il dispatcher invia e registra l'esito con `POST /api/v1/chat/notifiche/{id}/esito`.
+3. Se manca l'esito, la riserva scade dopo 5 minuti: la riga torna disponibile e conta come
+   tentativo.
 
-## Sviluppo e test
+**Limite:** se il bot si ferma tra l'invio a Telegram e la registrazione dell'esito, il
+messaggio può ripartire una volta alla scadenza della riserva. Telegram non offre una chiave
+anti-duplicati, quindi la consegna è "almeno una volta".
 
-Locale: fake adapter deterministico, nessun messaggio reale; segreti solo env/secret
-store. Testare firma valida/non valida, callback duplicato, retry, provider 429/5xx,
-errore permanente, outbox atomicità e PII nei log. Sandbox/provider reale solo con
-autorizzazione e numeri di test.
+## Provider e canali
 
-**Dipendenze:** M1 outbox/eventi/autorizzazione; M3 dialogo e backend HTTP; provider
-approvato. **Acceptance:** consegna idempotente osservabile, retry limitato, errori
-tracciabili, segreti non versionati. **Risultato Sprint successivo:** adapter fake,
-contratto webhook e spike provider. **Riferimenti:** [sicurezza](../architecture/SECURITY_DESIGN.md),
-[API](../architecture/API_SPECIFICATION.md).
+`NotificationDispatcher` riceve la funzione di invio del canale e non dipende da Telegram;
+`InboundMessage` fa lo stesso per i messaggi in arrivo. Per aggiungere un canale serve un
+adattatore con queste due interfacce. I segreti stanno solo nell'ambiente.
+
+**Riferimenti:** [sicurezza](../architecture/SECURITY_DESIGN.md),
+[API](../architecture/API_SPECIFICATION.md), [contratti](./INTEGRATION_CONTRACTS.md).

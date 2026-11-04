@@ -1,8 +1,7 @@
 # Sorgenti e rendering dei diagrammi
 
-I file `.mmd` sono le fonti modificabili. Solid lines indicano componenti presenti;
-le linee tratteggiate indicano integrazioni future o non runtime. Il modello ER
-è derivato da `database/01_schema.sql`; aggiornare entrambi nella stessa PR.
+I file `.mmd` sono le fonti modificabili. Il modello ER è derivato dagli script `database/01..08`;
+aggiornare entrambi nella stessa PR.
 
 ## Render ripetibile
 
@@ -14,7 +13,7 @@ powershell -ExecutionPolicy Bypass -File tools/build_diagrams.ps1
 
 Il comando usa `npx --yes @mermaid-js/mermaid-cli@11.4.2` e genera `.svg` e `.png`
 in `docs/diagrams/rendered/`. Il PNG è usato nel DOCX; l'SVG è l'output vettoriale
-per la consultazione. Nessun diagramma futuro è presentato come integrazione live.
+per la consultazione.
 
 ## Catalogo
 

@@ -1,74 +1,45 @@
 # FORNITORI — gestione del soccorso stradale
 
-Project work ITS Developer 4.0 per coordinare richieste di soccorso stradale,
-centrale operativa, autisti e integrazioni esterne. Il riferimento locale
-`origin/main` è stato integrato fino a `bb8e548` nel branch `feature/backend`;
-il fetch successivo non è riuscito per indisponibilità della connessione a GitHub,
-quindi non è possibile confermare che questo sia ancora l'ultimo SHA remoto.
-Il progetto comprende backend Java/Spring, client web statico, workflow missioni,
-chatbot Telegram e API di geocodifica/percorso. La UI non visualizza ancora mappe
-e WhatsApp resta pianificato. Il run CI `41811689974` riguarda il precedente SHA
-`69ead57`, non i commit successivi. Limiti browser/provider e prove locali sono
-esplicitati nei report.
+Project work ITS Developer 4.0 per coordinare richieste di soccorso stradale, centrale operativa
+e autisti. Comprende backend Java/Spring, client web con mappa, workflow delle missioni e chatbot
+Telegram. Requisiti e acceptance del docente restano da confermare: PDF ed Excel originali non sono
+nel repository.
 
-Apri la [documentazione aggiornata](./docs/README.md) o l'[indice generale](./docs/00_INDICE_GENERALE.md)
-per audit, BUR/FUD/TAD, guide, test e Word modificabili. Il PDF e l'Excel originali
-del docente non sono presenti nella working tree esaminata: i requisiti non sono
-quindi dichiarati approvati.
+Apri la [documentazione](./docs/README.md) o l'[indice generale](./docs/00_INDICE_GENERALE.md).
 
-Il [report conclusivo della revisione](./docs/management/FINAL_REVIEW_REPORT.md)
-riassume evidenze, deliverable e attività ancora bloccate.
-
-## Stato della baseline
+## Stato
 
 | Area | Stato |
 |---|---|
-| Java 25 LTS / Maven | **IMPLEMENTATO**; verificato con Temurin 25.0.5 |
-| Backend Spring Boot: sessione, CSRF, ruoli, anagrafiche e rotte missioni | **IMPLEMENTATO**; 31 test MVC/security e diagnostica passati nella revisione locale |
-| Schema, seed e baseline PostgreSQL | Script **IMPLEMENTATI**; PostgreSQL locale 18.6 verificato con ruolo applicativo non-superuser; Hibernate `validate` e baseline SQL **PASS** |
-| Missioni, timeout, pricing, note, dashboard e storico autista | **IMPLEMENTATO** in `main`; PostgreSQL CI **PASS** |
-| Chatbot (`chatbot/`) e API `chat/*` | **IMPLEMENTATO**; prova Telegram dichiarata nel README del modulo |
-| Notifiche al cliente | Outbox/backend e dispatcher Telegram presenti; prova reale dichiarata nel README del modulo; WhatsApp **PIANIFICATO** |
-| UI web | **PRESENTE** in `src/main/resources/static/`: pagina pubblica, login, centrale e area autista; 2 flussi browser/API/PostgreSQL PASS in entrambi gli ordini |
-| API mappe | **PRESENTE** per geocodifica, percorso e distanza stimata; la UI non mostra ancora la mappa |
-| CI Java 25 | Run GitHub Actions storico PASS su `69ead57`; modifiche successive, incluso workflow a privilegi minimi e merge UI fino a `bb8e548`, da verificare con una nuova run |
+| Backend: sessione, CSRF, ruoli, anagrafiche, missioni, tariffe, note, dashboard | Implementato |
+| UI web: pagina pubblica, centrale e area autista, mappa Leaflet | Implementato |
+| Mappe: geocodifica, percorso e km stimati con Nominatim e OSRM | Implementato |
+| Chatbot Telegram e API `chat/*` | Implementato; la sola targa identifica il cliente, limite noto della demo |
+| Notifiche al cliente con stato di invio persistente | Implementato per le missioni create dal bot |
+| WhatsApp, webhook in ingresso, gestione utenti | Fuori ambito |
 
-## Requisiti locali
+## Requisiti
 
-- JDK 25 LTS (il POM dichiara sia `java.version` sia `maven.compiler.release` a 25).
-- PostgreSQL 18 o compatibile.
-- Maven Wrapper incluso; scarica Maven 3.9.9 al primo avvio.
+- JDK 25 LTS.
+- PostgreSQL 18 o compatibile, con `psql`.
+- Maven Wrapper incluso.
+- Python 3.10 o superiore per il chatbot.
 
-## Stack tecnologico
+## Stack
 
 | Area | Tecnologia |
 |---|---|
-| Backend | Java 25 LTS, Spring Boot 4.1.2, Spring Security, Spring Data JPA |
+| Backend | Java 25, Spring Boot 4.1.2, Spring Security, Spring Data JPA |
 | Build | Maven Wrapper 3.9.9 |
-| Persistenza | PostgreSQL 18 o compatibile |
+| Persistenza | PostgreSQL 18 |
 | Contratto | REST/JSON, OpenAPI 3.0.3 |
-| Client | Web HTML/CSS/JavaScript/Bootstrap 5.3, servito da Spring Boot |
-| Provider previsti | Telegram e WhatsApp Business/Twilio, soggetti ad approvazione |
+| Client | HTML, CSS, JavaScript, Bootstrap 5.3, Leaflet, serviti da Spring Boot |
+| Chatbot | Python, sola libreria standard, Telegram in long polling |
+| Mappe | Nominatim e OSRM pubblici |
 
-### Windows: installazione JDK 25
+## Configurazione
 
-Usa una distribuzione JDK 25 affidabile, per esempio Eclipse Temurin 25 LTS.
-Per una sessione PowerShell senza modifiche globali:
-
-```powershell
-$env:JAVA_HOME = "$HOME\.jdks\temurin-25.0.5+8"
-$env:Path = "$env:JAVA_HOME\bin;$env:Path"
-java -version
-javac -version
-.\mvnw.cmd -version
-```
-
-In alternativa scarica l'ultima release 25 LTS da
-[Adoptium](https://adoptium.net/temurin/releases/?version=25), verifica il checksum
-pubblicato dal distributore e configura `JAVA_HOME` per il tuo utente. Non abbassare
-il target Maven per aggirare un JDK mancante.
-
-La password PostgreSQL non è inclusa nel repository. Impostare localmente:
+La password PostgreSQL non è nel repository. Impostarla localmente (PowerShell):
 
 ```powershell
 $env:SPRING_DATASOURCE_URL = "jdbc:postgresql://localhost:5432/fornitori"
@@ -76,12 +47,17 @@ $env:SPRING_DATASOURCE_USERNAME = "fornitori_app"
 $env:SPRING_DATASOURCE_PASSWORD = "<password configurata localmente>"
 ```
 
-Il database e l'utente applicativo devono essere predisposti dall'amministratore
-PostgreSQL. Non riutilizzare credenziali dimostrative fuori da un ambiente locale.
+Su macOS e Linux usare `export` con gli stessi nomi.
 
-## Schema e caricamento dati
+## Database
 
-Eseguire in ordine nel database `fornitori`:
+Creare un database vuoto di proprietà dell'utente applicativo:
+
+```powershell
+createdb -O fornitori_app fornitori
+```
+
+Eseguire tutti gli script in ordine:
 
 ```powershell
 psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/01_schema.sql
@@ -91,153 +67,75 @@ psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/04_assert_base
 psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/05_chat_requests.sql
 psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/06_chat_recipient.sql
 psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/07_backend_hardening.sql
+psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/08_cleanup_and_delivery.sql
 ```
 
-Questa sequenza è per un database nuovo. Su un database esistente verificare
-prima quali modifiche siano già state applicate e fare un backup; non rieseguire
-schema o seed come scorciatoia di migrazione. Il repository non mantiene un
-registro automatico delle versioni SQL: applicare solo le modifiche mancanti
-nell'ordine e controllarne l'esito prima di avviare l'applicazione.
+Hibernate è in `validate`: senza tutti gli script, 07 e 08 compresi, l'applicazione non si avvia. Su un
+database esistente applicare solo gli script mancanti, nell'ordine, dopo un backup: chi è già a 07 esegue
+solo 08. Dopo 08 non rieseguire 01 e 02: `08_cleanup_and_delivery.sql` rimuove `chat_sessions` e
+`drivers.stato_seed`.
 
-Gli script attuali sono additivi e non contengono `DROP` o `TRUNCATE`; il seed
-ignora le chiavi primarie già presenti e riallinea le sequenze identity. Non usare
-Hibernate `update`: le future modifiche strutturali richiedono migrazioni SQL
-esplicite e verificate.
+Le righe del docente in `missions` sono marcate `is_fixture=TRUE` e costituiscono lo storico di riferimento
+al 28/10/2026: non vengono mai modificate.
 
-Le righe del docente in `missions` sono marcate `is_fixture=TRUE` e costituiscono lo
-storico di riferimento al 28/10/2026. Non vanno modificate dallo scheduler operativo.
-
-## Build, test e avvio
+## Build e avvio
 
 ```powershell
-.\mvnw.cmd clean verify
+.\mvnw.cmd clean package
 .\mvnw.cmd spring-boot:run
 ```
 
-Con il backend avviato, aprire `http://localhost:8080/`. La pagina pubblica è
-accessibile senza login; l'area riservata usa la sessione e le API REST dello stesso
-server.
+Su macOS e Linux usare `./mvnw`. Aprire `http://localhost:8080/`: la pagina pubblica è accessibile senza
+login, l'area riservata usa la sessione e le API dello stesso server.
 
-Hibernate è configurato in `validate`: l'applicazione si avvia solo se il database
-esiste, gli script sono stati eseguiti e le variabili datasource sono corrette.
-Il test di caricamento del contesto richiede `SPRING_DATASOURCE_PASSWORD`; i test
-web di sicurezza non accedono al database.
+La pipeline [backend-ci.yml](./.github/workflows/backend-ci.yml) compila il progetto, applica gli script a
+un PostgreSQL effimero e verifica l'avvio dell'applicazione con un ruolo senza privilegi di amministratore.
 
-La pipeline [backend-ci.yml](./.github/workflows/backend-ci.yml) verifica Java 25
-e, in un job separato, inizializza un PostgreSQL effimero con schema, seed e
-assertion di baseline. L'applicazione nei job PostgreSQL usa un ruolo DML
-non-superuser; le migrazioni sono applicate dall'admin effimero del container.
-Questa modifica locale va ancora verificata da una nuova esecuzione GitHub Actions.
+## API
 
-## API backend
+Il contratto è in [api/openapi.yaml](./api/openapi.yaml): 38 operazioni, 34 implementate e 4 fuori ambito.
+Mappa delle superfici in [API_SPECIFICATION.md](./docs/architecture/API_SPECIFICATION.md).
 
-Tutte le anagrafiche e le operazioni di sessione, tranne il recupero CSRF e il login,
-richiedono una sessione. Le API centrali richiedono `RESPONSABILE`; il ruolo
-`AUTISTA` non riceve i dati riservati della centrale. Le richieste mutative richiedono
-il token ottenuto da `GET /api/v1/auth/csrf` nell'header `X-CSRF-TOKEN`.
+Le API centrali richiedono `RESPONSABILE`; le mutazioni richiedono il token di `GET /api/v1/auth/csrf`
+nell'header `X-CSRF-TOKEN`. Le API `chat/*` usano `Authorization: Bearer` con `FORNITORI_CHAT_TOKEN`, da
+impostare uguale su backend e chatbot; se manca, rispondono `401`. Vedi [chatbot/README.md](./chatbot/README.md).
 
-| Metodo | Endpoint | Stato |
-|---|---|---|
-| POST | `/api/v1/auth/login` | Implementato; JSON, sessione HttpOnly |
-| POST | `/api/v1/auth/logout` | Implementato; sessione invalidata |
-| GET | `/api/v1/auth/me` | Implementato |
-| GET | `/api/v1/auth/csrf` | Implementato |
-| GET | `/api/v1/autisti` | Implementato; disponibilità calcolata dalle missioni operative |
-| GET | `/api/v1/mezzi` | Implementato |
-| GET | `/api/v1/compagnie` | Implementato |
-| GET | `/api/v1/clienti?search=...` | Implementato; nome o targa |
-| POST | `/api/v1/clienti` | Implementato; centrale |
-| GET | `/api/v1/officine` | Implementato |
-| GET/POST | `/api/v1/missioni` | Implementato in `main` |
-| GET | `/api/v1/missioni/{id}` | Implementato; autista limitato alle missioni autorizzate |
-| POST | `/api/v1/missioni/{id}/proposte` | Implementato |
-| POST | `/api/v1/missioni/{id}/accept`, `/reject`, `/complete` | Implementato |
-| PATCH | `/api/v1/missioni/{id}/cost` | Implementato |
-| GET/POST | `/api/v1/missioni/{id}/notes` | Implementato |
-| GET | `/api/v1/dashboard`, `/api/v1/autista/missioni`, `/api/v1/autista/storico` | Implementato |
-| PATCH | `/api/v1/missioni/{id}/intervento` | Implementato; centrale |
-| GET | `/api/v1/maps/route` | Implementato; centrale e autista, usa Nominatim e OSRM |
-| POST | `/api/v1/chat/lookup-targa`, `/api/v1/chat/missioni` | Implementato; token di servizio del chatbot |
-| POST | `/api/v1/chat/stato` | Implementato; token di servizio del chatbot |
-| GET | `/api/v1/chat/notifiche` | Implementato; token di servizio del chatbot |
-| POST | `/api/v1/chat/notifiche/{id}/esito` | Implementato; token di servizio del chatbot |
-
-Le API `chat/*` usano `Authorization: Bearer` con il valore di `FORNITORI_CHAT_TOKEN`,
-da impostare uguale sul backend e sul chatbot. Se manca, rispondono sempre `401`.
-Vedi [chatbot/README.md](./chatbot/README.md).
-
-Il contratto completo è in [api/openapi.yaml](./api/openapi.yaml); gli stati
-`implemented` e `designed` vanno letti per singola operation e non attestano da
-soli la verifica end-to-end. Le nuove API mappe sono parte del backend integrato.
-La UI non invoca ancora il servizio mappe.
-
-## Struttura Spring Boot
-
-I package seguono la suddivisione per layer del progetto di riferimento SpringbootES:
+## Struttura
 
 ```text
 src/main/java/it/exprivia/fornitori/
-├── FornitoriApplication.java
-├── config/       # configurazione Spring Security e sessione
+├── config/       # Spring Security e sessione
 ├── controller/   # endpoint REST
 ├── dto/          # payload di richiesta e risposta
 ├── entity/       # entità JPA
 ├── enums/        # ruoli applicativi
-├── repository/   # query e accesso ai dati con Spring Data JPA
+├── repository/   # accesso ai dati
 ├── service/      # logica applicativa
-└── common/       # gestione condivisa degli errori API
+└── common/       # gestione condivisa degli errori
+src/main/resources/static/   # client web
+database/                    # script SQL 01..08
+chatbot/fornitori_chatbot/   # bot Telegram
 ```
 
-Il flusso è `controller → service → repository → entity`; i controller usano i DTO
-per non esporre direttamente le entità persistenti. Le classi di test sono in
-`src/test/java/it/exprivia/fornitori/`.
+Il flusso è `controller → service → repository → entity`; i DTO evitano di esporre le entità.
 
 ## Credenziali demo e sicurezza
 
-Il seed contiene esclusivamente hash BCrypt delle password d'esempio. Le credenziali
-da usare per una demo locale vanno consultate nei materiali distribuiti dal docente;
-non copiarle in questo repository, nei log o in ambienti pubblici. I DTO non espongono
-password né hash. Il cookie di sessione è HttpOnly e le richieste mutative mantengono
-la protezione CSRF.
+Il seed contiene solo hash BCrypt delle password d'esempio; le credenziali per la demo vanno consultate nei
+materiali del docente. Questa è una demo con dati sintetici: la sola targa identifica il cliente e il progetto
+non è pronto per dati reali. Vedi [sicurezza](./docs/architecture/SECURITY_DESIGN.md).
 
-## Componenti e documentazione
+## Team
 
-Apri la [dashboard visuale Spring & Scrum](./docs/SPRING_SCRUM_DASHBOARD.html)
-nel browser per esplorare i layer Spring, filtrare il backlog per Sprint e
-scaricare un CSV importabile in Jira. È una vista statica del repository, non una
-dashboard collegata a Jira.
-
-| Componente | Responsabile | Guida |
+| Area | Responsabili | Guida |
 |---|---|---|
-| Backend e database | Membro 1 | [Guida backend](./docs/team/MEMBRO_1_BACKEND.md) |
-| Frontend | Membro 2 | [Guida frontend](./docs/team/MEMBRO_2_FRONTEND.md) |
-| Chatbot | Membro 3 | [Guida chatbot](./docs/team/MEMBRO_3_CHATBOT.md) |
-| Mappe | Membro 4 | [Guida mappe](./docs/team/MEMBRO_4_MAPS.md) |
-| Notifiche | Membro 5 | [Guida notifiche](./docs/team/MEMBRO_5_NOTIFICATIONS.md) |
+| Backend | Vincenzo Minervini | [Guida](./docs/team/MEMBRO_1_BACKEND.md) |
+| Frontend | Francesco Valeriano, Giuseppe Cangellosi, Marika Sancilio | [Guida](./docs/team/MEMBRO_2_FRONTEND.md) |
+| Chatbot | Marco Colucci | [Guida](./docs/team/MEMBRO_3_CHATBOT.md) |
+| Mappe | Marco Colucci | [Guida](./docs/team/MEMBRO_4_MAPS.md) |
+| Notifiche | Marika Sancilio, Francesco Valeriano, Giuseppe Cangellosi | [Guida](./docs/team/MEMBRO_5_NOTIFICATIONS.md) |
 
-- Inizia da [indice generale](./docs/00_INDICE_GENERALE.md) e
-  [guide del team](./docs/team/README.md).
-- Architettura, database, API e regole: [documentazione per area](./docs/README.md).
-- Piano Scrum: [registro](./docs/agile/README.md) e [backlog](./docs/agile/PRODUCT_BACKLOG.md).
-- Processo branch/PR: [docs/07_GIT_WORKFLOW.md](./docs/07_GIT_WORKFLOW.md).
-
-- Report Sprint 1: [docs/SPRINT_1_REPORT.md](./docs/SPRINT_1_REPORT.md)
-- Evidenze effettive: [docs/quality/TEST_EVIDENCE.md](./docs/quality/TEST_EVIDENCE.md)
-- Database e dizionario: [docs/architecture/DATABASE_DESIGN.md](./docs/architecture/DATABASE_DESIGN.md)
-- Contratto API normativo: [api/openapi.yaml](./api/openapi.yaml)
-- Manuale tecnico: [docs/manuals/MANUALE_TECNICO.md](./docs/manuals/MANUALE_TECNICO.md)
-- Manuale utente: [docs/manuals/MANUALE_UTENTE.md](./docs/manuals/MANUALE_UTENTE.md)
-- Word editabili: [docs/word/](./docs/word/)
-
-## Hardening backend è 04/11/2026
-
-[Audit E2E](docs/quality/BACKEND_E2E_AUDIT.md),
-[security review](docs/quality/SECURITY_REVIEW.md) e
-[evidenze](docs/quality/TEST_EVIDENCE.md) distinguono prove locali, CI e limiti.
-118 test Java su PostgreSQL 18 senza skip, 4 Node e 2 browser con DB reale isolato.
-Applicare la migrazione additiva `database/07_backend_hardening.sql` dopo 01–06.
-Login rinnova CSRF; anche GET mappe richiede CSRF; creazione chat richiede lookup
-positivo valido per la stessa sessione/cliente. Protocollo Python invariato.
-Il DB personale localhost:5432 accetta autenticazione ma non contiene `missions`;
-non è stato modificato. Il verde dei test isolati non inizializza quel database.
-Nessuna modifica grafica; titolarità chatbot e consegna outbox restano gate aperti.
+Altri riferimenti: [manuale tecnico](./docs/manuals/MANUALE_TECNICO.md),
+[manuale utente](./docs/manuals/MANUALE_UTENTE.md), [database](./docs/architecture/DATABASE_DESIGN.md),
+[Scrum](./docs/agile/README.md), [Git](./docs/07_GIT_WORKFLOW.md), [Word editabili](./docs/word/),
+[dashboard visuale](./docs/SPRING_SCRUM_DASHBOARD.html).

@@ -13,11 +13,11 @@ Per i criteri generali di completamento vedere
 
 | Membro | Fatto dall'ultimo sync | Prossimo passo | Blocco / owner / scadenza |
 |---|---|---|---|
-| M1 Backend | | | |
-| M2 Frontend | | | |
-| M3 Chatbot | | | |
-| M4 Mappe | | | |
-| M5 Notifiche | | | |
+| Vincenzo Minervini (Backend) | | | |
+| Francesco Valeriano (Frontend, Notifiche) | | | |
+| Giuseppe Cangellosi (Frontend, Notifiche) | | | |
+| Marika Sancilio (Frontend, Notifiche) | | | |
+| Marco Colucci (Chatbot, Mappe) | | | |
 
 **Decisioni, issue e rischi:**<br>
 **Completamento:** ogni impedimento ha owner/azione; gli stati riportati sono

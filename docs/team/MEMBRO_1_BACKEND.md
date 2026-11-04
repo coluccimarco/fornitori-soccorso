@@ -1,61 +1,47 @@
-# Membro 1 — Backend & Database Lead
+# Membro 1 — Backend
 
-**Versione:** 1.0 · **Data:** 03/11/2026 · **Responsabile:** Membro 1<br>
-**Indice:** responsabilità · layer · presente · Sprint 2 · test
+**Responsabile:** Vincenzo Minervini · **Versione:** 2.0 · **Data:** 04/11/2026
 
-## Scopo e responsabilità
+## Responsabilità
 
-Owner di Spring, PostgreSQL, OpenAPI e integrazione. Coordina `pom.xml`, schema,
-seed e contratti. Java 25 LTS; Spring Boot 4.1.2 attuale; Maven Wrapper 3.9.9.
+Spring Boot, PostgreSQL, OpenAPI e integrazione. Java 25, Spring Boot 4.1.2, Maven
+Wrapper 3.9.9. Coordina `pom.xml`, schema, seed e contratti.
 
 ## Struttura
 
-`controller` valida HTTP e delega; `dto` definisce payload; `entity` mappa DB;
-`repository` esegue query; `service` contiene use case/transazioni; `enums` definisce
-valori stabili; `config` configura sessione/CSRF/ruoli; `common` normalizza errori.
-Non esporre entity, hash o credenziali.
+`controller` valida HTTP e delega; `dto` definisce i payload; `entity` mappa il DB;
+`repository` esegue le query; `service` contiene casi d'uso e transazioni; `enums` i
+valori stabili; `config` sessione, CSRF e ruoli; `common` normalizza gli errori. Le
+entity e le credenziali non vengono mai esposte.
 
-## Disponibile — IMPLEMENTATO
+## Funzioni implementate
 
-Login JSON, CSRF, logout, profilo, sessione HttpOnly, ruoli e API anagrafiche:
-autisti, mezzi, compagnie, clienti (ricerca e inserimento), officine. Configura
-PostgreSQL da environment; applica script `database/01...07` in ordine.
+- Login JSON, CSRF, logout, profilo, sessione HttpOnly di 30 minuti, limite di 20 login
+  al minuto per IP, ruoli `RESPONSABILE` e `AUTISTA`.
+- Anagrafiche: autisti, mezzi, compagnie, clienti (ricerca e inserimento), officine.
+- Missioni: creazione, proposta, accettazione, rifiuto, chiusura, correzione dell'intervento.
+- Storico proposte in sola lettura: `GET /api/v1/missioni/{id}/proposte`, per la centrale.
+- Scadenza da `pricing_config`, scheduler solo sulle missioni live, controllo anche al
+  momento della risposta dell'autista.
+- Lock pessimista su missione e autista; indice DB contro le doppie assegnazioni.
+- Chiusura con tariffa server-side, `BigDecimal`, `HALF_UP`, fascia notturna 20:00–08:00
+  sull'ora di accettazione, Europe/Rome. Rettifica motivata con audit.
+- Dashboard reference e live con totale e subtotali per autista.
+- Note solo su missioni live: su una fixture la risposta è 409.
+- Outbox nella transazione di dominio: le missioni della centrale non hanno un
+  destinatario, quindi la riga nasce `SKIPPED` e non conserva il telefono del cliente.
 
-## Sprint 2 — IMPLEMENTATO IN `main`
+## Database
 
-- Missioni, proposte e storico proposte; transizioni transazionali.
-- Timeout da `pricing_config`, scheduler live-only e guard al momento dell'accept.
-- Lock pessimista missione/autista; indice DB contro doppie assegnazioni.
-- Chiusura con tariffa server-side, `BigDecimal`, `HALF_UP` e rettifica motivata con audit.
-- Dashboard reference/live, totale e subtotali per autista; fixture escluse dal live.
-- `Clock` iniettato per deadline; timezone tariffaria Europe/Rome.
-- Note e API autista con verifica dell'identità lato server.
-- Test unitari/MVC e test PostgreSQL end-to-end/concorrenza passati in CI;
-  la verifica PostgreSQL locale resta bloccata dall'assenza di credenziali.
+Applicare `database/01..08` in ordine su un DB vuoto. Su un DB già inizializzato
+applicare solo gli script mancanti. Hibernate resta in `validate`. Per un uso condiviso
+tenere separati l'account delle migrazioni e quello applicativo.
 
-Le 13 operazioni backend missione del report storico sono state integrate in
-`main` tramite PR #3. Il job CI latest `41656606659` su `f763d53` è verde su Java 25
-e PostgreSQL 18. Il conteggio corrente è 34 operation (30 implementate, 4
-progettate), incluse geocodifica e routing backend.
+## Regole e chiusura del lavoro
 
-## Logging, test e Definition of Done
+Log senza password, token o dati personali; messaggi API generici per gli errori
+inattesi. Prima di ogni PR: `./mvnw clean package`, prova manuale del flusso, diff check
+e OpenAPI.
 
-Log strutturati senza password/token/body PII; errori inattesi con correlation ID
-se introdotto, messaggi API generici. Prima di ogni PR: JDK25
-`.\mvnw.cmd clean verify`, test PostgreSQL, diff check e OpenAPI.
-
-**Dipendenze:** PostgreSQL, feedback tariffario, consumer M2–M5.
-**Completamento backend:** test PostgreSQL CI PASS; 13 operazioni OpenAPI
-promosse a `implemented`. **Riferimenti:**
-[runbook](../BACKEND_SPRINT1_RUNBOOK.md),
+**Riferimenti:** [manuale tecnico](../manuals/MANUALE_TECNICO.md),
 [regole](../requirements/BUSINESS_RULES.md).
-
-## Aggiornamento hardening e prove del 04/11/2026
-
-Responsabile backend comunicato: **Minervini Vincenzo**. Java 25 mantenuto.
-Eseguire migrazione 07 e suite su database isolato; separare account migrazione e
-runtime come nel runner E2E. API stabili, aggiunte DTO retrocompatibili e due
-precondizioni esplicite: CSRF route e grant lookup chat. Prove:118 Java senza
-skip, 4 Node, 2 browser con commit SQL. Database personale ancora da inizializzare.
-Prima di uso reale risolvere identità chatbot e delivery outbox. Le evidenze CI
-precedenti descrivono solo i rispettivi commit, non il nuovo branch.

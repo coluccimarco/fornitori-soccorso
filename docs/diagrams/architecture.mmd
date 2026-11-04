@@ -1,4 +1,4 @@
-%% FORNITORI | runtime integrato | baseline f763d53 | 03/11/2026
+%% FORNITORI | runtime integrato | 04/11/2026
 flowchart LR
     Centrale["Responsabile centrale<br/>browser UI presente"] -->|cookie sessione + CSRF| Web["Client statico<br/>HTML / CSS / JavaScript"]
     Autista["Autista<br/>browser UI presente"] -->|cookie sessione + CSRF| Web
@@ -14,4 +14,3 @@ flowchart LR
     Services --> Outbox["Notification outbox<br/>persistente"]
     Outbox --> Bot
     Services -->|geocoding / routing| Maps["Nominatim / OSRM<br/>provider pubblici"]
-    WA["WhatsApp provider<br/>non implementato"] -. futuro .-> Bot

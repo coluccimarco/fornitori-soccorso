@@ -1,68 +1,45 @@
 # Project Charter — FORNITORI
 
-**Codice:** FOR-CH-001 · **Versione:** 1.0 · **Data:** 03/11/2026
-**Sponsor/approvatore:** da confermare con il docente · **Project lead:** ruolo M1 nel repository
+**Codice:** FOR-CH-001 · **Versione:** 2.0 · **Data:** 04/11/2026
+**Sponsor/approvatore:** da confermare con il docente
 
 ## Sintesi
 
-FORNITORI è un project work del percorso ITS Developer 4.0 per realizzare un
-sistema dimostrativo di coordinamento del soccorso stradale. Il repository integra
-backend Java/Spring e PostgreSQL, client web HTML/CSS/JavaScript, API mappe e
-chatbot Python su Telegram; visualizzazione cartografica, WhatsApp e webhook in
-ingresso non sono presenti nella baseline verificata.
+FORNITORI è un project work del percorso ITS Developer 4.0: un sistema dimostrativo di coordinamento del soccorso
+stradale, con backend Java/Spring e PostgreSQL, client web con mappa e chatbot Python su Telegram.
 
-## Scopo e obiettivi
+## Obiettivi
 
-- Modellare anagrafiche, missioni e relative transizioni operative.
-- Separare ruoli centrale/autista e fornire contratti REST verificabili.
-- Preservare dati fixture e distinguere storico didattico dal lavoro live.
-- Mostrare un flusso chatbot tramite Telegram senza accesso diretto alle tabelle.
-- Produrre evidenze ripetibili con Maven, test e PostgreSQL in CI.
-- Preparare il project work per integrazione didattica, con ogni funzione marcata
-  in modo trasparente come implementata, parziale o pianificata.
+- Modellare anagrafiche, missioni e transizioni operative.
+- Separare i ruoli centrale e autista e fornire contratti REST verificabili.
+- Preservare le fixture e distinguere lo storico didattico dal lavoro live.
+- Mostrare un flusso chatbot su Telegram senza accesso diretto alle tabelle.
 
-Questi obiettivi sono una baseline derivata dal repository e dai documenti storici,
-non un'approvazione della specifica del docente.
+## Ambito
 
-## Ambito e consegne
+**Presente:** API di autenticazione, anagrafiche, missioni, chat e mappe; client web per responsabile e autista con
+mappa, rettifica costo, correzione officina e storico proposte; persistenza JPA; schema SQL; dispatcher Telegram;
+contratti OpenAPI; pipeline.
 
-**Presente:** API di autenticazione/anagrafiche/missioni/chat/mappe, client web
-statico per responsabile e autista, persistenza JPA, schema SQL, dispatcher
-Telegram nel chatbot, contratti OpenAPI, test e CI.
+**Fuori ambito:** WhatsApp; webhook in ingresso; gestione utenti da interfaccia; infrastruttura cloud e produzione.
 
-**Non presente nella baseline:** mappa visuale collegata al browser; alcune azioni
-centrali (rettifica intervento/costo); WhatsApp; infrastruttura cloud/produzione.
-La UI non ha browser E2E verificati. La disponibilità in OpenAPI di un endpoint
-`designed` non è una consegna implementata.
-
-**Deliverable documentali:** Markdown canonico, DOCX modificabili generati,
-workbook dei registri, diagrammi Mermaid e audit delle fonti.
+**Deliverable documentali:** Markdown, DOCX generati, workbook dei registri e diagrammi Mermaid.
 
 ## Organizzazione
 
-| Ruolo repository | Ambito primario | Approvazioni necessarie |
+| Area | Responsabili | Approvazioni necessarie |
 |---|---|---|
-| M1 | Backend, database, contratti e coordinamento tecnico | Modifiche a schema/API condivisi |
-| M2 | Frontend statico centrale/autista | UX, integrazione API e verifica browser |
-| M3 | Chatbot Python/Telegram | Conversazione, canale e privacy |
-| M4 | API mappe/routing | Provider, licenza, fallback e coordinamento vista browser |
-| M5 | Adapter canale/notifiche | Provider esterni, segreti e policy di retry |
-| Docente/team | Requisiti e decisioni didattiche | Fonte primaria non disponibile in questa baseline |
+| Backend | Vincenzo Minervini | Modifiche a schema e API condivisi |
+| Frontend | Francesco Valeriano, Giuseppe Cangellosi, Marika Sancilio | UX e integrazione API |
+| Chatbot | Marco Colucci | Conversazione, canale e privacy |
+| Mappe | Marco Colucci | Provider, licenza e fallback |
+| Notifiche | Marika Sancilio, Francesco Valeriano, Giuseppe Cangellosi | Provider, segreti e tentativi |
+| Docente | Requisiti e decisioni didattiche | Fonte primaria non presente nel repository |
 
-I ruoli non provano che tutte le attività siano state assegnate o approvate per
-persona; i nomi degli studenti non sono registrati nel repository esaminato.
+## Vincoli e successo
 
-## Vincoli e criteri di successo
+JDK 25; Spring Boot 4.1.2; Maven Wrapper 3.9.9; PostgreSQL 18; OpenAPI come contratto. Nessuna credenziale viene
+committata. Il successo del progetto si dichiara dopo l'acceptance del docente.
 
-JDK 25; Spring Boot 4.1.2; Maven Wrapper 3.9.9; PostgreSQL 18 o compatibile;
-OpenAPI come contratto. Nessuna credenziale va committata. CI latest sulla baseline
-`f763d53` (run `41656606659`) ha entrambi i job in success. Il successo complessivo
-del progetto non si dichiara finché i requisiti originali non sono disponibili e
-le funzioni UI/mappe che il docente riterrà obbligatorie non sono state valutate.
-
-## Rischi, ipotesi e gate
-
-La priorità dei requisiti, tempi reali, budget, date Sprint e sign-off docente sono
-**DA CONFERMARE**. Gate: convalida fonti, freeze dei requisiti, contratti consumer,
-integrazione verificabile, review finale. Dettagli: [registro rischi](./RISK_REGISTER.md)
-e [audit](./DOCUMENTATION_AUDIT.md).
+Gate: convalida delle fonti, freeze dei requisiti, demo, review finale. Dettagli nel
+[registro rischi](./RISK_REGISTER.md).

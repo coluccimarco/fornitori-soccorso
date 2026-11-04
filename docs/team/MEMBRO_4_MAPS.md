@@ -1,49 +1,48 @@
-# Membro 4 — Mappe e routing
+# Membro 4 — Mappe
 
-**Versione:** 1.1 · **Data:** 03/11/2026 · **Responsabile:** Membro 4
+**Responsabile:** Marco Colucci · **Versione:** 2.0 · **Data:** 04/11/2026
 
-## Stato e responsabilità
+## Stato
 
-Il servizio backend è implementato in `MapController`, `MapService`,
-`NominatimGeocodingClient` e `OsrmRoutingClient`. `GET /api/v1/maps/route` restituisce
-punti, geometria e km stimati; i test automatici sono inclusi nella CI
-`41656606659` su `f763d53`. L'uso reale dei provider pubblici non è stato verificato
-in questa revisione. La UI web mostra la mappa con Leaflet e propone i km alla chiusura.
+Il servizio è in `MapController`, `MapService`, `NominatimGeocodingClient` e
+`OsrmRoutingClient`. La UI mostra la mappa con Leaflet, indica provider e natura stimata
+dei km e li propone alla chiusura. La chiusura resta possibile se il provider non risponde.
 
-## Contratto runtime
+## Contratto
 
 ```text
 GET /api/v1/maps/route?missionId=<id>&driverId=<opzionale>
 ```
 
-- Richiede sessione autenticata e ruolo RESPONSABILE o AUTISTA assegnato alla
-  missione. L'autista usa il proprio mezzo; il responsabile può indicare un driver.
-- Itinerario: base mezzo → luogo sinistro; aggiunge officina se il tipo è traino.
-- Se mancano coordinate dell'origine, il backend geocodifica l'indirizzo con
-  Nominatim e salva coordinate e km stimati associati alla missione.
-- OSRM restituisce route geometry e distanza arrotondata a due decimali. I km
-  stimati non sono i km effettivi inseriti dall'autista alla chiusura.
-- `400`: driver non disponibile/indicato; `422`: indirizzo non trovato;
-  `503`: servizio esterno non disponibile; `401/403/404`: sessione, permesso o
-  risorsa.
+- Richiede sessione, header `X-CSRF-TOKEN` e ruolo RESPONSABILE o AUTISTA assegnato alla
+  missione. L'autista usa il proprio mezzo; il responsabile può indicare un autista.
+- Itinerario: base mezzo → luogo sinistro; aggiunge l'officina se il tipo è traino.
+- Se mancano le coordinate dell'origine, il backend geocodifica l'indirizzo con Nominatim
+  e le salva sulla missione.
+- OSRM restituisce geometria e distanza. I km stimati si salvano solo per l'autista
+  assegnato e non sono i km effettivi inseriti alla chiusura.
+
+| Esito | Quando |
+|---|---|
+| 200 con percorso | Autista assegnato o indicato |
+| 200 con il solo punto del sinistro | Nessun autista assegnato né indicato: `kmStimati` e `geometria` sono null |
+| 400 | `missionId` mancante o non numerico |
+| 401 / 403 | Sessione assente, CSRF mancante, ruolo errato o missione di un altro autista |
+| 404 | Missione o autista inesistente |
+| 422 | Indirizzo non trovato |
+| 503 | Servizio esterno non disponibile |
+
+Il comportamento del codice è stato scelto come riferimento perché coincide con OpenAPI e
+con la UI, che usa il 200 per mostrare il luogo prima della scelta dell'autista.
 
 ## Provider e privacy
 
-I default sono Nominatim pubblico (`User-Agent` configurabile, limite di una
-richiesta al secondo) e OSRM pubblico. Il backend usa timeout e restituisce errori
-espliciti; provider e rete non sono garantiti. La geocodifica trasmette indirizzi
-a un servizio esterno: valutarne minimizzazione, policy, rate limit e licenza prima
-di un uso reale. Le proprietà sono documentate in
+I default sono Nominatim pubblico (`User-Agent` configurabile) e OSRM pubblico. Il client
+Nominatim rispetta il limite di una richiesta al secondo per istanza; la ricerca è limitata
+alla Puglia. Il backend usa timeout e restituisce errori espliciti; la disponibilità dei
+servizi pubblici non è garantita. La geocodifica trasmette indirizzi a un servizio esterno:
+adatto alla demo, da rivalutare per dati reali. Le proprietà sono in
 [`MANUALE_TECNICO.md`](../manuals/MANUALE_TECNICO.md).
 
-## Integrazione e verifica ancora necessarie
-
-- Etichettare chiaramente provider, unità e natura stimata dei km.
-- Non bloccare la chiusura missione quando il provider non risponde e non
-  inventare distanze.
-- Le suite `MapProviderClientsTests` e `MapPostgresIntegrationTests` verificano
-  il codice con test automatici; test provider live, UX/browser e acceptance
-  docente restano NOT RUN/DA CONFERMARE.
-
 **Riferimenti:** [API](../architecture/API_SPECIFICATION.md),
-[contratti](./INTEGRATION_CONTRACTS.md), [piano test](../quality/TEST_PLAN.md).
+[contratti](./INTEGRATION_CONTRACTS.md).

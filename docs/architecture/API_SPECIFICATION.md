@@ -1,51 +1,40 @@
 # Specifica API
 
-**Codice:** FOR-API-001 · **Versione:** 1.1 · **Data:** 03/11/2026
-**Baseline:** `main` / `f763d53`
+**Codice:** FOR-API-001 · **Versione:** 2.0 · **Data:** 04/11/2026
 
-La fonte normativa è [`api/openapi.yaml`](../../api/openapi.yaml); questa pagina
-offre una mappa, non replica i payload.
+La fonte normativa è [`api/openapi.yaml`](../../api/openapi.yaml); questa pagina offre una mappa,
+non replica i payload.
 
-## Stato rilevato
+## Stato
 
-Il documento YAML contiene 34 operazioni: 30 con
-`x-implementation-status: implemented` e 4 `designed`. Le operation `designed`
-coprono gestione utenti (2) e webhook in ingresso Telegram/WhatsApp (2). L'API
-mappe è implementata nel backend; la UI web non la invoca. Lo status dichiara la
-presenza runtime del contratto, non certifica una verifica end-to-end o un
-provider esterno reale.
+Il documento contiene 38 operazioni: 34 `implemented`, che coincidono con i mapping dei 6
+controller, e 4 `designed`, fuori ambito: gestione utenti (2) e webhook Telegram e WhatsApp (2).
 
 ## Superfici
 
-| Superficie | Authn/authz | Operazioni principali | Stato |
+| Superficie | Autenticazione e ruolo | Operazioni principali | Stato |
 |---|---|---|---|
-| `/api/v1/auth/*` | Sessione, CSRF | login/me/logout/csrf | Implementato |
-| `/api/v1/{autisti,mezzi,compagnie,clienti,officine}` | RESPONSABILE; cookie e CSRF sulle mutazioni | anagrafiche e creazione cliente | Implementato |
-| `/api/v1/missioni/*` | Centrale o AUTISTA assegnato secondo use case | consultazione, proposta, accept/reject, complete, rettifica, note/intervento | Implementato |
+| `/api/v1/auth/*` | Sessione, CSRF | login, me, logout, csrf | Implementato |
+| `/api/v1/{autisti,mezzi,compagnie,clienti,officine}` | RESPONSABILE; CSRF sulle mutazioni | anagrafiche e creazione cliente | Implementato |
+| `/api/v1/missioni/*` | Centrale o AUTISTA assegnato secondo il caso d'uso | consultazione, proposta, accept/reject, complete, rettifica, note, intervento | Implementato |
+| `/api/v1/missioni/{id}/proposte` (GET) | RESPONSABILE | storico proposte in sola lettura | Implementato |
 | `/api/v1/missioni/{id}/proposta-automatica`, `/api/v1/centrale/avvisi` | RESPONSABILE | proposta al più vicino libero, avvisi su rifiuti e scadenze | Implementato |
-| `/api/v1/dashboard`, `/autista/*` | RESPONSABILE o proprio AUTISTA | report, storico personale e dettaglio missione aperta, con contatti cliente solo dopo l'accettazione | Implementato |
-| `/api/v1/chat/*` | `SERVICE_CHATBOT` bearer token, stateless | lookup targa, create, stato, outbox/esito | Implementato |
-| `/api/v1/maps/route` | Sessione e ruolo/ownership missione-driver | geocodifica opzionale, percorso e km stimati | Implementato; provider esterni non garantiti |
-| `/api/v1/utenti*`, `/api/v1/webhooks/*` | Ruoli previsti | utenti, ingressi provider | Designed |
+| `/api/v1/dashboard`, `/autista/*` | RESPONSABILE o proprio AUTISTA | report, storico personale, dettaglio missione aperta | Implementato |
+| `/api/v1/chat/*` | Token bearer `SERVICE_CHATBOT`, stateless | lookup targa, creazione, stato, riserva notifiche ed esito | Implementato |
+| `/api/v1/maps/route` | Sessione e CSRF; ruolo e proprietà della missione | geocodifica, percorso e km stimati | Implementato |
+| `/api/v1/utenti*`, `/api/v1/webhooks/*` | — | utenti, ingressi provider | Fuori ambito |
 
 ## Regole di consumo
 
-Per contratti aggiornati consultare OpenAPI e verificare `x-required-role`,
-`security`, status e risposta errore. Sessione operatore: token CSRF su mutazioni.
-Chatbot: `SERVICE_CHATBOT` tramite `FORNITORI_CHAT_TOKEN`; credenziale assente o
-non valida viene rifiutata. Il client non deve considerare un endpoint `designed`
-disponibile solo perché definito nello YAML.
+Verificare in OpenAPI `x-required-role`, `security`, status e risposta d'errore. Le mutazioni di
+sessione richiedono il CSRF, come la `GET` delle mappe, che può salvare dati. Il chatbot usa
+`FORNITORI_CHAT_TOKEN`: credenziale assente o errata dà `401`.
 
-## Aggiornamento hardening e prove del 04/11/2026
+## Errori
 
-Le 30 operazioni implementate coincidono con i mapping dei 5 controller; 4 rimangono
-designed. `OpenApiContractTests` confronta 32 record (nomi/tipi) e operazioni.
-Errori pubblici `{status,error}` includono conversioni parametri 400, metodo 405 e
-media type 415. Nome cliente 150, telefono 32, targa 20, modello/città 150, polizza 100;
-km/importi NUMERIC(10,2), costo calcolato oltre capacità restituisce 400 senza chiusura.
-MissionResponse aggiunge 5 campi contatto/officina opzionali negli stati attivi;
-Dashboard dichiara fonte/riferimentoAl. Bearer chatbot è opaco, non JWT.
-Schema chat distinto da CreateMission: nessun kmStimati, canale solo telegram/whatsapp.
-GET route richiede header CSRF; nuove pratiche chat richiedono lookup valido,
-retry difforme 409. Nessun URL rinominato. Inventario consumer e JSON completo
-in [audit E2E](../quality/BACKEND_E2E_AUDIT.md).
+Gli errori hanno la forma `{status, error, message}`. `error` è un codice stabile (`conflict`,
+`not_found`, `invalid_request`…); `message` è un testo per l'utente scritto dal servizio, presente
+su alcuni 400, 404, 409 e 422. Non contengono mai eccezioni o SQL.
+
+Limiti dei campi: nome cliente 150, telefono 32, targa 20, modello e città 150, polizza 100; km e
+importi `NUMERIC(10,2)`. Il bearer del chatbot è opaco, non un JWT.

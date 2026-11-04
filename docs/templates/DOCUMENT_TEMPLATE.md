@@ -16,5 +16,5 @@ relativi a fonti repository e sezioni di eccezioni/decisioni aperte.
 
 ## Riferimenti e revisione
 
-Collegare specifica, codice, contratti, test ed evidenze. Registrare owner/data
+Collegare specifica, codice, contratti ed evidenze. Registrare owner/data
 quando si aggiorna. Non aggiungere password, segreti o dati personali non necessari.

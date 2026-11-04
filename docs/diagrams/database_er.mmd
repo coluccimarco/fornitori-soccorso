@@ -25,7 +25,6 @@ erDiagram
         bigint id PK
         bigint user_id FK,UK
         bigint vehicle_id FK,UK
-        varchar stato_seed
     }
     VEHICLES {
         bigint id PK
@@ -80,15 +79,24 @@ erDiagram
         bigint actor_user_id FK
         jsonb detail
     }
-    CHAT_SESSIONS {
-        bigint id PK
-        varchar channel
-        varchar external_chat_id
-        jsonb context
+    CHAT_MISSION_REQUESTS {
+        varchar request_id PK
+        bigint mission_id FK,UK
+        varchar session_id
+        varchar destinatario
+        varchar request_fingerprint
+    }
+    CHAT_LOOKUP_GRANTS {
+        varchar session_id PK
+        bigint customer_id FK
+        timestamptz expires_at
     }
     NOTIFICATIONS_OUTBOX {
         bigint id PK
         bigint mission_id FK
         varchar event_key UK
         varchar stato
+        timestamptz prossimo_tentativo_il
     }
+    MISSIONS ||--o| CHAT_MISSION_REQUESTS : origina
+    CUSTOMERS ||--o{ CHAT_LOOKUP_GRANTS : autorizza

@@ -1,51 +1,36 @@
 # Sicurezza e protezione dei dati
 
-**Codice:** FOR-SEC-001 · **Versione:** 1.0 · **Data:** 03/11/2026
-Questa descrive controlli sorgente, non è un penetration test né certificazione.
+**Codice:** FOR-SEC-001 · **Versione:** 2.0 · **Data:** 04/11/2026
+Descrive i controlli presenti nel codice; non è un penetration test né una certificazione.
 
 ## Controlli presenti
 
-- Password operatori verificate con BCrypt; DTO non devono restituire hash/password.
-- Chain API operatore stateful con sessione HTTP, cambio session ID all'autenticazione,
-  CSRF su mutazioni e risposte JSON `401/403`.
-- Ruoli RESPONSABILE/AUTISTA e controlli di proprietà missione nel service.
-- Chain `/api/v1/chat/**` separata, stateless, token Bearer e nessun CSRF di sessione.
-- Segreto passato da `FORNITORI_CHAT_TOKEN`; non mantenerlo nei file del repository.
-- I bot usano service API; accesso diretto alle tabelle è vietato per architettura.
-- Cookie HttpOnly, SameSite Lax; `SESSION_COOKIE_SECURE` configurabile.
-- La chain chat usa autenticazione stateless con token di servizio; non usa CSRF
-  di sessione. Il client statico non sostituisce le verifiche di ruolo o proprietà
-  eseguite dal server.
+- Password verificate con BCrypt; i DTO non restituiscono hash o password.
+- Chain operatore con sessione HTTP, cambio session ID e rotazione CSRF al login, CSRF sulle
+  mutazioni e sulla `GET` delle mappe, risposte JSON `401/403`.
+- Ruoli RESPONSABILE e AUTISTA; proprietà della missione controllata nel service: una vecchia
+  proposta non dà accesso dopo una riassegnazione.
+- Chain `/api/v1/chat/**` separata e stateless, con token bearer confrontato a tempo costante.
+- Cookie HttpOnly, SameSite Lax, sessione di 30 minuti; `Secure` nel profilo `prod`.
+- Limiti: 20 login al minuto per IP; 5 targhe non trovate per sessione; 100 lookup al minuto per
+  istanza. Il server non si fida di `X-Forwarded-For`.
+- Client dei provider senza redirect, con timeout 3/8 s, risposta massima 1 MiB e valori controllati.
+- Contatti del cliente visibili all'autista solo dopo l'accettazione.
+- Le missioni della centrale non conservano il telefono del cliente in outbox.
+- SQL parametrizzato ed escaping HTML dei dati dinamici nel client.
 
-## Limiti, privacy e minacce
+## Limiti noti della demo
 
-La lookup cliente a partire dalla targa non verifica la titolarità; il bot può
-mostrare nome/compagnia e creare richieste. Stato dialogo in RAM. Telegram
-trasporta dati fuori dal backend; l'uso è adatto alla demo dichiarata, non implica
-autorizzazione production. Webhook e provider WhatsApp non sono implementati.
-Logging/retention, DPIA, consenso, gestione incidenti, secret rotation e policy di
-produzione non risultano documentati/approvati. Prima di uso reale serve review
-privacy e sicurezza specifica.
+- **La sola targa identifica il cliente:** il bot mostra nome e compagnia e può creare richieste a
+  chi la conosce. Il lookup autorizza la pratica per 15 minuti ma non prova la titolarità. Non usare
+  con dati reali.
+- Stato del dialogo in RAM. Telegram trasporta dati fuori dal backend.
+- Consegna delle notifiche "almeno una volta" in caso di crash tra invio ed esito.
+- Logging, retention, DPIA, consenso, gestione incidenti, rotazione dei segreti e policy di
+  produzione non sono definiti. Prima di un uso reale serve una revisione privacy e sicurezza.
 
-Per eventuali webhook: verificare firma sul payload grezzo, timestamp/anti-replay
-e idempotency key; limitare dimensione e frequenza, minimizzare i log e conservare
-i segreti solo in secret manager o ambiente protetto. Retry deve essere idempotente.
-Questi controlli sono requisiti futuri, non funzionalità già implementate.
+WhatsApp e webhook in ingresso sono fuori ambito. Se venissero introdotti, dovrebbero verificare la
+firma sul payload grezzo, timestamp e replay, limitare dimensione e frequenza.
 
-## Verifiche
-
-`ApiSecurityTests`, `ChatApiSecurityTests`, test chatbot e CI Java/PostgreSQL
-verificano soltanto i casi codificati. La CI non è un audit indipendente. Consultare
-[test](../quality/TEST_PLAN.md) e [rischi](../management/RISK_REGISTER.md).
-
-## Aggiornamento hardening e prove del 04/11/2026
-
-CSRF invalidato esplicitamente al login e ricaricato dal client; timeout sessione
-30 minuti, cookie Secure nel profilo prod. GET `/maps/route` richiede CSRF per
-le scritture legacy. Accesso missione/note/route limitato al driver corrente;
-una proposta passata non dà accesso dopo riassegnazione. Limite login20/minuto/IP
-remoto, lookup chat100/minuto/istanza, memoria limitata; non usare X-Forwarded-For
-non attendibile. Lookup positivo autorizza una pratica per15 minuti, non prova
-identità. Fingerprint nuovi requestId protegge retry difformi. Provider senza
-redirect, timeout3/8s, body1MiB e range verificati. Dettagli, gravità e residui
-in [SECURITY_REVIEW.md](../quality/SECURITY_REVIEW.md).
+Dettagli e gravità in [SECURITY_REVIEW.md](../quality/SECURITY_REVIEW.md); rischi nel
+[registro](../management/RISK_REGISTER.md).

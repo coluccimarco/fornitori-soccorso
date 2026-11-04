@@ -7,11 +7,9 @@ flowchart LR
     Telegram["Telegram<br/>bot a long polling"]
     PostgreSQL[("PostgreSQL 18")]
     Maps["Nominatim / OSRM<br/>provider pubblici"]
-    WhatsApp["WhatsApp<br/>non implementato"]
     Ops -->|"browser, sessione operatore, CSRF"| System
     Driver -->|"browser, sessione/ruolo AUTISTA"| System
     Customer -->|"richiesta e stato"| Telegram
     Telegram -->|"bot Python / long polling"| System
     System -->|"JPA / transazioni"| PostgreSQL
-    System -->|"solo API route backend"| Maps
-    System -. "webhook/canale non integrati" .-> WhatsApp
+    System -->|"geocodifica e percorso"| Maps

@@ -1,31 +1,20 @@
 # Registro rischi e impedimenti
 
-**Codice:** FOR-RSK-001 · **Versione:** 1.0 · **Data:** 03/11/2026
-Scale qualitative: Alto / Medio / Basso. Owner indica il ruolo proposto, non un nome.
+**Codice:** FOR-RSK-001 · **Versione:** 2.0 · **Data:** 04/11/2026
+Scale qualitative: Alto / Medio / Basso.
 
-| ID | Rischio / evidenza | Prob. | Impatto | Mitigazione / trigger | Owner | Stato |
+| ID | Rischio | Prob. | Impatto | Mitigazione | Responsabili | Stato |
 |---|---|---:|---:|---|---|---|
-| R-01 | PDF docente e Excel originale non sono disponibili nella working tree | Alta | Alto | Acquisirli prima di approvare BUR/dataset; bloccare claims di conformità | Docente/M1 | BLOCCATO |
-| R-02 | Contratto OpenAPI e comportamento runtime possono divergere; gli status non attestano E2E | Media | Alto | Aggiornare contratto e test con ogni modifica; run latest `41656606659` PASS | M1 | MITIGATO / monitorare |
-| R-03 | UI presente ma non coperta da browser E2E; alcuni flussi centrali non sono esposti | Alta | Alto | Testare login, accessibilità, browser e percorsi missione; confrontare richieste UX | M2/team | APERTO |
-| R-04 | API mappe dipende da Nominatim/OSRM pubblici; mappa UI e WhatsApp non integrati | Alta | Medio/alto | Rispettare rate limit/privacy; pianificare fallback/provider e vista UI se richiesti | M4/M5 | PARZIALE |
-| R-05 | Accesso PostgreSQL locale non verificato senza credenziali; Docker Engine locale ha risposto HTTP 500 | Media | Medio | Usare ambiente autorizzato; CI effimera è verde e non sostituisce setup locale | M1 | DA CONFERMARE |
-| R-06 | Ricerca cliente via targa non verifica titolarità (limite dichiarato nel README chatbot) | Alta | Alto | Definire verifica identità con docente/privacy prima dell'uso reale | M3/M1 | APERTO |
-| R-07 | Stato conversazione in RAM si perde al riavvio (README chatbot) | Alta | Medio | Decidere se persistenza è necessaria; testare recovery | M3 | ACCETTATO per demo |
-| R-08 | Dataset storico include assegnazioni incoerenti con regole live | Media | Medio | Mantenere `is_fixture`; non reinterpretare fixture come assegnazioni live | M1 | MITIGATO |
-| R-09 | Requisiti approvati e date/verbali Scrum non dimostrati | Media | Medio | Raccogliere verbali e sign-off reali, senza ricostruzioni retroattive | Team | DA CONFERMARE |
-| R-10 | DOCX non ancora ispezionati visivamente in Microsoft Word | Media | Medio | Eseguire checklist manuale in Word e aggiornare indice/campi prima consegna | M1 | NOT RUN |
+| R-01 | PDF del docente ed Excel originale non sono nel repository | Alta | Alto | Acquisirli prima di approvare BUR e dataset | Team | Aperto |
+| R-02 | Contratto OpenAPI e comportamento possono divergere | Media | Medio | Aggiornare il contratto insieme al codice | Vincenzo Minervini | Mitigato |
+| R-03 | Nessuna suite automatica nel repository: una modifica può introdurre regressioni | Media | Alto | Prova manuale dei flussi prima di ogni merge e della demo | Tutti | Aperto |
+| R-04 | Nominatim e OSRM pubblici possono non rispondere | Media | Medio | Errori espliciti; la chiusura missione resta possibile | Marco Colucci | Mitigato |
+| R-05 | Setup locale errato: script non applicati | Media | Medio | Seguire 01..08 del README; Hibernate `validate` lo segnala all'avvio | Tutti | Mitigato |
+| R-06 | La targa non prova la titolarità | Alta | Alto | Limite noto della demo: solo dati sintetici | Marco Colucci | Accettato per la demo |
+| R-07 | Lo stato della conversazione in RAM si perde al riavvio | Alta | Basso | Le missioni restano nel backend; il cliente ricomincia il dialogo | Marco Colucci | Accettato per la demo |
+| R-08 | Il dataset storico include assegnazioni incoerenti con le regole live | Media | Medio | `is_fixture` isola lo storico | Vincenzo Minervini | Mitigato |
+| R-09 | Requisiti approvati e verbali Scrum non dimostrati | Media | Medio | Raccogliere verbali e sign-off reali | Team | Aperto |
+| R-10 | DOCX non ispezionati visivamente in Microsoft Word | Media | Medio | Controllo manuale e aggiornamento dell'indice prima della consegna | Team | Aperto |
+| R-11 | Messaggio duplicato se il bot si ferma tra invio ed esito | Bassa | Basso | Riserva persistente; consegna "almeno una volta" | Marika Sancilio, Francesco Valeriano, Giuseppe Cangellosi | Accettato per la demo |
 
-Non rappresenta un registro ufficiale approvato. Le righe di `R-01` e `R-06` vanno
-risolte prima di dichiarare idoneità a uso reale.
-
-## Aggiornamento hardening e prove del 04/11/2026
-
-R-02 mitigato con 33 contract test OpenAPI. R-03 mitigato per 2 scenari browser/DB,
-non per UI rettifica/intervento/mappe o accessibilità. R-05: autenticazione locale
-PASS, schema missions assente; test su PG18 isolato PASS. R-06 resta APERTO:
-grant sessione/cliente e limiti mitigano abuso, non titolarità. Aggiungere come
-rischio di rilascio la consegna outbox concorrente/crash senza lease: nessuna
-garanzia exactly-once. Prod HTTPS, permessi operativi, logging/retention e fonti
-originali restano gate. Nessuna nuova accettazione del rischio dichiarata per
-conto del team; Draft PR finché i gate essenziali non sono chiusi.
+`R-01` e `R-06` vanno risolti prima di dichiarare l'idoneità a un uso reale.

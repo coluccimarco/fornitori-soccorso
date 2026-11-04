@@ -1,177 +1,115 @@
 # Functional Design — FORNITORI
 
-**Codice:** FOR-FUD-001 · **Versione:** 1.0 · **Data:** 03/11/2026
-**Responsabile:** M1–M5 per componente · **Stato:** design e runtime distinti per scenario
-**Fonte API normativa:** [`api/openapi.yaml`](../../api/openapi.yaml)
+**Codice:** FOR-FUD-001 · **Versione:** 2.0 · **Data:** 04/11/2026
+**Responsabili:** team per componente · **Fonte API normativa:** [`api/openapi.yaml`](../../api/openapi.yaml)
 
-## Maturità funzionale
-
-Le API backend per auth, anagrafiche, missioni, dashboard e chatbot sono presenti;
-il chatbot Python supporta console/Telegram. Frontend statico e API routing sono
-presenti; la vista cartografica non è integrata. L'operatività Telegram e le notifiche su provider sono dichiarate
-nel README del modulo; la CI automatizza test software ma non il servizio Telegram.
-
-**Attori:** RESPONSABILE, AUTISTA autenticato, cliente via bot, servizio chatbot,
-dispatcher notifiche. Due scenari browser con PostgreSQL isolato sono verificati
-nel rapporto BACKEND_E2E_AUDIT; la copertura UX completa resta da approvare.
+**Attori:** RESPONSABILE, AUTISTA autenticato, cliente via bot, servizio chatbot, dispatcher
+notifiche.
 
 ## UC-001 — Accesso operatore
 
-**Attore:** responsabile o autista · **Scopo:** instaurare sessione con ruolo.
-**Prerequisiti:** utente applicativo configurato. **Trigger:** richiesta di login.
-**Flusso principale:** il client ottiene CSRF → invia login JSON con token →
-backend autentica e imposta sessione → client legge identità/ruolo.
-**Alternativi/eccezioni:** credenziale non valida `401`; CSRF mancante/non valido;
-sessione revocata al logout; accesso ruolo non autorizzato `403`.
-**Postcondizione:** sessione valida o rifiuto senza accesso.
-**API:** `/api/v1/auth/csrf`, `/login`, `/me`, `/logout`.
-**Acceptance/test:** cookie/CSRF, login, logout, `401/403` in `ApiSecurityTests`.
-**Stato:** IMPLEMENTATO, test backend in CI.
+**Attore:** responsabile o autista. **Prerequisiti:** utente applicativo configurato.
+**Flusso:** il client ottiene il CSRF → invia il login JSON con il token → il backend autentica
+e imposta la sessione → il client legge identità e ruolo.
+**Eccezioni:** credenziali non valide `401`; CSRF mancante `403`; sessione revocata al logout;
+ruolo non autorizzato `403`; troppi tentativi `429`.
+**API:** `/api/v1/auth/csrf`, `/login`, `/me`, `/logout`. **Stato:** IMPLEMENTATO.
 
-## UC-002 — Consultare anagrafiche e ricercare cliente
+## UC-002 — Consultare anagrafiche e cercare un cliente
 
-**Attore:** RESPONSABILE · **Scopo:** leggere clienti, driver, mezzi, compagnie,
-officine; filtrare clienti per nome/targa. **Prerequisiti:** sessione RESPONSABILE.
-**Trigger:** richiesta di consultazione.
-**Flusso:** il client chiama la risorsa → il service applica filtri/ruoli →
-restituisce DTO senza credenziali.
-**Alternativi/eccezioni:** sessione assente `401`, ruolo errato `403`, risultato
-vuoto restituito senza dati inventati.
-**Postcondizione:** dati consultati; nessuna modifica.
-**API:** `GET /api/v1/{autisti,mezzi,compagnie,clienti,officine}`.
-**Acceptance/test:** ricerca nome e targa normalizzata, risposte e permessi.
+**Attore:** RESPONSABILE. **Flusso:** il client chiama la risorsa → il service applica filtri
+e ruoli → restituisce DTO senza credenziali.
+**Eccezioni:** `401`, `403`; un risultato vuoto non inventa dati.
+**API:** `GET /api/v1/{autisti,mezzi,compagnie,clienti,officine}`. **Stato:** IMPLEMENTATO.
+
+## UC-003 — Inserire un cliente
+
+**Attore:** RESPONSABILE. **Flusso:** dati validati → controllo duplicati e compagnia →
+persistenza → DTO. **Eccezioni:** validazione `400`; targa duplicata `409` con messaggio
+"Targa già presente"; `401/403`. **API:** `POST /api/v1/clienti`. **Stato:** IMPLEMENTATO.
+
+## UC-004 — Creare una missione
+
+**Attore:** RESPONSABILE o servizio chatbot. **Prerequisiti:** cliente noto; il traino richiede
+un'officina. **Flusso centrale:** validazione → codice e stato `nuova` → persistenza. **Flusso
+chatbot:** lookup, dialogo guidato, creazione tramite API servizio.
+**Eccezioni:** token errato, input errato, rate limit, duplicato, cliente inesistente, provider
+non disponibile; nessuna missione falsa.
+**API:** `POST /api/v1/missioni`, `POST /api/v1/chat/missioni`, `POST /api/v1/chat/lookup-targa`.
+**Stato:** IMPLEMENTATO; la sola targa è un limite noto della demo.
+
+## UC-005 — Proporre una missione a un autista
+
+**Attore:** RESPONSABILE. **Prerequisiti:** missione proponibile e autista disponibile.
+**Flusso:** lock e verifica → proposta e scadenza da configurazione → l'autista la vede nella sua
+area entro 15 secondi. Con "al più vicino" sceglie il sistema, in linea d'aria, escludendo chi
+ha già risposto. **Eccezioni:** autista occupato o stato incompatibile `409`.
+**API:** `POST /api/v1/missioni/{id}/proposte`, `POST /api/v1/missioni/{id}/proposta-automatica`.
 **Stato:** IMPLEMENTATO.
 
-## UC-003 — Inserire cliente
+## UC-006 — Accettare, rifiutare o far scadere una proposta
 
-**Attore:** RESPONSABILE · **Prerequisiti:** sessione e CSRF.
-**Trigger:** inserimento anagrafica. **Flusso:** inviare dati validati → service
-controlla duplicati/compagnia → persiste → restituisce DTO. **Alternativi:**
-validazione `400`, conflitto duplicato `409`, `401/403`.
-**Postcondizione:** cliente persistito una volta. **API:** `POST /api/v1/clienti`.
-**Test:** test Registry, validazione e conflitto identificati nei test backend.
-**Stato:** IMPLEMENTATO.
+**Attore:** AUTISTA destinatario; scheduler per la scadenza. **Flusso:** l'autista risponde prima
+della deadline → il service controlla destinatario, stato e tempo. Rifiuto e scadenza generano
+un avviso per la centrale, che può riproporre mantenendo lo storico.
+**Eccezioni:** risposta a o dopo la deadline `409`; altro autista `403`.
+**API:** `/accept`, `/reject`, `GET /api/v1/centrale/avvisi`. **Stato:** IMPLEMENTATO.
 
-## UC-004 — Creare missione e dettaglio
+## UC-007 — Segnalazione, correzione e chiusura
 
-**Attore:** RESPONSABILE o servizio chatbot autenticato. **Scopo:** registrare
-richiesta live. **Prerequisiti:** cliente noto e parametri validi; traino richiede
-officina secondo DB. **Trigger:** richiesta di soccorso.
-**Flusso centrale:** validare dati → assegnare codice/stato iniziale `nuova` →
-persistenza transazionale → esporre id/dettaglio. **Flusso chatbot:** lookup
-limitato, dialogo guidato, creazione tramite API servizio.
-**Eccezioni:** token servizio assente/errato, input errato, rate-limit/duplicato,
-cliente inesistente, provider non disponibile; nessuna missione falsa.
-**Postcondizione:** missione live salvata e origine/canale registrati.
-**API:** `POST /api/v1/missioni`; `POST /api/v1/chat/missioni`;
-`POST /api/v1/chat/lookup-targa`.
-**Test:** `MissionPostgresIntegrationTests`, `ChatPostgresIntegrationTests`,
-`ChatApiSecurityTests`, `chatbot/tests/test_http_backend.py`.
-**Stato:** IMPLEMENTATO; verifica titolarità targa insufficiente per uso reale.
+**Attore:** AUTISTA assegnato; RESPONSABILE per correggere intervento e officina.
+**Flusso:** eventuale segnalazione → km effettivi → il service valida e calcola il costo →
+completa e crea evento e outbox. La centrale corregge tipo e officina dalla scheda missione,
+finché la missione è nuova, rifiutata o scaduta.
+**Eccezioni:** missione non chiudibile, km non validi, ruolo errato; una nota su una missione
+dello storico dà `409`. **API:** `/intervento`, `/complete`, `/notes`. **Stato:** IMPLEMENTATO.
 
-## UC-005 — Proporre una missione ad autista
+## UC-008 — Calcolare o rettificare il costo
 
-**Attore:** RESPONSABILE · **Prerequisiti:** missione live proponibile e driver
-operativamente disponibile. **Trigger:** assegnazione.
-**Flusso:** lock/verifica → registra proposta e scadenza basata su configurazione →
-notifica/opportunità al driver API. Storico delle proposte conservato.
-**Eccezioni:** driver non disponibile/conflitto, missione non compatibile, ruolo
-errato; non sovrascrivere una proposta precedente.
-**Postcondizione:** stato proposta e deadline persistiti.
-**API:** `POST /api/v1/missioni/{id}/proposte`.
-**Test:** `MissionPostgresIntegrationTests` include flusso, concorrenza e scadenze.
-**Stato:** IMPLEMENTATO, CI PostgreSQL.
-
-## UC-006 — Accettare, rifiutare o far scadere proposta
-
-**Attore:** AUTISTA destinatario; scheduler per scadenza. **Prerequisiti:** proposta
-corrente e sessione con identità assegnata.
-**Flusso principale:** il driver risponde prima della deadline → service controlla
-owner/stato/tempo → accetta o registra rifiuto. Scadenza porta a `scaduta`; centrale
-può riproporre mantenendo storico.
-**Eccezioni:** accettazione a o dopo deadline respinta; chiamata da altro autista,
-duplicato o transizione impossibile respinti. Scheduler periodico opera sulle sole
-missioni live.
-**Postcondizione:** esito e timeline aggiornati in modo transazionale.
-**API:** `/accept`, `/reject`, `/proposte`.
-**Test:** test mission service e integrazione PostgreSQL; boundary del Clock e concorrenza.
-**Stato:** IMPLEMENTATO.
-
-## UC-007 — Segnalazione e chiusura missione
-
-**Attore:** AUTISTA assegnato; RESPONSABILE può aggiornare il tipo d'intervento.
-**Prerequisiti:** missione assegnata/accettata; km effettivi validi al completamento.
-**Flusso:** (eventuale) segnalazione autorizzata → invio km effettivi → service
-valida stato e calcola costo → completa e crea evento/outbox.
-**Alternativi:** missione non chiudibile, km invalidi, ruolo/driver non assegnato;
-nessun esito OK falso. **API:** `/intervento`, `/complete`, `/notes`.
-**Test:** test PostgreSQL missione, note e completamento.
-**Stato:** API backend e UI note/chiusura presenti e verificate nel browser;
-la modifica intervento rimane disponibile solo via API.
-
-## UC-008 — Calcolare o rettificare costo
-
-**Attore:** service per calcolo; RESPONSABILE per rettifica.
-**Prerequisiti:** missione completabile, km effettivi, configurazione pricing.
-**Flusso:** tariffa server-side da configurazione; eventuale rettifica richiede
-permesso e motivo e conserva costo calcolato e audit.
-**Alternativi:** dati incompleti o ruolo errato; non fidarsi di un totale inviato dal
-client. **API:** `/complete`, `PATCH /cost`.
-**Regola implementata nel servizio:** tariffa base 50 + 1,20/km, supplemento 25%
-20:00–08:00, arrotondamento `HALF_UP`, timezone `Europe/Rome`.
-**Acceptance/test:** `PricingServiceTests` e test integrazione. Conferma docente sul
-timestamp di riferimento rimane DA CONFERMARE.
+**Attore:** service per il calcolo; RESPONSABILE per la rettifica, dalla scheda missione.
+**Regola:** base 50 + 1,20/km, supplemento 25% dalle 20:00 alle 08:00, `HALF_UP`, `Europe/Rome`.
+La rettifica richiede un motivo e conserva costo calcolato e audit.
+**API:** `/complete`, `PATCH /cost`. **Stato:** IMPLEMENTATO; timestamp di riferimento da
+confermare con il docente.
 
 ## UC-009 — Consultare dashboard e guadagni
 
-**Attore:** RESPONSABILE; AUTISTA per i propri dati. **Prerequisiti:** sessione
-valida. **Flusso:** aggregare missioni secondo filtro/modo reference-live; endpoint
-autista limita l'identità all'utente autenticato. **Eccezioni:** `401/403`,
-risultato vuoto; mai includere altri autisti nello storico personale.
-**API:** `GET /api/v1/dashboard`, `/api/v1/autista/missioni`,
-`/api/v1/autista/storico`. **Test:** `MissionPostgresIntegrationTests`,
-`ApiSecurityTests`. **Stato:** API e client web presenti; 2 scenari Chromium/PostgreSQL PASS locali (04/11).
+**Attore:** RESPONSABILE; AUTISTA per i propri dati. **Flusso:** aggregati per modalità reference
+o live; l'endpoint autista si limita all'utente autenticato.
+**API:** `GET /api/v1/dashboard`, `/api/v1/autista/missioni`, `/api/v1/autista/storico`.
+**Stato:** IMPLEMENTATO.
 
-## UC-010 — Conversazione cliente e consultazione stato
+## UC-010 — Conversazione cliente e stato
 
-**Attore:** cliente via bot Telegram/console. **Prerequisiti:** runtime bot; token
-backend configurato per backend HTTP; canale Telegram avviato.
-**Flusso:** invio targa → richiesta informazioni limitate → condivisione posizione/
-indirizzo → descrizione problema → riepilogo e creazione → comando `STATO` per
-risorsa collegata alla chat. `AIUTO`/`ANNULLA` sono comandi del dialogo.
-**Eccezioni:** targa non trovata (limite tentativi), formato non valido, rate limit,
-servizio offline, sessione in RAM scaduta/riavvio. La targa non prova identità.
-**API:** `/api/v1/chat/lookup-targa`, `/missioni`, `/stato`.
-**Test:** `chatbot/tests/test_dialogs.py`, `ChatApiSecurityTests`,
-`ChatPostgresIntegrationTests`.
-**Stato:** IMPLEMENTATO in console/Telegram, con limitazioni note; non equivale a UI web.
+**Attore:** cliente via Telegram o console. **Flusso:** targa → nome e compagnia → posizione o
+indirizzo → intervento → problema → creazione. `STATO` risponde per la chat con una frase
+comprensibile; `AIUTO` e `ANNULLA` sono comandi del dialogo.
+**Eccezioni:** targa non trovata (limite tentativi), formato non valido, rate limit, servizio non
+disponibile. Se il riconoscimento della targa scade (15 minuti), il bot lo rinnova da solo.
+**API:** `/api/v1/chat/lookup-targa`, `/missioni`, `/stato`. **Stato:** IMPLEMENTATO.
 
-## UC-011 — Ricevere notifiche di presa in carico e completamento
+## UC-011 — Notifiche di presa in carico e completamento
 
-**Attori:** backend/outbox e dispatcher chatbot; destinatario Telegram per richiesta
-supportata. **Prerequisiti:** evento accettazione/completamento e dispatcher attivo.
-**Flusso:** evento outbox transazionale → bot legge coda Telegram → invia → registra
-esito; eventi rimangono pendenti se bot offline, secondo comportamento descritto nel README.
-**Eccezioni:** provider offline, errore temporaneo, duplicati; non dichiarare l'invio
-universale per missioni senza chat associata. **Test:** `test_notifications.py`,
-`ChatPostgresIntegrationTests`, `ChatApiSecurityTests`.
-**Stato:** PARZIALE/IMPLEMENTATO per il canale Telegram documentato; WhatsApp e CI
-non verificano il provider reale.
+**Attori:** backend e dispatcher del bot. **Flusso:** evento outbox transazionale → il bot riserva
+le righe → invia → registra l'esito. Se il bot è spento, i messaggi restano in coda.
+**Eccezioni:** provider non disponibile (nuovo tentativo dopo 30 secondi, massimo 5); missioni
+della centrale senza invio (`SKIPPED`).
+**API:** `POST /api/v1/chat/notifiche/claim`, `POST /api/v1/chat/notifiche/{id}/esito`.
+**Stato:** IMPLEMENTATO per Telegram; WhatsApp fuori ambito.
 
-## UC-012 — Routing cartografico
+## UC-012 — Percorso e mappa
 
-**Attore:** autista/centrale. **Flusso progettato:** base mezzo → luogo intervento →
-eventuale officina per traino; riparazione sul posto omette officina. Distanza
-stimata non equivale ai km effettivi.
-**API:** `GET /api/v1/maps/route`, metadata `implemented`; backend usa Nominatim
-per geocodifica opzionale e OSRM per route/km stimati. **Acceptance/test:**
-`MapProviderClientsTests` e `MapPostgresIntegrationTests` sono inclusi nella CI;
-provider live e vista cartografica browser sono NOT RUN/non integrati.
-**Stato:** API IMPLEMENTATA; UI cartografica DA FARE se richiesta.
+**Attore:** autista e centrale. **Flusso:** base mezzo → luogo intervento → eventuale officina per
+il traino. La distanza stimata non equivale ai km effettivi e viene proposta alla chiusura.
+**API:** `GET /api/v1/maps/route`. **Stato:** IMPLEMENTATO, con mappa Leaflet nella UI.
 
-## Diagrammi e confini
+## UC-013 — Storico proposte
 
-Il client browser è presente, ma la vista mappa non è integrata. I diagrammi Mermaid
-distinguono contesto runtime, componenti presenti e confini futuri:
-[`diagrams/`](../diagrams/). Regole di stato persistite: schema SQL e service
-implementati; i flussi UI restano design, non runtime.
+**Attore:** RESPONSABILE. **Flusso:** dalla scheda missione "Mostra storico proposte" elenca
+autista, esito e date di ogni tentativo, anche per le missioni dello storico di riferimento.
+**Eccezioni:** `401`, `403`, `404`. **API:** `GET /api/v1/missioni/{id}/proposte`.
+**Stato:** IMPLEMENTATO.
+
+## Diagrammi
+
+Le sequenze e gli stati sono in [`diagrams/`](../diagrams/).

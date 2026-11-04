@@ -7,6 +7,5 @@ Per rigenerare tutti i DOCX e il workbook: dalla root
 clic destro sull'indice → **Aggiorna campo → Aggiorna intero indice**.
 
 Il DOCX mantiene stili Word, header/footer, numeri pagina, link, tabelle e figure
-PNG se presenti nella cartella rendered. Il renderer in questa environment non è
-Microsoft Word; la verifica strutturale è ripetibile, ma l'ispezione visuale finale
-deve essere eseguita in Word prima della consegna ufficiale.
+PNG se presenti nella cartella rendered. Prima della consegna ufficiale aprirli in Word per un controllo
+visivo e per aggiornare l'indice.

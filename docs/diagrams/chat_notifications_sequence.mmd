@@ -1,4 +1,4 @@
-%% Telegram long polling and supported notifications; not a provider CI test.
+%% Telegram long polling e notifiche con riserva persistente.
 sequenceDiagram
     actor Cliente
     participant Telegram as Telegram Bot API
@@ -18,10 +18,10 @@ sequenceDiagram
     API-->>Bot: mission code and state
     Bot-->>Telegram: confirmation
     Service->>DB: transaction writes outbox on accepted/completed
-    Bot->>API: GET /chat/notifiche?canale=telegram
-    API->>DB: read pending messages
+    Bot->>API: POST /chat/notifiche/claim
+    API->>DB: PENDING to SENDING (skip locked)
     API-->>Bot: notification payloads
     Bot->>Telegram: send message
     Bot->>API: POST /chat/notifiche/{id}/esito
-    API->>DB: persist send result
+    API->>DB: SENT, or PENDING after 30 s, or FAILED after 5 attempts
     Telegram-->>Cliente: accepted / completed update

@@ -11,4 +11,4 @@ flowchart LR
     Common["common<br/>API/domain errors"] -. shared .-> Controller
     Bot["Python chatbot"] -->|HTTP + service bearer| Controller
     Telegram["Telegram channel"] --> Bot
-    Service -->|route API only| Providers["Nominatim / OSRM"]
+    Service -->|geocodifica e percorso| Providers["Nominatim / OSRM"]

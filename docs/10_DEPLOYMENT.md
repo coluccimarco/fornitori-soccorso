@@ -1,46 +1,40 @@
 # Build, configurazione e deployment
 
-**Versione:** 1.0 · **Data:** 03/11/2026 · **Responsabile:** Membro 1 — Backend/DevOps<br>
-**Indice:** locale · configurazione · build · ambienti · stato deployment
+**Versione:** 2.0 · **Data:** 04/11/2026 · **Responsabile:** Vincenzo Minervini (Membro 1)
 
-## Scopo e stato
+## Stato
 
-Le istruzioni locali e CI sono **IMPLEMENTATE**. Container, staging, produzione,
-segreti runtime e osservabilità sono **PIANIFICATI**, non configurati.
+Avvio locale e pipeline GitHub Actions sono disponibili. Container, staging, produzione e osservabilità non
+sono configurati e sono fuori ambito.
 
 ## Avvio locale
 
-Prerequisiti: Java 25 LTS, PostgreSQL 18 compatibile e Maven Wrapper. Crea un DB
-demo isolato, imposta:
+Prerequisiti: Java 25, PostgreSQL 18 e Maven Wrapper. Crea un database demo e applica `database/01..08` come
+indicato nel [README](../README.md). Quindi:
 
 ```powershell
 $env:SPRING_DATASOURCE_URL = "jdbc:postgresql://localhost:5432/fornitori"
 $env:SPRING_DATASOURCE_USERNAME = "fornitori_app"
 $env:SPRING_DATASOURCE_PASSWORD = "<secret locale>"
 $env:SESSION_COOKIE_SECURE = "false"
-.\mvnw.cmd clean verify
+.\mvnw.cmd clean package
 .\mvnw.cmd spring-boot:run
 ```
 
-Per HTTPS in un ambiente remoto impostare cookie Secure e TLS al reverse proxy.
-Hibernate `validate` richiede schema già applicato.
+Per HTTPS in un ambiente remoto usare il profilo `prod` e TLS al reverse proxy. Hibernate `validate` richiede
+lo schema già applicato.
 
-## CI
+## Pipeline
 
-`.github/workflows/backend-ci.yml` usa GitHub-hosted Ubuntu, Temurin 25, cache
-Maven, build/test e un job PostgreSQL temporaneo. La password CI è fittizia,
-limitata al service effimero; non riutilizzarla in alcun ambiente persistente.
+`.github/workflows/backend-ci.yml` usa Ubuntu, Temurin 25 e un PostgreSQL 18 temporaneo: compila il progetto,
+controlla le dipendenze e la documentazione, applica gli script e verifica l'avvio dell'applicazione con un
+ruolo senza privilegi di amministratore. La password usata è fittizia e limitata al servizio effimero.
 
-## Future fasi operative
+## Fasi future
 
-1. Decidere target (VM/container/servizio gestito), rete, backup e migrazioni.
-2. Iniettare segreti da secret manager, mai da file committed.
-3. Abilitare TLS, cookie Secure, health checks, metriche/log strutturati e alert.
-4. Eseguire backup/restore test e deployment rollback.
-5. Promuovere solo artefatti provenienti da CI verde e taggare dopo approvazione.
+1. Decidere target, rete, backup e migrazioni.
+2. Iniettare i segreti da un secret manager, mai da file versionati.
+3. Abilitare TLS, cookie Secure, health check, metriche, log strutturati e alert.
+4. Provare backup, restore e rollback.
 
-**Dipendenze:** DB provisionato, JDK 25, segreti autorizzati, decisione hosting.
-**Criterio:** ambiente riproducibile e testato, piano rollback/backup verificato.
-**Riferimenti:** [README](../README.md),
-[sicurezza](./architecture/SECURITY_DESIGN.md),
-[rischi](./management/RISK_REGISTER.md).
+**Riferimenti:** [sicurezza](./architecture/SECURITY_DESIGN.md), [rischi](./management/RISK_REGISTER.md).

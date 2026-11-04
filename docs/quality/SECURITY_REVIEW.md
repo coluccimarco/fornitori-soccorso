@@ -1,90 +1,37 @@
-# Revisione difensiva sicurezza backend
+# Revisione difensiva della sicurezza
 
-**04/11/2026 — baseline 5a16da8, feature/backend — Minervini Vincenzo.**
-Verifica applicativa limitata ai casi descritti, non penetration test completo
-né certificazione. Riferimenti: [OWASP ASVS 5.0](https://asvs.owasp.org/),
-[OWASP API Security 2023](https://owasp.org/projects/api-security-project),
-[Spring Security CSRF](https://docs.spring.io/spring-security/reference/servlet/exploits/csrf.html),
-[session management](https://docs.spring.io/spring-security/reference/servlet/authentication/session-management.html).
-La verifica considera autenticazione, sessione, autorizzazione, input, API e dati;
-non pretende copertura di tutti i requisiti ASVS.
+**Versione:** 2.0 · **Data:** 04/11/2026 · **Responsabile:** Vincenzo Minervini (Membro 1)
+Revisione limitata ai casi descritti, non penetration test né certificazione. Riferimenti:
+[OWASP ASVS 5.0](https://asvs.owasp.org/), [OWASP API Security 2023](https://owasp.org/projects/api-security-project).
 
-| ID / gravità | Prima / componente | Mitigazione e prova | Stato |
+| ID / gravità | Rischio | Mitigazione | Stato |
 |---|---|---|---|
-| SEC-01 HIGH | Vecchio destinatario di proposta poteva leggere missione/note e route dopo riassegnazione | Ownership sul driver corrente; PostgresHttpWorkflowTests con due autisti, note e mappe | CORRETTO per casi verificati |
-| SEC-02 HIGH | Creazione chat con clienteId senza lookup legato alla sessione | Grant DB 15 minuti, polizza attiva alla creazione; lookup assente/scaduto negato; ChatPostgresIntegrationTests | MITIGATO, non prova identità |
-| SEC-03 HIGH | La targa nota consente riconoscimento nome/compagnia senza dimostrare titolarità | Limite globale 100 lookup/minuto + 5 errori/sessione; grant non sostituisce OTP/consenso | APERTO, blocca dati reali |
-| SEC-04 MEDIUM | requestId riusato con destinatario/sessione/payload diversi | Fingerprint SHA256 canonico per richieste nuove, verifica binding; mismatch 409 | CORRETTO nuove richieste; legacy senza fingerprint parziale |
-| SEC-05 MEDIUM | Login manuale non invalidava CSRF precedente | Rotazione repository CSRF e refresh client; login DB reale verifica vecchio token 403 e nuova session ID | CORRETTO |
-| SEC-06 MEDIUM | Tentativi login non limitati, lookup aggirabile cambiando sessione | Limiter per IP remoto 20/minuto e globale chat 100/minuto, finestra Clock e cap10.000; RateLimitTests | MITIGATO singola istanza; proxy/NAT e replica da dimensionare |
-| SEC-07 MEDIUM | GET mappe produceva scritture senza CSRF | Match esplicito GET e HEAD implicito route, header obbligatorio; MVC negativo e test proprietà | CORRETTO; GET con side effect resta debito contrattuale; HEAD riprodotto200 pre-fix e negato403 post-fix |
-| SEC-08 MEDIUM | Lunghezze, precisione e costo calcolato oltre capacità DB | Bean Validation + guardia costo, 400 prima della chiusura; MVC e PostgresHttpWorkflowTests | CORRETTO |
-| SEC-09 MEDIUM | Provider poteva restituire coordinate/distanze invalide, redirect e body non limitati | Destinazione da config, no redirect, 1 MiB, timeout3/8s, range; 11 test provider HTTP locale | MITIGATO; TLS/config produzione e disponibilità live NOT RUN |
-| SEC-10 MEDIUM | Token/sessione persa lasciava UI con 403 generico e token vecchio | Probe /auth/me dopo 403 di mutazione, nessun replay; reset token/logout/login | Test browser e login HTTP; nessun retry scrittura automatico |
-| SEC-11 MEDIUM | Record LoginRequest poteva apparire nei log DEBUG con password | toString redatto; osservati 11 record LoginRequest[redacted] nei test HTTP eseguiti; stacktrace esclusi dal JSON, DEBUG disabilitato nel runner | CORRETTO DTO login/CSRF con regression test diagnostica; policy log/retention operativa da definire |
-| SEC-12 MEDIUM | Doppia consegna outbox con dispatcher concorrenti o crash prima ACK | event_key unica, ACK lock e limite tentativi già presenti; test outbox mantenuti | APERTO lease/retry persistenti; non exactly-once |
-| SEC-13 LOW | Parametri non convertibili fuori dal formato ApiError | Handler 400/405/415 uniforme; ApiContractTests | CORRETTO |
-| SEC-14 MEDIUM | Sicurezza cookie dipendente dall'ambiente | HttpOnly, Lax, timeout30m; prod impone Secure | Configurato, HTTPS reale NOT RUN |
-
-Nessuna criticità CRITICAL dimostrata. Le gravità sono valutazioni tecniche per
-questo sistema, non punteggi CVSS ufficiali. SEC-03 e SEC-12 non sono accettati
-implicitamente: rimangono decisioni aperte per responsabile/team. L'accettazione
-storica dello stato bot in RAM vale solo per demo, come da R-07; questa revisione
-non approva produzione o uso di dati personali reali.
+| SEC-01 HIGH | Un vecchio destinatario di proposta poteva leggere missione, note e percorso dopo una riassegnazione | Accesso limitato all'autista corrente | Corretto |
+| SEC-02 HIGH | Creazione chat con `clienteId` senza lookup legato alla sessione | Autorizzazione DB di 15 minuti, polizza controllata alla creazione | Mitigato; non prova l'identità |
+| SEC-03 HIGH | La targa nota consente di vedere nome e compagnia senza dimostrare la titolarità | Limiti di 100 lookup al minuto e 5 errori per sessione | Limite noto della demo; blocca l'uso con dati reali |
+| SEC-04 MEDIUM | `requestId` riusato con destinatario, sessione o dati diversi | Impronta SHA-256 canonica; difformità 409 | Corretto |
+| SEC-05 MEDIUM | Il login non invalidava il CSRF precedente | Rotazione del token e aggiornamento del client | Corretto |
+| SEC-06 MEDIUM | Tentativi di login non limitati | 20 al minuto per IP, memoria limitata | Mitigato su singola istanza |
+| SEC-07 MEDIUM | La GET delle mappe produceva scritture senza CSRF | Header obbligatorio anche per GET e HEAD | Corretto |
+| SEC-08 MEDIUM | Lunghezze, precisione e costo calcolato oltre la capacità del DB | Validazione e controllo del costo, 400 prima della chiusura | Corretto |
+| SEC-09 MEDIUM | Il provider poteva restituire valori invalidi, redirect e risposte non limitate | Nessun redirect, 1 MiB, timeout 3/8 s, intervalli controllati | Mitigato |
+| SEC-10 MEDIUM | Sessione persa con UI su 403 generico | Controllo di `/auth/me` dopo un 403, senza ripetere le scritture | Corretto |
+| SEC-11 MEDIUM | La password del login poteva apparire nei log DEBUG | `toString` redatto per login e CSRF | Corretto |
+| SEC-12 MEDIUM | Doppia consegna delle notifiche con più dispatcher | Riserva persistente con `FOR UPDATE SKIP LOCKED` e scadenza | Corretto per più dispatcher; resta il caso di crash tra invio ed esito |
+| SEC-13 LOW | Parametri non convertibili fuori dal formato d'errore | Risposte 400, 405 e 415 uniformi | Corretto |
+| SEC-14 MEDIUM | Sicurezza del cookie dipendente dall'ambiente | HttpOnly, Lax, 30 minuti; `prod` impone Secure | Configurato; HTTPS reale non provato |
+| SEC-15 LOW | Telefono del cliente conservato in outbox per le missioni della centrale | Righe `SKIPPED` senza telefono, anche per i dati esistenti | Corretto |
 
 ## Altri controlli e limiti
 
-- BCrypt e autenticazione da PostgreSQL reale; ruoli default-deny, chain chat
-  stateless a token separata, CSRF operatore attivo. Niente JWT aggiunto.
-- Token servizio esatto, confronto constant-time; assente/errato negato dai test.
-  Rotazione operativa: aggiornare backend e bot in ambiente coordinato, riavviare
-  e verificare 401 col token precedente. Nessuna doppia chiave/grace period implementata.
-- SQL parametrizzato; il repository non concatena input utente. Il frontend
-  usa escaping HTML per i dati dinamici; quattro test JS includono payload XSS.
-- Runtime E2E con ruolo non-superuser; migrazioni eseguite dall'admin del solo
-  cluster temporaneo. Le autorizzazioni del database personale non sono certificate.
-- Segreti fuori Git; checkpoint DPAPI esterno. Non pubblicare log completi,
-  cookie, dump o datasource. Fixture/password CI sono dimostrative, non credenziali operative.
-- OSV: 124 versioni Maven risolte, nessun advisory corrispondente alla scansione
-  locale. Servizio esterno e copertura temporale limitati: non significa assenza
-  universale di vulnerabilità; nuove corrispondenze bloccano il job dedicato.
-- Nessun CORS aperto aggiunto; frontend same-origin. HTTPS/reverse proxy, CSP e
-  integrità CDN Bootstrap, dimensione massima JSON in ingresso, retention, backup,
-  secret manager, controlli anti-abuso distribuiti restano da implementare/verificare.
-- Provider live Telegram, Nominatim/OSRM e WhatsApp non testati con dati reali.
-  Il limite body riguarda i client mappe Java; non si estende per inferenza a Python.
+- BCrypt e autenticazione da PostgreSQL; ruoli default-deny; chain chat stateless a token. Nessun JWT.
+- Rotazione del token di servizio: aggiornare backend e bot insieme e riavviare; nessun periodo di grazia.
+- SQL parametrizzato; il frontend applica l'escaping HTML dei dati dinamici.
+- Segreti fuori da Git. Non pubblicare log completi, cookie, dump o datasource.
+- Nessun CORS aperto: frontend same-origin. Reverse proxy HTTPS, CSP, integrità CDN di Bootstrap, retention, backup e
+  secret manager restano fuori dalla consegna.
 
 ## Regole di rilascio
 
-Draft PR: le prove del flusso locale non autorizzano automaticamente dati reali.
-Prima del rilascio risolvere SEC-03, concordare le garanzie di consegna SEC-12,
-collaudare HTTPS/configurazione e raccogliere approvazioni docente/consumer.
-Evidenze riproducibili e limiti in [BACKEND_E2E_AUDIT.md](BACKEND_E2E_AUDIT.md)
-e [TEST_EVIDENCE.md](TEST_EVIDENCE.md).
-
-## Evidenza aggiornata — 04/11/2026
-
-Il test browser PostgreSQL verifica che nome, telefono e targa non siano esposti
-all'autista prima dell'accettazione; dopo l'accettazione sono restituiti solo al
-driver assegnato, mentre un altro autista riceve `403`. Entrambi i flussi E2E
-passano in ordine normale e inverso su database PostgreSQL 18 temporanei.
-
-La revisione del workflow CI ha rilevato che il precedente servizio PostgreSQL
-creava `fornitori_app` come superuser, rendendo i test meno rappresentativi dei
-privilegi applicativi. La modifica locale esegue schema/seed con l'admin effimero
-e assegna al runtime solo `USAGE` sullo schema, DML sulle tabelle e uso delle
-sequenze; i ruoli E2E sono separati e non-superuser. Password applicative
-generate a runtime e mascherate nei log. Il workflow YAML è stato validato, ma
-la sua esecuzione su GitHub Actions è **NON VERIFICATA**; il run verde
-`41811689974` precede la modifica. Non dichiarare quindi superata la verifica
-remota del nuovo modello di privilegi.
-
-SEC-03 e SEC-12 restano aperti; i test sintetici non dimostrano autorizzazione
-reale del cliente, consegna exactly-once, configurazione HTTPS operativa o
-protezione dei dati reali.
-
-La suite browser è stata ripetuta dopo l'integrazione locale del frontend
-`origin/main=bb8e548`: 2/2 scenari PASS in ordine standard e 2/2 in ordine
-inverso su PostgreSQL temporaneo. Le prove confermano le regole di privacy e
-autorizzazione descritte sopra e il percorso di persistenza; non sostituiscono
-una nuova esecuzione CI sul commit né i controlli esterni ancora aperti.
+La demo usa solo dati sintetici. Prima di un uso con dati reali: risolvere SEC-03, collaudare HTTPS e configurazione,
+raccogliere le approvazioni.

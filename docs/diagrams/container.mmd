@@ -1,4 +1,4 @@
-%% Container view: solid lines are present in code; dotted lines are not integrated.
+%% Container view.
 flowchart TB
     subgraph Client["Client"]
         Ops["Responsabile"]
@@ -17,8 +17,8 @@ flowchart TB
     DB[("PostgreSQL 18")]
     Geocoder["Nominatim"]
     Router["OSRM"]
-    WhatsApp["WhatsApp<br/>non implementato"]
     Ops --> Web
+    Web -->|"tile mappa"| OSM["OpenStreetMap"]
     Driver --> Web
     Web -->|"same-origin session + CSRF"| Static
     Static --> API
@@ -28,5 +28,4 @@ flowchart TB
     API --> Service --> Persistence --> DB
     Service -->|"geocoding"| Geocoder
     Service -->|"routing"| Router
-    Bot -. "outbox API / polling" .-> API
-    Bot -.-> WhatsApp
+    Bot -->|"riserva notifiche ed esito"| API

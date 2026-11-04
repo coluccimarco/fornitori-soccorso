@@ -1,6 +1,6 @@
 # Registro decisioni consolidato
 
-**Codice:** FOR-DEC-001 · **Versione:** 1.1 · **Data:** 03/11/2026 · **Owner:** M1
+**Codice:** FOR-DEC-001 · **Versione:** 2.0 · **Data:** 04/11/2026
 Questo registro consolida la baseline corrente e conserva in appendice il contesto
 dei record storici, con ID storici `H-*`. Non attribuisce approvazioni a persone
 non identificate; le decisioni di business restano da confermare col docente dove
@@ -14,19 +14,22 @@ indicato.
 | D-004 | Storico | `is_fixture` distingue righe didattiche dal lavoro live | Implementato | Schema SQL e servizi missione |
 | D-005 | Canale chatbot | Flusso a menu deterministico, senza AI obbligatoria | Implementato per console/Telegram; Gemini facoltativo non implementato | `chatbot/README.md` |
 | D-006 | Segreti | Token chatbot fornito tramite variabile d'ambiente condivisa col backend | Implementato come configurazione; rotazione/secret store di produzione non documentati | README chatbot e proprietà backend |
-| D-007 | Identità chatbot | README segnala che la verifica basata sulla targa non prova la titolarità | Limite noto; soluzione/approvazione da definire | `chatbot/README.md` |
-| D-008 | Telegram | Bot a long polling, notifiche implementate nel modulo | Dichiarato provato su Telegram dal README/commit; CI non è test provider reale | `chatbot/README.md`, history Git |
-| D-009 | WhatsApp | Provider e relativo webhook non integrati | Pianificato | OpenAPI `designed`, guide team |
-| D-010 | Frontend | Client HTML/CSS/JavaScript servito da Spring Boot per responsabile e autista | Presente nel codice; browser E2E NOT RUN e flussi incompleti | `src/main/resources/static/`, run CI |
-| D-011 | Mappe | `GET /api/v1/maps/route`, Nominatim e OSRM | API implementata e testata in CI; provider live e vista browser NOT RUN | `MapController`, `MapService`, OpenAPI |
-| D-012 | Docente | File PDF/Excel non disponibili all'audit | Richiesta di acquisizione aperta | Inventory working tree |
+| D-007 | Identità chatbot | La sola targa identifica il cliente, come nei dialoghi del docente | Limite noto della demo | `chatbot/README.md` |
+| D-008 | Telegram | Bot a long polling, notifiche implementate nel modulo | Implementato | `chatbot/README.md` |
+| D-009 | WhatsApp e webhook | Non integrati | Fuori ambito | OpenAPI `designed`, guide del team |
+| D-010 | Frontend | Client HTML/CSS/JavaScript servito da Spring Boot per responsabile e autista | Implementato | `src/main/resources/static/` |
+| D-011 | Mappe | `GET /api/v1/maps/route`, Nominatim, OSRM e mappa Leaflet | Implementato | `MapController`, `MapService`, `app.js` |
+| D-012 | Docente | File PDF/Excel non presenti nel repository | Richiesta di acquisizione aperta | Repository |
+| D-013 | Gestione utenti | Non esposta: un utente autista richiede anche autista e mezzo dedicati, gli account arrivano dal seed | Fuori ambito | OpenAPI `designed` |
+| D-014 | Notifiche della centrale | Nessun invio: la chat del cliente non è nota; righe `SKIPPED` senza telefono | Implementato | `MissionService`, `08_cleanup_and_delivery.sql` |
+| D-015 | Stato di invio | Riserva persistente `PENDING → SENDING → SENT` con scadenza; consegna almeno una volta in caso di crash | Implementato | `ChatService`, `NotificationDispatcher` |
+| D-016 | Mappe, codici di risposta | Vale il comportamento del codice: 404 per autista inesistente, 200 col solo sinistro senza autista | Implementato | `MapService`, OpenAPI |
 
 ## Decisioni da richiedere
 
 - Conferma dei requisiti obbligatori/facoltativi, dataset e acceptance dal docente.
 - Quale timestamp determina tariffa notturna e quale versione delle regole è normativa.
-- Acceptance della UI e necessità della mappa visuale, WhatsApp e autenticazione
-  più forte del chatbot.
+- Acceptance della UI e necessità di WhatsApp e di un'autenticazione più forte del chatbot.
 - Policy privacy/provider esterni Nominatim/OSRM e owner del contract source.
 
 ## Registro storico consolidato
@@ -44,8 +47,7 @@ H-006 sul canale outbox è stato aggiornato dal successivo H-009.
   già aperte alla data del 28/10/2026.
 - **Conseguenza:** le due assegnazioni aperte dell'autista 3 restano intatte; la
   disponibilità live non si basa sullo stato seed.
-- **Stato:** adottata nel modello e nel seed; flusso live implementato in Sprint 2
-  e verificato in PostgreSQL CI.
+- **Stato:** adottata nel modello e nel seed; flusso live implementato in Sprint 2.
 
 ### H-002 — Fascia tariffaria notturna (ID originale D-002)
 
@@ -59,9 +61,8 @@ H-006 sul canale outbox è stato aggiornato dal successivo H-009.
 
 - **Decisione:** memorizzare costi con `NUMERIC(10,2)` e importi Java con
   `BigDecimal`; non arrotondare chilometri prima del calcolo.
-- **Rounding:** arrotondamento finale `HALF_UP` a due decimali, verificato con i
-  casi tariffari diurni/notturni.
-- **Stato:** adottata e testata a livello unitario.
+- **Rounding:** arrotondamento finale `HALF_UP` a due decimali.
+- **Stato:** adottata.
 
 ### H-004 — Autenticazione (ID originale D-004)
 
@@ -74,9 +75,8 @@ H-006 sul canale outbox è stato aggiornato dal successivo H-009.
 
 - **Decisione:** Java 25 LTS; `java.version` e `maven.compiler.release` sono 25.
   Maven Wrapper resta 3.9.9.
-- **Motivo:** target condiviso e verifica riuscita con Temurin 25.0.5. Spring Boot
-  4.1.2 è mantenuto senza cambio major.
-- **Stato:** target compilato e `clean verify` superato su Java 25 il 03/11/2026.
+- **Motivo:** target condiviso. Spring Boot 4.1.2 è mantenuto senza cambio major.
+- **Stato:** adottata.
 
 ### H-006 — Canale outbox notifiche (ID originale D-006, superato da H-009)
 
@@ -109,9 +109,7 @@ H-006 sul canale outbox è stato aggiornato dal successivo H-009.
 - **Motivo:** il cliente in panne sa se serve il traino, ma non quale officina scegliere.
 - **Conseguenza:** i dialoghi 2-4 del foglio docente hanno un passo in più. La distanza
   non segue le strade. Senza coordinate né indirizzo valido il traino non viene creato.
-- **Stato registrato:** API applicata; mancava il comando nella UI della centrale
-  al momento del record. La baseline successiva ha frontend, ma alcuni flussi
-  restano incompleti.
+- **Stato:** applicata; la centrale corregge l'officina dalla scheda missione.
 
 ### H-009 — Notifiche al cliente (ID originale D-009; aggiorna H-006)
 
@@ -120,10 +118,9 @@ H-006 sul canale outbox è stato aggiornato dal successivo H-009.
   invia e registra l'esito. Dopo 5 invii falliti la notifica passa a `FAILED`.
 - **Motivo:** Telegram può scrivere solo a chi ha aperto una chat; long polling
   evita la necessità di un indirizzo pubblico.
-- **Conseguenza:** le missioni create dalla centrale restano `internal` e non
-  inviano messaggi. Consegna almeno una volta: un crash dopo invio può ripetere
-  il messaggio.
-- **Stato registrato:** applicata per Telegram; WhatsApp da collegare.
+- **Conseguenza:** le missioni create dalla centrale non inviano messaggi. Consegna almeno una volta: un
+  crash dopo l'invio può ripetere il messaggio.
+- **Stato:** applicata per Telegram; WhatsApp fuori ambito.
 
 ### H-010 — Geocodifica e percorso (ID originale D-010)
 
@@ -133,21 +130,12 @@ H-006 sul canale outbox è stato aggiornato dal successivo H-009.
 - **Conseguenza:** indirizzi inviati a terzi; provider pubblici senza SLA e con
   limiti; precisione dipendente da OpenStreetMap. Se i provider non rispondono,
   non si inventano km e la chiusura resta possibile.
-- **Stato aggiornato:** API backend implementata e testata in CI; provider live
-  e visualizzazione mappa browser non verificati.
+- **Stato:** implementata, con mappa Leaflet nella UI.
 
-## Aggiornamento hardening e prove del 04/11/2026
+## Aggiornamenti del 04/11/2026
 
-**D-HARD-01 è implementata, autorizzazione nella richiesta 04/11:** conservare
-monolite/layer e API condivise; correzioni mirate, migrazione 07 additiva e niente
-nuove infrastrutture. Commit/push solo feature/backend; PR senza merge finale.
-**D-HARD-02 è implementata, consumer da revisionare:** CSRF rinnovato al login e
-richiesto anche su GET route con effetti legacy; pratica chat vincolata a lookup
-15 minuti e fingerprint retry. Il grant non è una prova di identità.
-**D-HARD-03 è criterio operativo esplicitato dal committente, fonte docente da
-convalidare:** notte20:00 inclusa–08:00 esclusa, Europe/Rome, ora di accettazione,
-BigDecimal/HALF_UP. Supera l'ambiguità testuale storica H002 per questa revisione,
-non costituisce approvazione del docente sul PDF/Excel assente.
-**D-HARD-04 è gate aperto:** pubblicare Draft PR per titolarità chatbot/outbox e
-configurazione produzione non risolte. Non dichiarare il progetto completato
-soltanto sulla base dei test verdi.
+**D-HARD-01:** conservare monolite, layer e API condivise; correzioni mirate e migrazioni additive.
+**D-HARD-02:** CSRF rinnovato al login e richiesto anche sulla GET route; pratica chat vincolata al lookup per
+15 minuti e impronta per i retry. L'autorizzazione non è una prova di identità.
+**D-HARD-03:** notte dalle 20:00 incluse alle 08:00 escluse, Europe/Rome, ora di accettazione, BigDecimal/HALF_UP.
+Criterio operativo da convalidare col docente.

@@ -1,5 +1,4 @@
-%% FORNITORI | v1.1 | 03/11/2026 | owner: Membro 3
-%% Bot Telegram e API chat presenti; provider in questa sequenza non è testato dalla CI.
+%% FORNITORI | v2.0 | 04/11/2026 | Marco Colucci
 sequenceDiagram
     actor Cliente
     participant Bot as Chatbot guidato
@@ -9,6 +8,8 @@ sequenceDiagram
     API-->>Bot: nome e compagnia
     Bot->>Cliente: chiede indirizzo o posizione
     Cliente->>Bot: invia la posizione
+    Bot->>Cliente: chiede riparazione o traino
+    Cliente->>Bot: sceglie l'intervento
     Bot->>Cliente: chiede il problema
     Cliente->>Bot: descrive il problema
     Bot->>API: crea missione (requestId)
@@ -18,6 +19,6 @@ sequenceDiagram
     Bot->>API: stato della chat
     API-->>Bot: stato e autista
     Bot-->>Cliente: stato della richiesta
-    Bot->>API: legge le notifiche in coda
+    Bot->>API: riserva le notifiche in coda
     API-->>Bot: accettazione o chiusura
     Bot-->>Cliente: messaggio automatico
