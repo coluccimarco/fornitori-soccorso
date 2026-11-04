@@ -1,0 +1,130 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 520" role="img" aria-labelledby="t d">
+  <title id="t">Carro attrezzi con un'automobile sul pianale</title>
+  <desc id="d">Illustrazione: un carro attrezzi giallo percorre una strada trasportando un'automobile blu sul pianale.</desc>
+  <defs>
+    <linearGradient id="sky" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#cfe4f8"/>
+      <stop offset="1" stop-color="#f4f9fe"/>
+    </linearGradient>
+    <linearGradient id="cab" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#ffd23a"/>
+      <stop offset="1" stop-color="#eeb400"/>
+    </linearGradient>
+    <linearGradient id="car" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0" stop-color="#2f86e0"/>
+      <stop offset="1" stop-color="#14529f"/>
+    </linearGradient>
+    <linearGradient id="glass" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#e4f4fd"/>
+      <stop offset="1" stop-color="#8db8d4"/>
+    </linearGradient>
+    <g id="wheel-large">
+      <circle r="44" fill="#1c2530"/>
+      <circle r="27" fill="#d5dce3"/>
+      <circle r="17" fill="#8996a3"/>
+      <circle r="6" fill="#1c2530"/>
+    </g>
+    <g id="wheel-small">
+      <circle r="30" fill="#1c2530"/>
+      <circle r="18" fill="#dfe5ea"/>
+      <circle r="11" fill="#98a5b1"/>
+      <circle r="4" fill="#1c2530"/>
+    </g>
+  </defs>
+
+  <!-- Paesaggio -->
+  <rect width="1200" height="520" fill="url(#sky)"/>
+  <circle cx="1040" cy="92" r="46" fill="#fff3bf"/>
+  <g fill="#fff">
+    <ellipse cx="190" cy="82" rx="62" ry="17"/>
+    <ellipse cx="232" cy="68" rx="42" ry="20"/>
+    <ellipse cx="660" cy="62" rx="52" ry="14"/>
+    <ellipse cx="696" cy="50" rx="34" ry="16"/>
+  </g>
+  <path d="M0 330C130 250 250 270 390 312S640 262 790 296 1040 250 1200 318V430H0Z" fill="#bfd8bd"/>
+  <path d="M0 378C180 330 380 366 600 362S1000 330 1200 372V430H0Z" fill="#9cc49a"/>
+  <g fill="#6f9f76">
+    <ellipse cx="72" cy="340" rx="30" ry="46"/>
+    <ellipse cx="1130" cy="335" rx="32" ry="50"/>
+  </g>
+  <g fill="#6b5a45">
+    <rect x="67" y="372" width="10" height="44"/>
+    <rect x="1125" y="370" width="10" height="46"/>
+  </g>
+
+  <!-- Strada -->
+  <rect y="416" width="1200" height="104" fill="#465160"/>
+  <rect y="416" width="1200" height="6" fill="#c9d0d7"/>
+  <g fill="#f5f7f9">
+    <rect x="30" y="474" width="110" height="9" rx="2"/>
+    <rect x="230" y="474" width="110" height="9" rx="2"/>
+    <rect x="430" y="474" width="110" height="9" rx="2"/>
+    <rect x="630" y="474" width="110" height="9" rx="2"/>
+    <rect x="830" y="474" width="110" height="9" rx="2"/>
+    <rect x="1030" y="474" width="110" height="9" rx="2"/>
+  </g>
+
+  <g transform="translate(50 0)">
+    <ellipse cx="555" cy="432" rx="470" ry="11" fill="#1b232d" opacity=".4"/>
+
+    <!-- Telaio e passaruota -->
+    <rect x="150" y="350" width="840" height="13" fill="#1c2530"/>
+    <path d="M278 362A57 57 0 0 1 382 362Z" fill="#1c2530"/>
+    <path d="M808 362A57 57 0 0 1 912 362Z" fill="#1c2530"/>
+
+    <!-- Fiancata sotto il pianale -->
+    <path d="M150 304H745V350H376A58 58 0 0 0 284 350H150Z" fill="#f4f7fa"/>
+    <rect x="150" y="304" width="595" height="6" fill="#c9d2da"/>
+    <rect x="156" y="318" width="24" height="14" rx="2" fill="#d8352b"/>
+    <text x="568" y="337" fill="#154a99" font-family="Arial, Helvetica, sans-serif" font-size="21" font-weight="700" letter-spacing="1" text-anchor="middle">SOCCORSO STRADALE</text>
+
+    <!-- Paratia dietro la cabina -->
+    <rect x="704" y="176" width="28" height="104" rx="3" fill="#2d3946"/>
+    <rect x="711" y="188" width="14" height="82" rx="2" fill="#566474"/>
+    <rect x="684" y="196" width="48" height="8" rx="2" fill="#2d3946"/>
+
+    <!-- Automobile -->
+    <path d="M217 250A38 38 0 0 1 293 250ZM507 250A38 38 0 0 1 583 250Z" fill="#0d2442"/>
+    <path d="M180 250C172 225 176 200 196 190L236 178C262 146 296 130 350 128H420C458 130 484 150 510 178L585 192C612 198 626 216 626 250H583A38 38 0 0 0 507 250H293A38 38 0 0 0 217 250Z" fill="url(#car)"/>
+    <path d="M254 178C272 158 298 146 342 144V178Z" fill="url(#glass)"/>
+    <path d="M356 144H418C446 146 468 160 488 178H356Z" fill="url(#glass)"/>
+    <path d="M349 178V246M428 178V246" fill="none" stroke="#0f3f7d" stroke-width="2.5"/>
+    <rect x="360" y="192" width="24" height="6" rx="3" fill="#dceafa"/>
+    <rect x="440" y="192" width="24" height="6" rx="3" fill="#dceafa"/>
+    <path d="M196 218H618" stroke="#7fb9f0" stroke-width="3" opacity=".65"/>
+    <path d="M178 238H217M293 238H507M583 238H625" stroke="#0d3361" stroke-width="10"/>
+    <path d="M598 202C611 206 620 214 623 226L600 222Z" fill="#fff4bd"/>
+    <path d="M183 200 196 195 198 222 178 222Z" fill="#d8352b"/>
+    <use href="#wheel-small" x="255" y="248"/>
+    <use href="#wheel-small" x="545" y="248"/>
+
+    <!-- Fissaggi e cavo del verricello -->
+    <path d="M226 278 244 256M284 278 266 256M516 278 534 256M574 278 556 256" stroke="#d8352b" stroke-width="5" stroke-linecap="round"/>
+    <path d="M626 240H704" stroke="#2d3946" stroke-width="3"/>
+
+    <!-- Pianale -->
+    <path d="M104 304 142 278H745V304Z" fill="#f2bf00"/>
+    <path d="M104 304 142 278H745V284H148L120 304Z" fill="#ffdf6b"/>
+    <rect x="104" y="300" width="641" height="5" fill="#a97f00"/>
+
+    <!-- Cabina -->
+    <path d="M745 350V165Q745 150 760 150H850Q866 150 876 162L925 232 972 248Q990 254 990 274V350H906A58 58 0 0 0 814 350Z" fill="url(#cab)"/>
+    <path d="M768 170H846Q856 170 862 178L902 232H768Z" fill="url(#glass)"/>
+    <path d="M768 234H892V322H768Z" fill="none" stroke="#b98d00" stroke-width="2.5"/>
+    <rect x="776" y="244" width="30" height="7" rx="3.5" fill="#2d3946"/>
+    <text x="830" y="289" fill="#154a99" font-family="Arial, Helvetica, sans-serif" font-size="19" font-weight="700" text-anchor="middle">RecuVeicol</text>
+    <path d="M908 226 926 208H934V226Z" fill="#2d3946"/>
+    <path d="M952 264 985 264Q987 280 974 282H958Q950 276 952 264Z" fill="#fff8d2" stroke="#b98d00" stroke-width="2"/>
+    <rect x="938" y="322" width="62" height="28" rx="5" fill="#2d3946"/>
+    <rect x="982" y="328" width="18" height="10" rx="2" fill="#f28c1a"/>
+
+    <!-- Lampeggiante -->
+    <rect x="786" y="143" width="58" height="8" rx="2" fill="#2d3946"/>
+    <path d="M796 143V132Q796 124 804 124H826Q834 124 834 132V143Z" fill="#f28c1a"/>
+    <path d="M804 130H826" stroke="#ffd59c" stroke-width="4" stroke-linecap="round"/>
+
+    <!-- Ruote -->
+    <use href="#wheel-large" x="330" y="386"/>
+    <use href="#wheel-large" x="860" y="386"/>
+  </g>
+</svg>

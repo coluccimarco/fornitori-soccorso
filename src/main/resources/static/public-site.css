@@ -96,6 +96,28 @@
 .chatbot-float-label { position: absolute; right: 0; bottom: calc(100% + 10px); padding: 8px 12px; border-radius: 6px; background: #123f83; box-shadow: 0 3px 10px rgba(13, 43, 82, .2); color: #fff; font-size: 12px; font-weight: 700; white-space: nowrap; opacity: 0; pointer-events: none; transform: translateY(4px); transition: opacity .18s ease, transform .18s ease; }
 .chatbot-float:hover .chatbot-float-label, .chatbot-float:focus-visible .chatbot-float-label { opacity: 1; transform: translateY(0); }
 
+/* Pagina dei servizi rivolta ai clienti */
+.public-header { border-bottom: 1px solid #d6d6d6; }
+.page-title { margin-bottom: 26px; }
+.public-content .page-title h1 { margin: 0 0 12px; padding-bottom: 12px; border-bottom: 4px solid #f2bf00; color: #154a99; font-size: 36px; font-weight: 700; letter-spacing: -.6px; }
+.page-title p { max-width: 760px; margin: 0; color: #444; font-size: 17px; line-height: 1.55; }
+.hero-illustration img { display: block; width: 100%; height: auto; }
+.public-content .service-copy { font-size: 15px; line-height: 1.6; }
+.service-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.service-card { padding: 20px 22px; border: 1px solid #d9dee4; border-top: 4px solid #154a99; background: #fff; }
+.public-content .service-card h2 { margin: 0 0 8px; color: #154a99; font-size: 20px; }
+.service-when { color: #343434; font-weight: 700; }
+.request-steps, .after-steps { padding-left: 22px; }
+.request-steps li, .after-steps li { margin: 8px 0; }
+.safety-note { margin-top: 28px; padding: 16px 20px; border-left: 4px solid #d8352b; background: #fdf1f0; }
+.public-content .safety-note h2 { margin: 0 0 6px; font-size: 17px; }
+.safety-note p { margin: 0; }
+@media (max-width: 575.98px) {
+  .public-content .page-title h1 { font-size: 28px; }
+  .page-title p { font-size: 15px; }
+  .service-cards { grid-template-columns: minmax(0, 1fr); }
+}
+
 .back-to-site { display: block; margin-top: 26px; color: #5664d9 !important; font-size: 12px; text-decoration: none; }
 .back-to-site:hover { text-decoration: underline; }
 
