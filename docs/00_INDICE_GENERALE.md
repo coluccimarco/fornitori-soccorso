@@ -1,6 +1,6 @@
 # FORNITORI — indice generale e registro documentale
 
-**Codice:** FOR-IDX-001 · **Versione:** 2.0 · **Data:** 04/11/2026
+**Codice:** FOR-IDX-001 · **Versione:** 2.0 · **Data:** 04/11/2026 · **Responsabili:** team
 **Stato:** baseline documentale, non approvata dal docente
 **Repository:** [coluccimarco/fornitori-soccorso](https://github.com/coluccimarco/fornitori-soccorso)
 

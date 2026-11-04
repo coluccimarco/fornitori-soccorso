@@ -1,5 +1,7 @@
 # Guide del team e contratti condivisi
 
+**Codice:** FOR-TEAM-001 · **Versione:** 2.0 · **Data:** 04/11/2026 · **Responsabili:** team
+
 FORNITORI gestisce richiesta, assegnazione e chiusura del soccorso stradale,
 distinguendo centrale e autista e mantenendo uno storico verificabile. Requisiti
 originali e acceptance del docente restano da confermare: non sono nel repository.

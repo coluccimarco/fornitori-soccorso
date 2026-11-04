@@ -93,6 +93,11 @@ def validate_docx() -> tuple[int, int, int]:
             if "TOC" not in xml or "PAGE" not in package_text:
                 raise ValueError(f"Missing TOC/page field in {filename}")
         document = Document(path)
+        texts = [paragraph.text for paragraph in document.paragraphs]
+        texts += [cell.text for table in document.tables for row in table.rows for cell in row.cells]
+        leftover = [text[:60] for text in texts if "`" in text or re.search(r"(?<!/)\*\*", text)]
+        if leftover:
+            raise ValueError(f"Markdown markup left in {filename}: {leftover[:3]}")
         if not any(paragraph.style.name.startswith("Heading") for paragraph in document.paragraphs):
             raise ValueError(f"No Word heading styles found in {filename}")
         pictures += len(document.inline_shapes)

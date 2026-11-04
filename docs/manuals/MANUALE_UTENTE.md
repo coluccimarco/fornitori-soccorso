@@ -2,6 +2,7 @@
 
 **Codice:** FOR-USER-001 · **Versione:** 2.0 · **Data:** 04/11/2026
 **Destinatari:** responsabile centrale, autista e cliente
+**Responsabili:** Francesco Valeriano, Giuseppe Cangellosi, Marika Sancilio, Marco Colucci
 
 ## Prima di iniziare
 
