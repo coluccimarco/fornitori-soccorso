@@ -1,11 +1,15 @@
 # FORNITORI — gestione del soccorso stradale
 
 Project work ITS Developer 4.0 per coordinare richieste di soccorso stradale,
-centrale operativa, autisti e integrazioni esterne. La baseline `main` integrata
-fino a `f763d53` comprende backend Java/Spring, client web statico, workflow
-missioni, chatbot Telegram e API di geocodifica/percorso. La UI non visualizza
-ancora mappe e WhatsApp resta pianificato. CI e controlli locali sulla baseline
-integrata sono completati; i limiti browser/provider sono esplicitati nei report.
+centrale operativa, autisti e integrazioni esterne. Il riferimento locale
+`origin/main` è stato integrato fino a `bb8e548` nel branch `feature/backend`;
+il fetch successivo non è riuscito per indisponibilità della connessione a GitHub,
+quindi non è possibile confermare che questo sia ancora l'ultimo SHA remoto.
+Il progetto comprende backend Java/Spring, client web statico, workflow missioni,
+chatbot Telegram e API di geocodifica/percorso. La UI non visualizza ancora mappe
+e WhatsApp resta pianificato. Il run CI `41811689974` riguarda il precedente SHA
+`69ead57`, non i commit successivi. Limiti browser/provider e prove locali sono
+esplicitati nei report.
 
 Apri la [documentazione aggiornata](./docs/README.md) o l'[indice generale](./docs/00_INDICE_GENERALE.md)
 per audit, BUR/FUD/TAD, guide, test e Word modificabili. Il PDF e l'Excel originali
@@ -21,13 +25,13 @@ riassume evidenze, deliverable e attività ancora bloccate.
 |---|---|
 | Java 25 LTS / Maven | **IMPLEMENTATO**; verificato con Temurin 25.0.5 |
 | Backend Spring Boot: sessione, CSRF, ruoli, anagrafiche e rotte missioni | **IMPLEMENTATO**; 31 test MVC/security e diagnostica passati nella revisione locale |
-| Schema, seed e baseline PostgreSQL | Script **IMPLEMENTATI**; baseline PostgreSQL CI **PASS**; servizio locale attivo, ma accesso app locale da configurare con credenziali |
+| Schema, seed e baseline PostgreSQL | Script **IMPLEMENTATI**; PostgreSQL locale 18.6 verificato con ruolo applicativo non-superuser; Hibernate `validate` e baseline SQL **PASS** |
 | Missioni, timeout, pricing, note, dashboard e storico autista | **IMPLEMENTATO** in `main`; PostgreSQL CI **PASS** |
 | Chatbot (`chatbot/`) e API `chat/*` | **IMPLEMENTATO**; prova Telegram dichiarata nel README del modulo |
 | Notifiche al cliente | Outbox/backend e dispatcher Telegram presenti; prova reale dichiarata nel README del modulo; WhatsApp **PIANIFICATO** |
-| UI web | **PRESENTE** in `src/main/resources/static/`: pagina pubblica, login, centrale e area autista; 2 scenari browser/DB **PASS** locali; copertura limitata ai flussi descritti |
+| UI web | **PRESENTE** in `src/main/resources/static/`: pagina pubblica, login, centrale e area autista; 2 flussi browser/API/PostgreSQL PASS in entrambi gli ordini |
 | API mappe | **PRESENTE** per geocodifica, percorso e distanza stimata; la UI non mostra ancora la mappa |
-| CI Java 25 | Build, test, OpenAPI e PostgreSQL baseline/integration **PASS storico** (run `41656606659`, commit `f763d53`); nuovo run da consultare nella PR |
+| CI Java 25 | Run GitHub Actions storico PASS su `69ead57`; modifiche successive, incluso workflow a privilegi minimi e merge UI fino a `bb8e548`, da verificare con una nuova run |
 
 ## Requisiti locali
 
@@ -86,14 +90,19 @@ psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/03_verifiche.s
 psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/04_assert_baseline.sql
 psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/05_chat_requests.sql
 psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/06_chat_recipient.sql
+psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/07_backend_hardening.sql
 ```
 
-Chi ha già un database deve eseguire solo gli script `05` e `06` che non ha ancora
-applicato, altrimenti l'applicazione non si avvia.
+Questa sequenza è per un database nuovo. Su un database esistente verificare
+prima quali modifiche siano già state applicate e fare un backup; non rieseguire
+schema o seed come scorciatoia di migrazione. Il repository non mantiene un
+registro automatico delle versioni SQL: applicare solo le modifiche mancanti
+nell'ordine e controllarne l'esito prima di avviare l'applicazione.
 
-Gli script non cancellano dati. Lo schema usa `IF NOT EXISTS`; il seed usa conflitti
-per chiave primaria come no-op e riallinea le sequenze identity. Applicare le future
-modifiche strutturali con migrazioni esplicite, non con Hibernate `update`.
+Gli script attuali sono additivi e non contengono `DROP` o `TRUNCATE`; il seed
+ignora le chiavi primarie già presenti e riallinea le sequenze identity. Non usare
+Hibernate `update`: le future modifiche strutturali richiedono migrazioni SQL
+esplicite e verificate.
 
 Le righe del docente in `missions` sono marcate `is_fixture=TRUE` e costituiscono lo
 storico di riferimento al 28/10/2026. Non vanno modificate dallo scheduler operativo.
@@ -116,7 +125,9 @@ web di sicurezza non accedono al database.
 
 La pipeline [backend-ci.yml](./.github/workflows/backend-ci.yml) verifica Java 25
 e, in un job separato, inizializza un PostgreSQL effimero con schema, seed e
-assertion di baseline.
+assertion di baseline. L'applicazione nei job PostgreSQL usa un ruolo DML
+non-superuser; le migrazioni sono applicate dall'admin effimero del container.
+Questa modifica locale va ancora verificata da una nuova esecuzione GitHub Actions.
 
 ## API backend
 

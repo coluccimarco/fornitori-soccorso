@@ -1,13 +1,15 @@
 # Evidenze di test
 
-**Versione:** 2.0 · **Data:** 03/11/2026
+**Versione:** 2.1 · **Data:** 04/11/2026
 
 Questo registro separa evidenza CI, esecuzione locale e verifica non eseguita.
 Il codice presente o lo stato OpenAPI non sono da soli prova di funzionamento.
+Le sezioni datate sotto sono snapshot storici: la tabella finale è il riferimento
+per lo stato corrente di questa verifica.
 
-## Baseline verificata
+## Baseline storica — 03/11/2026
 
-| Controllo | Evidenza | Esito |
+| Controllo | Evidenza all'epoca | Esito all'epoca |
 |---|---|---|
 | Integrazione di `origin/main` | `origin/main` aggiornato a `f763d53`; merge nel branch `documentazione` completato con commit `6dbd5aa` | PASS |
 | CI Java/OpenAPI e PostgreSQL 18 | GitHub Actions run `41656606659` sul commit `f763d53`; entrambi i job `success` | PASS |
@@ -25,8 +27,8 @@ Il codice presente o lo stato OpenAPI non sono da soli prova di funzionamento.
 | Word visuale | Rendering/ispezione visiva non completati; un precedente tentativo automatico non è riuscito | NOT RUN |
 | Requisiti originali docente | PDF/Excel originali non presenti nel checkout verificato | BLOCKED / da confermare |
 
-Il test DB locale non è stato aggirato usando credenziali non autorizzate. La CI
-PostgreSQL 18 è evidenza separata, non equivalente a un test sul server locale.
+All'epoca il test DB locale non era stato eseguito; la CI PostgreSQL 18 era
+evidenza separata e non equivalente a un test sul server locale.
 Nominatim e OSRM sono provider pubblici; disponibilità, limiti e risposta live
 non sono coperti dalla suite automatica.
 
@@ -88,15 +90,43 @@ col CHECK deadline; corretti i test e rieseguiti, senza disabilitare vincoli.
 8 nuovi MVC pre-fix:4 failure; risultato post-fix PASS. Nessuna evidenza inventata
 per i regression test aggiunti dopo il fix. Il browser prova l'intero percorso;
 MockMvc transazionale/flush non è presentato come commit esterno.
-Connessione locale 5432 read-only PASS; tabella missions assente, setup applicativo
-BLOCKED. Provider live e WhatsApp NOT RUN. Run CI nuovi da consultare nella PR;
-le righe sopra il presente aggiornamento restano evidenze storiche03/11.
+Lo snapshot iniziale di questa revisione rilevava il servizio locale ma non aveva
+ancora schema/dati; provider live e WhatsApp non erano eseguiti. Questa situazione
+è superata dalle verifiche riportate nella tabella finale. I log integrali non
+sono deliverable e non vanno versionati: possono contenere dati sintetici o token
+di test.
 Non versionare i log integrali, che possono contenere dati sintetici o token di test.
 
 ### CI del fix finale e integrazione successiva
 
 [Run 41808673238](https://github.com/coluccimarco/fornitori-soccorso/actions/runs/41808673238)
-su `f1f84fc`: entrambi i job PASS, incluso browser con commit PostgreSQL.
-Il successivo merge di `origin/main` nel backend integra il merge esterno della
-PR #5, senza modificare src/api/database/tools/workflow rispetto al codice
-collaudato. L'ultimo SHA documentale e il suo run sono indicati nella PR finale.
+su `f1f84fc`: entrambi i job PASS, incluso browser con commit PostgreSQL. Il
+successivo merge di `origin/main` integrava allora il merge esterno della PR #5;
+quella nota non descrive gli ulteriori aggiornamenti frontend e CI registrati
+nella tabella finale.
+
+### Verifiche aggiornate — 04/11/2026
+
+| Controllo | Evidenza | Esito |
+|---|---|---|
+| Sincronizzazione Git | `git fetch origin --prune` riuscito; `origin/main=bb8e548` integrato in `feature/backend` senza conflitti; push del branch al commit `ca50e8b` | PASS; branch locale e `origin/feature/backend` allineati |
+| CI su `feature/backend` | [Run `41826245713`](https://github.com/coluccimarco/fornitori-soccorso/actions/runs/41826245713), commit `ca50e8b`, workflow `Backend CI`; job Java 25/contract quality e job Java 25/PostgreSQL baseline | PASS: entrambi i job, incluso il flusso browser con PostgreSQL |
+| CI storica su main | Run `41811689974`, commit `69ead57`, workflow `Backend CI` | PASS, ma antecedente alle modifiche al workflow |
+| Maven Java 25 locale | `clean verify`, Temurin 25.0.5+8 e datasource locale `fornitori`; 145 test, 0 failure/error/skip | PASS |
+| PostgreSQL/Playwright | `tools/run_isolated_browser.py`, PostgreSQL 18 temporaneo; ordine standard e inverso, eseguito dopo merge di `bb8e548` | PASS: 2/2 per ordine |
+| Round-trip UI/API/DB | UI crea cliente e missione; test SQL indipendente verifica la persistenza; API/UI mostrano accettazione, completamento e storico | PASS nei due scenari browser |
+| Privacy driver | PII oscurate prima dell'accettazione, visibili solo al driver assegnato dopo; altro driver riceve 403 | PASS nei test browser, entrambi gli ordini |
+| Frontend | `node --test tools/test_frontend.cjs`; `node --check src/main/resources/static/app.js` | PASS: 4 test e sintassi valida |
+| Chatbot | `python -m unittest discover` dalla directory `chatbot/` | PASS: 74 test |
+| Documentazione | `python tools/validate_docs.py` dopo gli aggiornamenti | PASS; rendering visivo Word NOT RUN |
+| CI ruoli DB | Workflow YAML usa un ruolo PostgreSQL non-superuser; run `41826245713` sul commit `ca50e8b` completa entrambi i job | PASS su GitHub Actions |
+| Database personale | PostgreSQL 18.6 su localhost:5432, ruolo `fornitori_app` non-superuser; 15 tabelle, 30 missioni, 16 foreign key | PASS; assertion baseline passata prima e dopo `clean verify` |
+| Docker Desktop | `docker info` restituisce HTTP 500 | UNAVAILABLE; test browser usano PostgreSQL locale temporaneo, non Docker |
+
+Il run `41809611044` aveva Java/PostgreSQL PASS e browser FAIL sul codice
+precedente; il run `41811689974` su `69ead57` è PASS ma antecedente al workflow
+aggiornato. Il run `41826245713` sul commit pubblicato `ca50e8b` ha entrambi i
+job PASS, incluso PostgreSQL/browser. Le verifiche browser locali sono state eseguite su un database
+temporaneo, mai sul database personale. Il controllo backend `mvnw clean verify`
+collega l'app al database locale; l'assertion della baseline viene eseguita dopo
+la suite per confermare la coerenza dei dati.

@@ -103,19 +103,18 @@ jobs:
         image: postgres:18
         env:
           POSTGRES_DB: fornitori
-          POSTGRES_USER: fornitori_app
+          POSTGRES_USER: postgres
           POSTGRES_PASSWORD: ci-only-password
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U fornitori_app -d fornitori"
+          --health-cmd "pg_isready -U postgres -d fornitori"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 20
     env:
       SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/fornitori
       SPRING_DATASOURCE_USERNAME: fornitori_app
-      SPRING_DATASOURCE_PASSWORD: ci-only-password
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -129,13 +128,24 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install --yes postgresql-client
+      - name: Create least-privilege application role
+        env:
+          PGPASSWORD: ci-only-password
+        run: |
+          app_password="$(python -c 'import secrets; print(secrets.token_hex(32))')"
+          echo "::add-mask::$app_password"
+          echo "SPRING_DATASOURCE_PASSWORD=$app_password" >> "$GITHUB_ENV"
+          psql --host localhost --username postgres --dbname fornitori --set ON_ERROR_STOP=1 \
+            --command "CREATE ROLE fornitori_app LOGIN PASSWORD '$app_password'"
       - name: Apply schema, seed, and baseline assertions
         env:
           PGPASSWORD: ci-only-password
         run: |
           for script in database/*.sql; do
-            psql --host localhost --username fornitori_app --dbname fornitori --set ON_ERROR_STOP=1 --file "$script"
+            psql --host localhost --username postgres --dbname fornitori --set ON_ERROR_STOP=1 --file "$script"
           done
+          psql --host localhost --username postgres --dbname fornitori --set ON_ERROR_STOP=1 \
+            --command "GRANT CONNECT ON DATABASE fornitori TO fornitori_app; GRANT USAGE ON SCHEMA public TO fornitori_app; GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO fornitori_app; GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO fornitori_app"
       - name: Verify application and tests against PostgreSQL
         run: ./mvnw --batch-mode --no-transfer-progress clean verify
       - uses: actions/setup-python@v5
@@ -149,26 +159,35 @@ jobs:
         env:
           PGHOST: localhost
           PGPORT: '5432'
-          PGUSER: fornitori_app
-          PGPASSWORD: ci-only-password
           PGDATABASE: fornitori_e2e
           E2E_ISOLATED: '1'
           E2E_BASE_URL: http://127.0.0.1:58880
           E2E_OUTPUT: target/e2e
         run: |
-          createdb fornitori_e2e
+          export PGPASSWORD=ci-only-password
+          createdb --host localhost --username postgres fornitori_e2e
           for script in database/*.sql; do
-            psql --set ON_ERROR_STOP=1 --file "$script" > /dev/null
+            psql --host localhost --username postgres --set ON_ERROR_STOP=1 --file "$script" > /dev/null
           done
+          app_password="$(python -c 'import secrets; print(secrets.token_hex(32))')"
+          admin_password="$(python -c 'import secrets; print(secrets.token_hex(32))')"
+          echo "::add-mask::$app_password"
+          echo "::add-mask::$admin_password"
+          psql --host localhost --username postgres --set ON_ERROR_STOP=1 \
+            --command "CREATE EXTENSION IF NOT EXISTS pgcrypto; CREATE ROLE e2e_app LOGIN PASSWORD '$app_password'; CREATE ROLE e2e_admin LOGIN PASSWORD '$admin_password'; GRANT CONNECT ON DATABASE fornitori_e2e TO e2e_app, e2e_admin; GRANT USAGE ON SCHEMA public TO e2e_app, e2e_admin; GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO e2e_app, e2e_admin; GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO e2e_app, e2e_admin"
           export E2E_PASSWORD="$(python -c 'import secrets; print(secrets.token_urlsafe(24))')"
           echo "::add-mask::$E2E_PASSWORD"
           python - <<'PY'
           import os, psycopg
-          with psycopg.connect(autocommit=True) as db:
-              db.execute('CREATE EXTENSION IF NOT EXISTS pgcrypto')
+          with psycopg.connect(user='postgres', password='ci-only-password',
+                               dbname='fornitori_e2e', autocommit=True) as db:
               db.execute("UPDATE app_users SET password_hash=crypt(%s, gen_salt('bf', 10))", (os.environ['E2E_PASSWORD'],))
           PY
           export SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/fornitori_e2e
+          export SPRING_DATASOURCE_USERNAME=e2e_app
+          export SPRING_DATASOURCE_PASSWORD="$app_password"
+          export PGUSER=e2e_admin
+          export PGPASSWORD="$admin_password"
           export SERVER_ADDRESS=127.0.0.1 SERVER_PORT=58880 DEBUG=false
           java -jar target/fornitori-0.0.1-SNAPSHOT.jar > target/e2e-app.log 2>&1 &
           app_pid=$!

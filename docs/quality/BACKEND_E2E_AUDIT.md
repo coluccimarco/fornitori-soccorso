@@ -278,3 +278,67 @@ su `f1f84fcc87751642304f046299624a1f523016d1` è PASS in entrambi i job:
 Java/PostgreSQL, Python, Node, OpenAPI, documenti, OSV e browser/PostgreSQL.
 Le verifiche locali finali comprendono **118 test Java, zero failure/error/skip**;
 il browser sul medesimo codice è stato verificato nuovamente dalla CI.
+
+### Aggiornamento sincronizzazione, privacy E2E e CI — 04/11/2026
+
+Il riferimento remoto è avanzato a `origin/main=69ead57`, commit di merge esterno
+di `origin/feature/backend`; il run [41811689974](https://github.com/coluccimarco/fornitori-soccorso/actions/runs/41811689974)
+su questo SHA è PASS. `feature/backend` è stato sincronizzato con `origin/main`
+localmente; il merge ha avuto un conflitto nel solo `tools/browser_e2e.py`, risolto
+conservando sia il test privacy già presente su main sia le verifiche aggiuntive
+descritte sotto. Nessun push è stato eseguito. Le modifiche locali riguardano il
+workflow CI, il test browser, la gestione del scheduler nel test PostgreSQL e la
+documentazione delle evidenze.
+
+Il run precedente [41809611044](https://github.com/coluccimarco/fornitori-soccorso/actions/runs/41809611044)
+aveva Java/PostgreSQL PASS e browser FAIL: il test attendeva nome/telefono prima
+dell'accettazione e, interrompendosi, lasciava una proposta che rendeva occupato
+l'autista selezionato dal test successivo. Il test corretto controlla via API e
+UI l'assenza di nome, telefono e targa prima dell'accettazione, la disponibilità
+dei dati dopo l'accettazione e il diniego a un autista non assegnato. La fixture
+sceglie l'autista disponibile dall'API e attende che l'opzione UI sia abilitata;
+il secondo flusso riusa la stessa logica per riassegnare senza scegliere autisti
+occupati o alterare gli esiti.
+
+| Prova locale | Esito |
+|---|---|
+| `mvnw clean verify`, Temurin 25.0.5+8, datasource PostgreSQL locale | BUILD SUCCESS; 145 test, 0 failure/error/skip; Hibernate ha validato lo schema PostgreSQL 18.6 |
+| `tools/run_isolated_browser.py`, PostgreSQL 18 temporaneo, ordine normale | PASS: 2/2 |
+| Stesso runner con `E2E_REVERSE_TEST_ORDER=1` | PASS: 2/2 |
+| `node --test tools/test_frontend.cjs` e `node --check src/main/resources/static/app.js` | PASS: 4/4 e sintassi valida |
+| `python -m unittest discover` da `chatbot/` | PASS: 74 test |
+| `python tools/validate_docs.py` | PASS: Markdown, OpenAPI, DOCX, workbook e Mermaid; rendering visivo Word non eseguito |
+
+Il workflow PostgreSQL è stato aggiornato localmente: l'admin effimero applica
+gli script; l'app usa un ruolo `fornitori_app` con soli privilegi DML, mentre
+l'E2E usa ruoli temporanei distinti per runtime e operazioni fixture. Le password
+applicative sono generate casualmente e mascherate nei log. YAML e parser del
+workflow verificati localmente; **la nuova configurazione CI non è ancora stata
+eseguita da GitHub Actions**. Il run verde `41811689974` precede questa modifica.
+
+Il database locale `fornitori` è stato verificato come `fornitori_app`
+non-superuser su PostgreSQL 18.6: 15 tabelle, 30 missioni, 16 foreign key e
+assertion baseline PASS. `mvnw clean verify` ha usato questo datasource; al
+termine la baseline è stata nuovamente verificata e risultava invariata.
+
+### Verifica end-to-end dopo l'integrazione frontend — 04/11/2026
+
+È stato integrato nel branch `feature/backend` il riferimento localmente
+disponibile `origin/main=bb8e548` con merge commit `ffccfa2`, senza conflitti.
+`git fetch origin --prune` non è riuscito per mancata connessione HTTPS a
+GitHub; l'eventuale avanzamento remoto successivo non è verificato.
+
+Su questo merge sono stati eseguiti i due scenari browser contro Spring Boot e
+un cluster PostgreSQL 18 temporaneo, sia nell'ordine standard sia nell'ordine
+inverso: **2/2 PASS per esecuzione**. Il flusso responsabile crea cliente e
+missione dalla UI, assegna e completa la missione; il test legge autonomamente
+lo stato dal DB e verifica che API/UI restituiscano gli stessi dati, costi e
+storico. Il flusso autista verifica privacy pre-accettazione, accesso autorizzato
+post-accettazione, isolamento tra autisti, rifiuto, scadenza e riproposizione.
+Il database personale non è usato dal browser runner.
+
+Frontend Node: 4/4 PASS e sintassi JavaScript valida. Chatbot: 74/74 PASS.
+`python tools/validate_docs.py` PASS; rendering visivo Word non eseguito. La
+suite Maven e il controllo della baseline sul database locale sono registrati
+nella tabella finale di `TEST_EVIDENCE.md`; nessun file di test è stato eliminato,
+poiché le suite sono attive e costituiscono la copertura di regressione.

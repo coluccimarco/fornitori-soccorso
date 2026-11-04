@@ -9,30 +9,35 @@
 |---|---|---|---|
 | Unit/service Java | prezzi, validazioni, transizioni | Maven Surefire, test `src/test/java` | Presente |
 | Web/security Java | sessione, CSRF, ruoli, DTO, errori | `ApiSecurityTests`, `ChatApiSecurityTests` | Presente |
-| PostgreSQL integration | schema, missioni, chat, concorrenza e query | `MissionPostgresIntegrationTests`, `ChatPostgresIntegrationTests`; servizio PostgreSQL 18 CI | CI PASS nel run latest; non eseguito localmente |
-| Bot Python | dialogo, backend HTTP, notifiche e Telegram channel | `python -m unittest discover` in `chatbot/` | PASS: 64 test locali il 04/11/2026; incluso nel workflow aggiornato |
+| PostgreSQL integration | schema, missioni, chat, concorrenza e query | Maven Surefire con PostgreSQL 18.6 locale; database isolati per i test browser | PASS locale; vedere `TEST_EVIDENCE.md` |
+| Bot Python | dialogo, backend HTTP, notifiche e Telegram channel | `python -m unittest discover` in `chatbot/` | PASS: 74 test locali il 04/11/2026; incluso nel workflow |
 | Contract/static | YAML, metadati status/role, package, Java target | step workflow `Backend CI` | CI PASS |
-| UI/browser | Flusso centrale/autista e sicurezza con DB isolato | tools/browser_e2e.py, runner locale e CI | 2 scenari PASS locali; accessibilità completa NOT RUN |
+| UI/browser | Flusso centrale/autista e sicurezza con DB isolato | `tools/run_isolated_browser.py` + Chromium + PostgreSQL 18 temporaneo | 2 scenari PASS in ordine standard e inverso; accessibilità completa NOT RUN |
 | Mappe | `MapProviderClientsTests`, `MapPostgresIntegrationTests` | API mappe testata in CI; provider live e mappa browser non inclusi | PASS automatico; live/UI NOT RUN |
 | WhatsApp/webhook | adapter e provider | Non implementati | NOT RUN |
 
-Un test saltato è distinto da PASS. L'esito del workflow `41656606659` su `f763d53`
-è prova per i job configurati (Java/OpenAPI e PostgreSQL 18), non per browser o
-provider esterni reali.
-La verifica di integrazione locale PostgreSQL resta separata dai job CI.
+Un test saltato è distinto da PASS. Il run GitHub Actions `41811689974` su
+`69ead57` è evidenza storica e non copre le modifiche locali successive. La
+configurazione aggiornata del workflow va verificata in una nuova esecuzione CI.
 
 ## Comandi
 
 ```powershell
 .\mvnw.cmd clean verify
+Push-Location chatbot
 python -m unittest discover
+Pop-Location
+$env:PG_BIN = "C:\Program Files\PostgreSQL\18\bin"
+$env:JAVA_HOME = "$HOME\.jdks\temurin-25.0.5+8"
+python tools\run_isolated_browser.py
 git diff --check
 ```
 
-Eseguire `python -m unittest discover` dalla directory `chatbot`. La suite ha restituito
-64 test PASS in esecuzione locale. La CI esegue Maven ma il workflow corrente non
-esegue la suite Python; aggiungerla è un possibile follow-up di processo, non parte
-di questa revisione docs.
+Eseguire la suite Python dalla directory `chatbot`. Il runner browser crea un
+cluster PostgreSQL temporaneo su una porta loopback dedicata e non usa il
+database locale `fornitori`; richiede le dipendenze in
+`tools/requirements-e2e.txt` e Chromium Playwright. Eseguire Maven prima del
+runner, che usa il JAR in `target/`.
 
 Il risultato locale per la baseline integrata e i conteggi sono riportati in
 [`TEST_EVIDENCE.md`](./TEST_EVIDENCE.md); il run CI remoto con PostgreSQL 18 è
@@ -60,7 +65,7 @@ separato.
 ## Aggiornamento hardening e prove del 04/11/2026
 
 Nuovi gate: ApiContractTests (validazione/ruoli/errori), OpenApiContractTests
-(32 DTO e mapping), PostgresHttpWorkflowTests (login BCrypt, CSRF, scritture e
+(33 test di contratto e mapping), PostgresHttpWorkflowTests (login BCrypt, CSRF, scritture e
 riletture, ownership, scadenza e overflow), RateLimitTests; estensioni provider,
 chat e doppia accettazione concorrente. `tools/test_frontend.cjs`:4 test Node.
 `tools/browser_e2e.py`:2 scenari Chromium con database isolato e connessione SQL
@@ -69,3 +74,11 @@ La CI esegue anche Python, Node, scanner OSV, validazione docs e browser/PG.
 Il piano non attribuisce PASS alle suite in base alla sola presenza del file;
 esiti aggiornati in TEST_EVIDENCE. Provider live, accessibilità completa e browser
 multipli restano NOT RUN. Nessun test disabilitato per ottenere il verde.
+
+Il controllo del 04/11/2026 ha inoltre verificato il flusso browser completo:
+creazione cliente e missione dal client, proposta/accettazione/completamento,
+riscontro indipendente delle scritture in PostgreSQL e rilettura dei dati nella
+UI; il secondo scenario verifica rifiuto, scadenza, riproposizione e permessi.
+Entrambi gli scenari sono passati sia nell'ordine standard sia nell'ordine
+inverso su database PostgreSQL isolati. Nessun test sorgente è stato rimosso:
+le suite presenti sono referenziate dal build o dai runner di progetto.
