@@ -425,12 +425,15 @@
     // Il riquadro può cambiare misura dopo il disegno (scrollbar, finestra, layout): si riadatta da solo.
     if (window.ResizeObserver) {
       const observer = new ResizeObserver(() => {
-        if (!container.isConnected) {
-          observer.disconnect();
-          return;
-        }
-        map.invalidateSize();
-        fit();
+        // Fuori dal ciclo di ridimensionamento, per non generare "ResizeObserver loop" nel browser.
+        window.requestAnimationFrame(() => {
+          if (!container.isConnected) {
+            observer.disconnect();
+            return;
+          }
+          map.invalidateSize();
+          fit();
+        });
       });
       observer.observe(container);
     }
