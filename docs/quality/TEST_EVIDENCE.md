@@ -109,8 +109,9 @@ nella tabella finale.
 
 | Controllo | Evidenza | Esito |
 |---|---|---|
-| Sincronizzazione Git | Riferimento locale `origin/main=bb8e548` integrato in `feature/backend` senza conflitti; `git fetch` non riuscito per connessione HTTPS a GitHub | Merge locale PASS; aggiornamento remoto più recente NON VERIFICATO |
-| CI su main | Run `41811689974`, commit `69ead57`, workflow `Backend CI` | PASS, ma antecedente alle modifiche locali al workflow |
+| Sincronizzazione Git | `git fetch origin --prune` riuscito; `origin/main=bb8e548` integrato in `feature/backend` senza conflitti; push del branch al commit `ca50e8b` | PASS; branch locale e `origin/feature/backend` allineati |
+| CI su `feature/backend` | [Run `41826245713`](https://github.com/coluccimarco/fornitori-soccorso/actions/runs/41826245713), commit `ca50e8b`, workflow `Backend CI`; job Java 25/contract quality e job Java 25/PostgreSQL baseline | PASS: entrambi i job, incluso il flusso browser con PostgreSQL |
+| CI storica su main | Run `41811689974`, commit `69ead57`, workflow `Backend CI` | PASS, ma antecedente alle modifiche al workflow |
 | Maven Java 25 locale | `clean verify`, Temurin 25.0.5+8 e datasource locale `fornitori`; 145 test, 0 failure/error/skip | PASS |
 | PostgreSQL/Playwright | `tools/run_isolated_browser.py`, PostgreSQL 18 temporaneo; ordine standard e inverso, eseguito dopo merge di `bb8e548` | PASS: 2/2 per ordine |
 | Round-trip UI/API/DB | UI crea cliente e missione; test SQL indipendente verifica la persistenza; API/UI mostrano accettazione, completamento e storico | PASS nei due scenari browser |
@@ -118,13 +119,14 @@ nella tabella finale.
 | Frontend | `node --test tools/test_frontend.cjs`; `node --check src/main/resources/static/app.js` | PASS: 4 test e sintassi valida |
 | Chatbot | `python -m unittest discover` dalla directory `chatbot/` | PASS: 74 test |
 | Documentazione | `python tools/validate_docs.py` dopo gli aggiornamenti | PASS; rendering visivo Word NOT RUN |
-| CI ruoli DB | Workflow YAML aggiornato a runtime non-superuser e password casuali mascherate | NON VERIFICATO su GitHub Actions; richiede una nuova run |
+| CI ruoli DB | Workflow YAML usa un ruolo PostgreSQL non-superuser; run `41826245713` sul commit `ca50e8b` completa entrambi i job | PASS su GitHub Actions |
 | Database personale | PostgreSQL 18.6 su localhost:5432, ruolo `fornitori_app` non-superuser; 15 tabelle, 30 missioni, 16 foreign key | PASS; assertion baseline passata prima e dopo `clean verify` |
 | Docker Desktop | `docker info` restituisce HTTP 500 | UNAVAILABLE; test browser usano PostgreSQL locale temporaneo, non Docker |
 
 Il run `41809611044` aveva Java/PostgreSQL PASS e browser FAIL sul codice
 precedente; il run `41811689974` su `69ead57` è PASS ma antecedente al workflow
-aggiornato. Le verifiche browser locali sono state eseguite su un database
+aggiornato. Il run `41826245713` sul commit pubblicato `ca50e8b` ha entrambi i
+job PASS, incluso PostgreSQL/browser. Le verifiche browser locali sono state eseguite su un database
 temporaneo, mai sul database personale. Il controllo backend `mvnw clean verify`
 collega l'app al database locale; l'assertion della baseline viene eseguita dopo
 la suite per confermare la coerenza dei dati.
