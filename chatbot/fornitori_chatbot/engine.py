@@ -15,6 +15,8 @@ from .backend import (
     BackendError,
     Conflict,
     InvalidRequest,
+    LookupExpired,
+    MissionCreated,
     MissionRequest,
     MissionStatus,
     NotFound,
@@ -89,6 +91,7 @@ class Session:
     state: State = State.START
     invalid_inputs: int = 0
     customer_id: Optional[int] = None
+    plate: Optional[str] = None
     location: Optional[str] = None
     latitude: Optional[float] = None
     longitude: Optional[float] = None
@@ -102,6 +105,7 @@ class Session:
         self.state = State.START
         self.invalid_inputs = 0
         self.customer_id = None
+        self.plate = None
         self.location = None
         self.latitude = None
         self.longitude = None
@@ -190,6 +194,7 @@ class ChatEngine:
         if not result.verificato or result.cliente_id is None:
             return [msg.PLATE_NOT_FOUND]
         session.customer_id = result.cliente_id
+        session.plate = normalize_plate(text)
         session.state = State.WAIT_LOCATION
         return [msg.PLATE_FOUND.format(nome=result.cliente_nome, compagnia=result.compagnia_nome)]
 
@@ -240,7 +245,7 @@ class ChatEngine:
             origine_lng=session.longitude,
         )
         try:
-            created = self._backend.create_mission(request)
+            created = self._create_with_renewed_lookup(session, request)
         except AddressNotFound:
             session.state = State.WAIT_LOCATION
             return [msg.ADDRESS_NOT_FOUND]
@@ -256,6 +261,16 @@ class ChatEngine:
             return [msg.UNAVAILABLE]
         session.reset()
         return [msg.CREATED.format(codice=created.codice)]
+
+    def _create_with_renewed_lookup(self, session: Session, request: MissionRequest) -> MissionCreated:
+        """Il dialogo può durare più del riconoscimento (15 minuti): lo rinnova una volta e riprova."""
+        try:
+            return self._backend.create_mission(request)
+        except LookupExpired:
+            result = self._backend.lookup_targa(session.session_id, session.plate)
+            if not result.verificato or result.cliente_id != session.customer_id:
+                raise
+            return self._backend.create_mission(request)
 
     def _show_status(self, session: Session) -> List[str]:
         try:
@@ -277,7 +292,7 @@ class ChatEngine:
 
 
 def _status_text(status: MissionStatus) -> str:
-    text = msg.STATUS.format(codice=status.codice, stato=status.stato.replace("_", " "))
+    text = msg.STATUS_TEXTS.get(status.stato, msg.STATUS_DEFAULT).format(codice=status.codice)
     if status.autista_nome:
         text += msg.STATUS_DRIVER.format(autista=status.autista_nome)
     return text + "."

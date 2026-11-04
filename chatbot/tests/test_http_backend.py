@@ -127,7 +127,7 @@ class HttpBackendTests(unittest.TestCase):
         self.reply(404, b"")
         self.assertIsNone(self.backend.current_status("telegram", "chat-1"))
 
-    def test_pending_notifications_are_parsed(self):
+    def test_claimed_notifications_are_parsed(self):
         self.reply(
             200,
             {
@@ -142,15 +142,15 @@ class HttpBackendTests(unittest.TestCase):
                 ]
             },
         )
-        notifications = self.backend.pending_notifications("telegram")
-        self.assertEqual(self.stub.requests[0]["path"], "/api/v1/chat/notifiche?canale=telegram")
+        notifications = self.backend.claim_notifications("telegram")
+        self.assertEqual(self.stub.requests[0]["path"], "/api/v1/chat/notifiche/claim")
         self.assertEqual(notifications[0].id, 5)
         self.assertEqual(notifications[0].autista_nome, "Autista Prova")
 
     def test_incomplete_notifications_are_unavailable(self):
         self.reply(200, {"notifiche": [{"id": 5}]})
         with self.assertRaises(BackendUnavailable):
-            self.backend.pending_notifications("telegram")
+            self.backend.claim_notifications("telegram")
 
     def test_report_notification_accepts_empty_response(self):
         self.reply(204, b"")

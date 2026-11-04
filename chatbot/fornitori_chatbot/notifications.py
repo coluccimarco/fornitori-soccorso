@@ -2,7 +2,7 @@
 import logging
 import threading
 import time
-from typing import Callable, Dict, Optional, Set
+from typing import Callable, Optional, Set
 
 from . import messages as msg
 from .backend import BackendClient, BackendError, Notification
@@ -10,7 +10,6 @@ from .backend import BackendClient, BackendError, Notification
 logger = logging.getLogger(__name__)
 
 POLL_INTERVAL_SECONDS = 5
-RETRY_DELAY_SECONDS = 30
 MAX_ERROR_LENGTH = 200
 
 
@@ -30,27 +29,21 @@ class NotificationDispatcher:
         backend: BackendClient,
         channel: str,
         send: Callable[[str, str], None],
-        clock: Callable[[], float] = time.time,
     ):
         self._backend = backend
         self._channel = channel
         self._send = send
-        self._clock = clock
-        self._retry_at: Dict[int, float] = {}
+        # Il backend riserva ogni notifica a un solo dispatcher e gestisce i tentativi.
         # Inviate ma con esito non ancora registrato: non vanno spedite una seconda volta.
         self._sent_unreported: Set[int] = set()
 
     def dispatch_once(self) -> None:
-        for notification in self._backend.pending_notifications(self._channel):
+        for notification in self._backend.claim_notifications(self._channel):
             if notification.id not in self._sent_unreported:
-                if self._clock() < self._retry_at.get(notification.id, 0):
-                    continue
                 error = self._deliver(notification)
                 if error is not None:
-                    self._retry_at[notification.id] = self._clock() + RETRY_DELAY_SECONDS
                     self._backend.report_notification(notification.id, False, error)
                     continue
-                self._retry_at.pop(notification.id, None)
                 self._sent_unreported.add(notification.id)
             self._backend.report_notification(notification.id, True)
             self._sent_unreported.discard(notification.id)

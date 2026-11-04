@@ -1,7 +1,7 @@
 import unittest
 
 from fornitori_chatbot import messages as msg
-from fornitori_chatbot.backend import AddressNotFound, BackendUnavailable, Conflict, RateLimited
+from fornitori_chatbot.backend import AddressNotFound, LookupExpired, LookupResult, BackendUnavailable, Conflict, RateLimited
 from fornitori_chatbot.engine import (
     DIALOG_TTL_SECONDS,
     INTERVENTION_QUESTION,
@@ -91,11 +91,14 @@ class TeacherDialogueTests(DialogTestCase):
 
     def test_07_status_with_open_mission(self):
         self.create_mission()
-        self.assertEqual(self.say("STATO"), ["La tua richiesta M-TEST-00001 è in stato nuova."])
+        self.assertEqual(
+            self.say("STATO"),
+            ["La tua richiesta M-TEST-00001 è stata ricevuta: stiamo cercando un autista disponibile."],
+        )
         self.backend.set_status(1, "accettata", "Autista Prova")
         self.assertEqual(
             self.say("STATO"),
-            ["La tua richiesta M-TEST-00001 è in stato accettata; autista assegnato: Autista Prova."],
+            ["La tua richiesta M-TEST-00001 è stata presa in carico; autista assegnato: Autista Prova."],
         )
 
     def test_08_status_without_missions_is_case_insensitive(self):
@@ -178,6 +181,43 @@ class PlateRecognitionTests(unittest.TestCase):
 
 
 class ErrorPathTests(DialogTestCase):
+    def _expire_lookup_once(self):
+        real = self.backend.create_mission
+        calls = []
+
+        def create(request):
+            calls.append(request)
+            if len(calls) == 1:
+                raise LookupExpired()
+            return real(request)
+
+        self.backend.create_mission = create
+        return calls
+
+    def test_expired_lookup_is_renewed_and_mission_created(self):
+        calls = self._expire_lookup_once()
+        created = self.create_mission()
+        self.assertEqual(len(calls), 2)
+        self.assertEqual(calls[0].request_id, calls[1].request_id)
+        self.assertIn("M-TEST-00001", created[0])
+
+    def test_expired_lookup_with_plate_no_longer_valid_is_rejected(self):
+        self._expire_lookup_once()
+        self.say("PW 660 SW")
+        self.say("Via Roma 1, Molfetta")
+        self.say("riparazione")
+        self.backend.lookup_targa = lambda session_id, targa: LookupResult(verificato=False)
+        self.assertEqual(self.say("La macchina non parte"), [msg.CREATE_REJECTED])
+        self.assertEqual(self.session().state, State.START)
+
+    def test_internal_states_are_not_shown_to_the_customer(self):
+        self.create_mission()
+        for state in ("non_accettata", "scaduta"):
+            self.backend.set_status(1, state)
+            reply = self.say("STATO")[0]
+            self.assertIn("altro autista", reply)
+            self.assertNotIn(state.replace("_", " "), reply)
+
     def test_status_phrase_from_the_pdf(self):
         self.create_mission()
         self.assertIn("M-TEST-00001", self.say("a che punto è il mio soccorso?")[0])

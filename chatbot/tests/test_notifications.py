@@ -4,16 +4,15 @@ from fornitori_chatbot import messages as msg
 from fornitori_chatbot.backend import BackendUnavailable, MissionRequest
 from fornitori_chatbot.engine import ChatEngine, InboundMessage
 from fornitori_chatbot.fake_backend import FakeBackend
-from fornitori_chatbot.notifications import RETRY_DELAY_SECONDS, NotificationDispatcher
+from fornitori_chatbot.notifications import NotificationDispatcher
 
 
 class NotificationTests(unittest.TestCase):
     def setUp(self):
         self.backend = FakeBackend()
         self.sent = []
-        self.now = 1000.0
         self.send_error = None
-        self.dispatcher = NotificationDispatcher(self.backend, "telegram", self.send, clock=lambda: self.now)
+        self.dispatcher = NotificationDispatcher(self.backend, "telegram", self.send)
 
         self.mission = self.backend.create_mission(
             MissionRequest(
@@ -48,7 +47,7 @@ class NotificationTests(unittest.TestCase):
         self.dispatcher.dispatch_once()
         self.assertEqual(self.sent, [("chat-1", msg.NOTIFY_COMPLETED.format(codice=self.mission.codice))])
 
-    def test_failed_send_is_reported_and_retried_after_delay(self):
+    def test_failed_send_is_reported_and_retried(self):
         self.backend.set_status(self.mission.id, "accettata", "Autista Prova")
         self.send_error = RuntimeError("sendMessage: HTTP 500")
         with self.assertLogs("fornitori_chatbot.notifications", "WARNING"):
@@ -56,10 +55,6 @@ class NotificationTests(unittest.TestCase):
         self.assertEqual(self.backend.notification_reports, [(1, False, "sendMessage: HTTP 500")])
 
         self.send_error = None
-        self.dispatcher.dispatch_once()
-        self.assertEqual(self.sent, [])
-
-        self.now += RETRY_DELAY_SECONDS
         self.dispatcher.dispatch_once()
         self.assertEqual(len(self.sent), 1)
 
@@ -76,7 +71,7 @@ class NotificationTests(unittest.TestCase):
         self.backend.report_notification = real_report
         self.dispatcher.dispatch_once()
         self.assertEqual(len(self.sent), 1)
-        self.assertEqual(self.backend.pending_notifications("telegram"), [])
+        self.assertEqual(self.backend.claim_notifications("telegram"), [])
 
     def test_dialog_passes_chat_as_recipient(self):
         engine = ChatEngine(self.backend)

@@ -19,6 +19,10 @@ class Unauthorized(BackendError):
     """HTTP 401/403: token di servizio mancante o errato."""
 
 
+class LookupExpired(Unauthorized):
+    """HTTP 403 sulla creazione: il riconoscimento della targa è assente o scaduto."""
+
+
 class NotFound(BackendError):
     """HTTP 404."""
 
@@ -92,7 +96,7 @@ class BackendClient(Protocol):
     def current_status(self, channel: str, recipient: str) -> Optional[MissionStatus]:
         ...
 
-    def pending_notifications(self, channel: str) -> List[Notification]:
+    def claim_notifications(self, channel: str) -> List[Notification]:
         ...
 
     def report_notification(self, notification_id: int, sent: bool, error: Optional[str] = None) -> None:

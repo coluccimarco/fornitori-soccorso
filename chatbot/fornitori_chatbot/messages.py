@@ -35,7 +35,15 @@ CREATED = (
 CREATE_CONFLICT = "Non posso registrare la richiesta. Contatta la centrale operativa."
 CREATE_REJECTED = "La richiesta non è stata accettata dal sistema. Contatta la centrale operativa."
 
-STATUS = "La tua richiesta {codice} è in stato {stato}"
+STATUS_DEFAULT = "La tua richiesta {codice} è in lavorazione"
+STATUS_TEXTS = {
+    "nuova": "La tua richiesta {codice} è stata ricevuta: stiamo cercando un autista disponibile",
+    "proposta": "La tua richiesta {codice} è stata inviata a un autista: attendiamo la sua conferma",
+    "accettata": "La tua richiesta {codice} è stata presa in carico",
+    "non_accettata": "La tua richiesta {codice} è in lavorazione: stiamo cercando un altro autista",
+    "scaduta": "La tua richiesta {codice} è in lavorazione: stiamo cercando un altro autista",
+    "eseguita": "L'intervento per la richiesta {codice} è concluso",
+}
 STATUS_DRIVER = "; autista assegnato: {autista}"
 NO_OPEN_REQUESTS = "Non risultano richieste aperte per questo numero. Scrivi la targa per attivare un soccorso."
 

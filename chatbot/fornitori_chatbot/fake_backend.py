@@ -61,7 +61,7 @@ class FakeBackend:
                 return status
         return None
 
-    def pending_notifications(self, channel: str) -> List[Notification]:
+    def claim_notifications(self, channel: str) -> List[Notification]:
         return list(self._notifications.values())
 
     def report_notification(self, notification_id: int, sent: bool, error: Optional[str] = None) -> None:

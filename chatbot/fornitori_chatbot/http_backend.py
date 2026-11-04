@@ -11,6 +11,7 @@ from .backend import (
     BackendUnavailable,
     Conflict,
     InvalidRequest,
+    LookupExpired,
     LookupResult,
     MissionCreated,
     MissionRequest,
@@ -76,8 +77,8 @@ class HttpBackend:
         except KeyError as exc:
             raise BackendUnavailable("risposta stato incompleta") from exc
 
-    def pending_notifications(self, channel: str) -> List[Notification]:
-        body = self._call("GET", f"/api/v1/chat/notifiche?canale={quote(channel, safe='')}")
+    def claim_notifications(self, channel: str) -> List[Notification]:
+        body = self._call("POST", "/api/v1/chat/notifiche/claim", {"canale": channel})
         try:
             return [
                 Notification(
@@ -124,8 +125,10 @@ class HttpBackend:
 def _map_status(status: int) -> BackendError:
     if status == 400:
         return InvalidRequest()
-    if status in (401, 403):
+    if status == 401:
         return Unauthorized()
+    if status == 403:
+        return LookupExpired()
     if status == 404:
         return NotFound()
     if status == 409:
