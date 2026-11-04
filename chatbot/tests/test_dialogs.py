@@ -1,9 +1,10 @@
 import unittest
 
 from fornitori_chatbot import messages as msg
-from fornitori_chatbot.backend import BackendUnavailable, Conflict, RateLimited
+from fornitori_chatbot.backend import AddressNotFound, BackendUnavailable, Conflict, RateLimited
 from fornitori_chatbot.engine import (
     DIALOG_TTL_SECONDS,
+    INTERVENTION_QUESTION,
     ChatEngine,
     InboundMessage,
     State,
@@ -33,6 +34,7 @@ class DialogTestCase(unittest.TestCase):
     def create_mission(self, chat="chat-1"):
         self.say("PW 660 SW", chat=chat)
         self.say("Via Roma 1, Molfetta", chat=chat)
+        self.say("riparazione", chat=chat)
         return self.say("La macchina non parte", chat=chat)
 
 
@@ -47,17 +49,16 @@ class TeacherDialogueTests(DialogTestCase):
         )
         self.assertEqual(self.session().state, State.WAIT_LOCATION)
 
-    def test_02_shared_position_is_saved(self):
+    def test_02_shared_position_is_saved_then_asks_intervention(self):
         self.say("PW 660 SW")
-        self.assertEqual(
-            self.say(latitude=41.2010, longitude=16.6000),
-            ["Descrivi in poche parole il problema."],
-        )
+        self.assertEqual(self.say(latitude=41.2010, longitude=16.6000), [INTERVENTION_QUESTION])
+        self.assertEqual(self.say("riparazione"), ["Descrivi in poche parole il problema."])
         self.assertEqual((self.session().latitude, self.session().longitude), (41.2010, 16.6000))
 
     def test_03_problem_creates_mission_without_further_confirmation(self):
         self.say("PW 660 SW")
         self.say(latitude=41.2010, longitude=16.6000)
+        self.say("riparazione")
         self.assertEqual(
             self.say("La macchina non parte, credo sia la batteria"),
             ["Richiesta M-TEST-00001 presa in carico. Ti avviseremo appena un autista accetta. "
@@ -65,12 +66,14 @@ class TeacherDialogueTests(DialogTestCase):
         )
         request = self.backend.requests[0]
         self.assertEqual(request.cliente_id, 1)
+        self.assertEqual(request.tipo_intervento, "riparazione_sul_posto")
         self.assertEqual(request.origine_lat, 41.2010)
         self.assertEqual(request.descrizione_problema, "La macchina non parte, credo sia la batteria")
 
     def test_04_textual_address(self):
         self.assertIn("Condividi la posizione", self.say("EB 821 TZ")[0])
-        self.assertEqual(self.say("Via Roma 10, Molfetta"), [msg.ASK_PROBLEM])
+        self.assertEqual(self.say("Via Roma 10, Molfetta"), [INTERVENTION_QUESTION])
+        self.say("2")
         self.say("Foratura")
         self.assertEqual(self.backend.requests[0].origine_indirizzo, "Via Roma 10, Molfetta")
         self.assertIsNone(self.backend.requests[0].origine_lat)
@@ -109,6 +112,60 @@ class TeacherDialogueTests(DialogTestCase):
         )
 
 
+class InterventionChoiceTests(DialogTestCase):
+    def reach_choice(self):
+        self.say("PW 660 SW")
+        return self.say("Via Roma 1, Molfetta")[0]
+
+    def test_question_offers_both_buttons(self):
+        question = self.reach_choice()
+        self.assertEqual(
+            question.buttons,
+            (("Riparazione sul posto", "riparazione"), ("Traino", "traino")),
+        )
+
+    def test_towing_button_creates_towing_mission(self):
+        self.reach_choice()
+        self.assertEqual(self.say("traino"), [msg.ASK_PROBLEM])
+        self.say("Motore in panne")
+        self.assertEqual(self.backend.requests[0].tipo_intervento, "traino")
+        self.assertIsNone(self.backend.requests[0].officina_id)
+
+    def test_typed_numbers_work_without_buttons(self):
+        self.reach_choice()
+        self.say("1")
+        self.say("Motore in panne")
+        self.assertEqual(self.backend.requests[0].tipo_intervento, "riparazione_sul_posto")
+
+    def test_other_text_repeats_question_with_buttons(self):
+        self.reach_choice()
+        reply = self.say("non so")[0]
+        self.assertEqual(reply, msg.ASK_INTERVENTION)
+        self.assertTrue(reply.buttons)
+        self.assertEqual(self.backend.requests, [])
+
+    def test_unknown_address_asks_position_again_keeping_request(self):
+        self.reach_choice()
+        self.say("traino")
+        real_create = self.backend.create_mission
+        attempts = []
+
+        def not_found(request):
+            attempts.append(request.request_id)
+            if len(attempts) == 1:
+                raise AddressNotFound()
+            return real_create(request)
+
+        self.backend.create_mission = not_found
+        self.assertEqual(self.say("Motore in panne"), [msg.ADDRESS_NOT_FOUND])
+        self.assertEqual(self.session().state, State.WAIT_LOCATION)
+        self.assertEqual(self.say("Corso Umberto 5, Bari"), [INTERVENTION_QUESTION])
+        self.say("traino")
+        self.assertIn("M-TEST-00001", self.say("Motore in panne")[0])
+        self.assertEqual(attempts[0], attempts[1])
+        self.assertEqual(self.backend.requests[-1].origine_indirizzo, "Corso Umberto 5, Bari")
+
+
 class PlateRecognitionTests(unittest.TestCase):
     def test_plate_formats(self):
         for text in ("PW 660 SW", "pw660sw", "PW-660-SW", " pw 660 sw "):
@@ -144,7 +201,7 @@ class ErrorPathTests(DialogTestCase):
         self.assertIsNone(self.session().customer_id)
 
     def test_cancel_works_in_every_active_state(self):
-        for steps in (["PW 660 SW"], ["PW 660 SW", "Via Roma 1, Molfetta"]):
+        for steps in (["PW 660 SW"], ["PW 660 SW", "Via Roma 1, Molfetta"], ["PW 660 SW", "Via Roma 1, Molfetta", "1"]):
             for step in steps:
                 self.say(step)
             self.assertEqual(self.say("ANNULLA"), [msg.CANCELLED])
@@ -166,6 +223,7 @@ class ErrorPathTests(DialogTestCase):
     def test_problem_too_short_is_rejected(self):
         self.say("PW 660 SW")
         self.say("Via Roma 1, Molfetta")
+        self.say("1")
         self.assertEqual(self.say("x"), [msg.INVALID_PROBLEM])
         self.assertEqual(self.backend.requests, [])
 
@@ -183,6 +241,7 @@ class IdempotencyTests(DialogTestCase):
     def test_retry_after_outage_reuses_request_id(self):
         self.say("PW 660 SW")
         self.say("Via Roma 1, Molfetta")
+        self.say("1")
         real_create = self.backend.create_mission
         attempts = []
 
@@ -222,6 +281,7 @@ class BackendFailureTests(DialogTestCase):
     def test_create_conflict_restarts_and_erases_data(self):
         self.say("PW 660 SW")
         self.say("Via Roma 1, Molfetta")
+        self.say("1")
         self.fail("create_mission", Conflict())
         self.assertEqual(self.say("Motore in panne"), [msg.CREATE_CONFLICT])
         self.assertEqual(self.session().state, State.START)

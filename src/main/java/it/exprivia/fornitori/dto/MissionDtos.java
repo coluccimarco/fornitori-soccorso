@@ -75,15 +75,66 @@ public final class MissionDtos {
             String officinaNome,
             String officinaIndirizzo,
             String officinaCitta) {
+        public MissionResponse withoutContactsUnless(String visibleState) {
+            return visibleState.equals(stato) ? this : withoutCustomerContacts();
+        }
+
+        /** Una proposta non rivela nome e telefono del cliente: compaiono dopo l'accettazione. */
+        public MissionResponse withoutCustomerContacts() {
+            return new MissionResponse(id, codice, stato, clienteId, autistaId, tipoIntervento, canaleOrigine,
+                    descrizioneProblema, origineIndirizzo, origineLat, origineLng, officinaId, kmStimati,
+                    kmEffettivi, creataIl, propostaIl, scadenzaIl, accettataIl, chiusaIl, notturno,
+                    costoCalcolato, costoFinale, rettificaMotivo, null, null, officinaNome, officinaIndirizzo,
+                    officinaCitta);
+        }
+
     }
 
     public record ProposalResponse(String stato, OffsetDateTime scadenzaIl, Long offertaId) {
+    }
+
+    public record NearestProposalResponse(
+            Long autistaId,
+            String autistaNome,
+            BigDecimal distanzaKm,
+            String stato,
+            OffsetDateTime scadenzaIl,
+            Long offertaId) {
+    }
+
+    public record CentreAlertResponse(
+            Long id,
+            String tipo,
+            Long missioneId,
+            String codice,
+            Long autistaId,
+            String autistaNome,
+            OffsetDateTime quando) {
+    }
+
+    public record DriverCustomerDetail(String nome, String telefono, String targa, String modelloVeicolo) {
+    }
+
+    public record DriverWorkshopDetail(
+            String nome,
+            String indirizzo,
+            String citta,
+            BigDecimal lat,
+            BigDecimal lng) {
+    }
+
+    public record DriverMissionDetailResponse(
+            MissionResponse missione,
+            DriverCustomerDetail cliente,
+            DriverWorkshopDetail officina,
+            BigDecimal guadagnoStimato) {
     }
 
     public record MissionNoteResponse(
             Long id,
             Long missionId,
             Long userId,
+            String autoreNome,
             String testo,
             OffsetDateTime createdAt) {
     }

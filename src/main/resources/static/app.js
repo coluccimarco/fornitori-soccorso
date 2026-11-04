@@ -12,10 +12,17 @@
     searchTimer: null,
     missions: [],
     driverMission: null,
+    driverDetails: {},
+    maps: new Map(),
+    alerts: [],
+    alertTimer: null,
     deadlineTimer: null,
     deadlineRefreshAt: 0,
     deadlineRefreshPending: false
   };
+
+  const ALERT_POLL_MS = 15000;
+  const alertStorageKey = (user) => `fornitori.avvisiLetti.${user?.id ?? "x"}`;
 
   const viewConfig = {
     clienti: {
@@ -149,13 +156,16 @@
     if (manager) {
       state.currentView = "dashboard";
       void loadRegistries();
+      startAlertPolling();
     } else {
+      stopAlertPolling();
       state.currentView = "autista";
     }
     goToView(state.currentView);
   }
 
   function showPublic() {
+    stopAlertPolling();
     state.user = null;
     state.csrf = null;
     loginView.classList.add("d-none");
@@ -296,6 +306,238 @@
         ? "Anagrafica officine non disponibile"
         : "Dettaglio non fornito dall'API missioni";
     return `<div><span class="field-label">Officina</span><strong>${safe(workshop?.nome || `Officina #${mission.officinaId}`)}</strong>${detail ? `<span class="${workshop ? "" : "data-unavailable"}">${detail}</span>` : ""}</div>`;
+  }
+
+  function driverCustomerMarkup(mission) {
+    const customer = state.driverDetails[mission.id]?.cliente;
+    if (!customer) {
+      return `<div><span class="field-label">Cliente</span><strong>Cliente #${safe(mission.clienteId)}</strong><span class="data-unavailable">Dettagli cliente non disponibili</span></div>`;
+    }
+    if (!customer.nome) {
+      const model = customer.modelloVeicolo ? `<span>${safe(customer.modelloVeicolo)}</span>` : "";
+      return `<div><span class="field-label">Cliente</span><span class="data-unavailable">Nome e recapito visibili dopo l'accettazione</span>${model}</div>`;
+    }
+    const vehicle = [customer.targa, customer.modelloVeicolo].filter(Boolean).map(safe).join(" · ");
+    return `<div><span class="field-label">Cliente</span><strong>${safe(customer.nome)}</strong><a href="tel:${safe(customer.telefono)}">${safe(customer.telefono)}</a><span>${vehicle}</span></div>`;
+  }
+
+  function driverWorkshopMarkup(mission) {
+    const workshop = state.driverDetails[mission.id]?.officina;
+    if (!workshop) return missionWorkshopMarkup(mission);
+    const address = [workshop.indirizzo, workshop.citta].filter(Boolean).map(safe).join(", ");
+    return `<div><span class="field-label">Officina</span><strong>${safe(workshop.nome)}</strong><span>${address}</span></div>`;
+  }
+
+  function driverEstimateMarkup(mission) {
+    return `<div><span class="field-label">Guadagno stimato</span><strong data-estimate="${safe(mission.id)}">${safe(estimateText(state.driverDetails[mission.id]))}</strong></div>`;
+  }
+
+  function estimateText(detail) {
+    return detail?.guadagnoStimato != null ? formatEuro(detail.guadagnoStimato) : "Calcolo in corso…";
+  }
+
+  function missionMapMarkup(missionId, hidden = false) {
+    return `<div class="mission-map-area${hidden ? " d-none" : ""}" data-map-area="${safe(missionId)}"><p class="small text-secondary mb-2" data-map-status>Caricamento mappa…</p><div class="mission-map d-none" data-map></div><ol class="mission-map-points small d-none" data-map-points></ol></div>`;
+  }
+
+  function removeMaps() {
+    state.maps.forEach((map) => map.remove());
+    state.maps.clear();
+  }
+
+  function mapAreaFor(missionId) {
+    // Dopo un cambio utente la pagina dell'altro ruolo resta nel DOM con le stesse missioni.
+    const page = state.user?.ruolo === "autista" ? "#driverPage" : "#missionPage";
+    return $(page)?.querySelector(`[data-map-area="${CSS.escape(String(missionId))}"]`);
+  }
+
+  async function showMissionMap(missionId, driverId) {
+    const area = mapAreaFor(missionId);
+    if (!area) return null;
+    const status = area.querySelector("[data-map-status]");
+    status.classList.remove("text-danger");
+    status.textContent = "Caricamento mappa…";
+    const params = new URLSearchParams({ missionId });
+    if (driverId) params.set("driverId", driverId);
+    try {
+      // Dopo l'hardening del backend anche questa GET richiede il token CSRF.
+      const route = await request(`/api/v1/maps/route?${params}`, { mutating: true });
+      const current = mapAreaFor(missionId);
+      if (!current) return route;
+      drawMissionMap(missionId, current, route);
+      return route;
+    } catch (error) {
+      const current = mapAreaFor(missionId);
+      if (current) {
+        const message = current.querySelector("[data-map-status]");
+        message.classList.add("text-danger");
+        message.textContent = ({
+          422: "Indirizzo non trovato: la mappa non è disponibile per questa missione.",
+          503: "Servizio mappe non disponibile: riprova più tardi. I chilometri si possono comunque inserire."
+        })[error.status] || error.message;
+      }
+      return null;
+    }
+  }
+
+  function drawMissionMap(missionId, area, route) {
+    const status = area.querySelector("[data-map-status]");
+    if (!window.L) {
+      status.classList.add("text-danger");
+      status.textContent = "Mappa non caricata: controlla la connessione.";
+      return;
+    }
+    const container = area.querySelector("[data-map]");
+    const pointsList = area.querySelector("[data-map-points]");
+    container.classList.remove("d-none");
+    pointsList.classList.remove("d-none");
+    state.maps.get(missionId)?.remove();
+    const map = L.map(container);
+    state.maps.set(missionId, map);
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+    }).addTo(map);
+    const labels = { base: "Base operativa", sinistro: "Dove si trova il cliente", officina: "Officina" };
+    pointsList.replaceChildren();
+    const coordinates = route.punti.map((point) => {
+      const label = `${labels[point.tipo] || point.tipo}: ${point.descrizione}`;
+      const popup = document.createElement("span");
+      popup.textContent = label;
+      const marker = L.marker([point.lat, point.lng], { title: label }).addTo(map).bindPopup(popup);
+      if (point.tipo === "sinistro") marker.setZIndexOffset(1000);
+      const item = document.createElement("li");
+      item.textContent = label;
+      pointsList.append(item);
+      return [point.lat, point.lng];
+    });
+    let fit;
+    if (route.geometria) {
+      const line = L.geoJSON(route.geometria, { style: { color: "#6d28d9", weight: 5 } }).addTo(map);
+      const bounds = line.getBounds().extend(coordinates);
+      fit = () => map.fitBounds(bounds, { padding: [32, 32] });
+      status.textContent = `Percorso stimato: ${route.kmStimati} km (fonte: OSRM). I km effettivi si confermano alla chiusura.`;
+    } else {
+      fit = () => map.setView(coordinates[0], 15);
+      status.textContent = "Scegli un autista per calcolare percorso e chilometri.";
+    }
+    fit();
+    // Il riquadro può cambiare misura dopo il disegno (scrollbar, finestra, layout): si riadatta da solo.
+    if (window.ResizeObserver) {
+      const observer = new ResizeObserver(() => {
+        if (!container.isConnected) {
+          observer.disconnect();
+          return;
+        }
+        map.invalidateSize();
+        fit();
+      });
+      observer.observe(container);
+    }
+  }
+
+  async function loadDriverRoute(mission) {
+    const route = await showMissionMap(mission.id);
+    if (!route) {
+      const estimate = document.querySelector(`[data-estimate="${CSS.escape(String(mission.id))}"]`);
+      if (estimate && state.driverDetails[mission.id]?.guadagnoStimato == null) estimate.textContent = "Non disponibile";
+      return;
+    }
+    const input = $("#actualKm");
+    if (input && !input.value && state.driverMission?.id === mission.id && route.kmStimati != null) {
+      input.value = route.kmStimati;
+    }
+    try {
+      const detail = await request(`/api/v1/autista/missioni/${mission.id}`);
+      state.driverDetails[mission.id] = detail;
+      const estimate = document.querySelector(`[data-estimate="${CSS.escape(String(mission.id))}"]`);
+      if (estimate) estimate.textContent = estimateText(detail);
+    } catch (error) {
+      console.error("Stima del guadagno non aggiornata:", error);
+    }
+  }
+
+  function lastSeenAlertId() {
+    try {
+      return Number(localStorage.getItem(alertStorageKey(state.user))) || 0;
+    } catch (error) {
+      return 0;
+    }
+  }
+
+  function markAlertsRead() {
+    const newest = state.alerts.reduce((max, alert) => Math.max(max, alert.id), lastSeenAlertId());
+    try {
+      localStorage.setItem(alertStorageKey(state.user), String(newest));
+    } catch (error) {
+      console.error("Avvisi letti non salvati:", error);
+    }
+    renderAlerts();
+  }
+
+  function renderAlerts() {
+    const seen = lastSeenAlertId();
+    const unread = state.alerts.filter((alert) => alert.id > seen).length;
+    const badge = $("#alertBadge");
+    badge.textContent = unread > 99 ? "99+" : String(unread);
+    badge.classList.toggle("d-none", unread === 0);
+    $("#alertButton").setAttribute("aria-label", unread ? `Avvisi, ${unread} non letti` : "Avvisi");
+    $("#alertList").innerHTML = state.alerts.length
+      ? state.alerts.map((alert) => {
+        const driver = alert.autistaNome || "Un autista";
+        const text = alert.tipo === "rifiutata"
+          ? `${driver} ha rifiutato la missione`
+          : `${driver} non ha risposto: proposta scaduta`;
+        return `<article class="alert-item${alert.id > seen ? " unread" : ""}"><span>${safe(text)} <strong>${safe(alert.codice)}</strong></span><time>${safe(formatDateTime(alert.quando))}</time><button class="btn btn-sm btn-outline-primary align-self-start" type="button" data-alert-mission="${safe(alert.missioneId)}">Apri missione</button></article>`;
+      }).join("")
+      : '<p class="small text-secondary mb-0">Nessun avviso.</p>';
+  }
+
+  async function loadAlerts() {
+    try {
+      state.alerts = await request("/api/v1/centrale/avvisi");
+      renderAlerts();
+    } catch (error) {
+      if (error.status === 401) stopAlertPolling();
+      else console.error("Avvisi non aggiornati:", error);
+    }
+  }
+
+  function startAlertPolling() {
+    stopAlertPolling();
+    void loadAlerts();
+    state.alertTimer = window.setInterval(() => void loadAlerts(), ALERT_POLL_MS);
+  }
+
+  function stopAlertPolling() {
+    if (state.alertTimer) window.clearInterval(state.alertTimer);
+    state.alertTimer = null;
+    state.alerts = [];
+    $("#alertPanel")?.classList.add("d-none");
+    $("#alertBadge")?.classList.add("d-none");
+  }
+
+  async function openMissionFromAlert(missionId) {
+    $("#alertPanel").classList.add("d-none");
+    $("#alertButton").setAttribute("aria-expanded", "false");
+    state.currentView = "missioni";
+    $("#missionMode").value = "live";
+    $("#missionStatus").value = "";
+    goToView("missioni");
+    await loadMissions();
+    const card = document.querySelector(`[data-mission-card="${CSS.escape(String(missionId))}"]`);
+    if (!card) return;
+    card.classList.add("highlight");
+    card.scrollIntoView({ block: "center" });
+    window.setTimeout(() => card.classList.remove("highlight"), 4000);
+  }
+
+  function costCorrectionMarkup(mission) {
+    if (mission.stato !== "eseguita" || $("#missionMode").value !== "live") return "";
+    const note = mission.rettificaMotivo
+      ? `<p class="small text-secondary mb-2">Calcolato ${safe(formatEuro(mission.costoCalcolato))}, corretto: ${safe(mission.rettificaMotivo)}</p>`
+      : "";
+    return `<section class="mission-cost">${note}<form class="cost-form" data-cost-form="${safe(mission.id)}"><label class="visually-hidden" for="cost-${safe(mission.id)}">Nuovo costo</label><div class="input-group input-group-sm"><input class="form-control" id="cost-${safe(mission.id)}" name="costoFinale" type="number" min="0" step="0.01" value="${safe(mission.costoFinale)}" required><span class="input-group-text">€</span></div><label class="visually-hidden" for="reason-${safe(mission.id)}">Motivo della correzione</label><input class="form-control form-control-sm" id="reason-${safe(mission.id)}" name="motivo" minlength="3" maxlength="1000" placeholder="Motivo della correzione" required><button class="btn btn-sm btn-outline-primary" type="submit">Correggi costo</button></form></section>`;
   }
 
   function goToView(view) {
@@ -449,6 +691,7 @@
       $("#missionPendingCount").textContent = dashboard.pending;
       $("#missionDoneCount").textContent = dashboard.eseguite;
       $("#missionExpiredCount").textContent = dashboard.scadute;
+      $("#missionRejectedCount").textContent = dashboard.nonAccettate;
       $("#missionRevenue").textContent = formatEuro(dashboard.totaleEur);
       $("#driverTotals").innerHTML = dashboard.totalePerAutista.length
         ? dashboard.totalePerAutista.map((driver) =>
@@ -470,13 +713,14 @@
       list.innerHTML = '<div class="empty-state"><span class="empty-icon">↗</span><h2 class="h6">Nessuna missione</h2><p class="small text-secondary mb-0">Crea una missione o modifica i filtri.</p></div>';
       return;
     }
+    removeMaps();
     list.innerHTML = state.missions.map((mission) => {
       const canPropose = $("#missionMode").value === "live"
         && ["nuova", "non_accettata", "scaduta"].includes(mission.stato);
       const driverOptions = state.data.autisti.map((driver) =>
         `<option value="${safe(driver.id)}"${driver.disponibilita === "occupato" ? " disabled" : ""}>${safe(driver.nome)}${driver.disponibilita === "occupato" ? " · occupato" : ""}</option>`
       ).join("");
-      return `<article class="mission-card">
+      return `<article class="mission-card" data-mission-card="${safe(mission.id)}">
         <div class="mission-card-header">
           <div><span class="mission-code">${safe(mission.codice)}</span><span class="mission-status status-${safe(mission.stato)}">${safe(statusLabel(mission.stato))}</span></div>
           <span class="small text-secondary">${safe(formatDateTime(mission.chiusaIl || mission.scadenzaIl))}</span>
@@ -493,7 +737,12 @@
           <button class="btn btn-link btn-sm px-0" type="button" data-mission-notes="${safe(mission.id)}" aria-expanded="false" aria-controls="mission-notes-${safe(mission.id)}">Mostra segnalazioni</button>
           <div class="note-list d-none" id="mission-notes-${safe(mission.id)}"><p class="small text-secondary mb-0">Apri per caricare le segnalazioni.</p></div>
         </section>
-        ${canPropose ? `<div class="mission-propose"><label class="visually-hidden" for="driver-${safe(mission.id)}">Seleziona autista</label><select class="form-select form-select-sm" id="driver-${safe(mission.id)}"><option value="">Seleziona autista</option>${driverOptions}</select><button class="btn btn-sm btn-outline-primary" type="button" data-propose="${safe(mission.id)}">Invia proposta</button></div>` : ""}
+        <section class="mission-notes">
+          <button class="btn btn-link btn-sm px-0" type="button" data-mission-map="${safe(mission.id)}" aria-expanded="false">Mostra mappa</button>
+          ${missionMapMarkup(mission.id, true)}
+        </section>
+        ${costCorrectionMarkup(mission)}
+        ${canPropose ? `<div class="mission-propose"><label class="visually-hidden" for="driver-${safe(mission.id)}">Seleziona autista</label><select class="form-select form-select-sm" id="driver-${safe(mission.id)}"><option value="">Seleziona autista</option>${driverOptions}</select><button class="btn btn-sm btn-outline-primary" type="button" data-propose="${safe(mission.id)}">Invia proposta</button><button class="btn btn-sm btn-primary" type="button" data-propose-nearest="${safe(mission.id)}">Proponi al più vicino</button></div>` : ""}
       </article>`;
     }).join("");
     updateCountdowns();
@@ -513,6 +762,15 @@
       const missions = await request("/api/v1/autista/missioni");
       const accepted = missions.find((mission) => mission.stato === "accettata");
       state.driverMission = accepted || null;
+      state.driverDetails = {};
+      await Promise.all(missions.map(async (mission) => {
+        try {
+          state.driverDetails[mission.id] = await request(`/api/v1/autista/missioni/${mission.id}`);
+        } catch (error) {
+          console.error("Dettagli missione non disponibili:", error);
+        }
+      }));
+      removeMaps();
       $("#driverMissions").innerHTML = missions.filter((mission) => mission.stato === "proposta").length
         ? missions.filter((mission) => mission.stato === "proposta").map(driverProposalCard).join("")
         : '<div class="empty-state"><span class="empty-icon">✓</span><h2 class="h6">Nessuna proposta in attesa</h2><p class="small text-secondary mb-0">Le nuove missioni appariranno qui.</p></div>';
@@ -526,6 +784,7 @@
         detail.innerHTML = "";
       }
       updateCountdowns();
+      missions.forEach((mission) => void loadDriverRoute(mission));
     } catch (error) {
       showInlineAlert("#driverAlert", error.message);
       $("#driverMissions").innerHTML = "";
@@ -536,12 +795,14 @@
     return `<article class="mission-card proposal-card">
       <div class="mission-card-header"><div><span class="mission-code">${safe(mission.codice)}</span><span class="mission-status status-proposta">Proposta</span></div><strong class="countdown" data-deadline="${safe(mission.scadenzaIl)}"></strong></div>
       <div class="mission-card-grid">
-        ${missionCustomerMarkup(mission)}
+        ${driverCustomerMarkup(mission)}
         <div><span class="field-label">Luogo</span><strong>${safe(mission.origineIndirizzo)}</strong></div>
         <div><span class="field-label">Intervento</span><strong>${safe(mission.tipoIntervento === "traino" ? "Traino" : "Riparazione sul posto")}</strong></div>
-        ${missionWorkshopMarkup(mission)}
+        ${driverWorkshopMarkup(mission)}
+        ${driverEstimateMarkup(mission)}
       </div>
       <p class="mission-description">${safe(mission.descrizioneProblema)}</p>
+      ${missionMapMarkup(mission.id)}
       <div class="mission-actions"><button class="btn btn-success" type="button" data-driver-action="accept" data-mission-id="${safe(mission.id)}">Accetta</button><button class="btn btn-outline-secondary" type="button" data-driver-action="reject" data-mission-id="${safe(mission.id)}">Rifiuta</button></div>
     </article>`;
   }
@@ -550,12 +811,14 @@
     return `<article class="mission-card active-mission-card">
       <div class="mission-card-header"><div><span class="mission-code">${safe(mission.codice)}</span><span class="mission-status status-accettata">In corso</span></div><span class="small text-secondary">Accettata ${safe(formatDateTime(mission.accettataIl))}</span></div>
       <div class="mission-card-grid">
-        ${missionCustomerMarkup(mission)}
+        ${driverCustomerMarkup(mission)}
         <div><span class="field-label">Luogo intervento</span><strong>${safe(mission.origineIndirizzo)}</strong></div>
-        ${missionWorkshopMarkup(mission)}
+        ${driverWorkshopMarkup(mission)}
         <div><span class="field-label">Intervento</span><strong>${safe(mission.tipoIntervento === "traino" ? "Traino" : "Riparazione sul posto")}</strong></div>
+        ${driverEstimateMarkup(mission)}
       </div>
       <p class="mission-description">${safe(mission.descrizioneProblema)}</p>
+      ${missionMapMarkup(mission.id)}
       <section class="mission-notes"><h2 class="h6">Segnala alla centrale</h2><div class="note-list" id="missionNotes"><p class="small text-secondary">Caricamento segnalazioni…</p></div>
         <form id="missionNoteForm" class="note-form"><label class="visually-hidden" for="missionNoteText">Nota per la centrale</label><textarea id="missionNoteText" class="form-control" rows="2" maxlength="2000" required placeholder="Scrivi un aggiornamento sulla missione…"></textarea><button class="btn btn-outline-primary" type="submit">Invia segnalazione</button></form>
       </section>
@@ -567,7 +830,7 @@
     const notes = await request(`/api/v1/missioni/${missionId}/notes`);
     if (!noteList) return;
     noteList.innerHTML = notes.length ? notes.map((note) =>
-      `<article class="note-item"><div><strong>Utente #${safe(note.userId)}</strong><time>${safe(formatDateTime(note.createdAt))}</time></div><p>${safe(note.testo)}</p></article>`
+      `<article class="note-item"><div><strong>${safe(note.autoreNome || `Utente #${note.userId}`)}</strong><time>${safe(formatDateTime(note.createdAt))}</time></div><p>${safe(note.testo)}</p></article>`
     ).join("") : '<p class="small text-secondary mb-0">Nessuna segnalazione inviata.</p>';
   }
 
@@ -735,6 +998,27 @@
   $("#missionMode").addEventListener("change", () => void loadMissions());
   $("#missionStatus").addEventListener("change", () => void loadMissions());
   $("#missionList").addEventListener("click", async (event) => {
+    const mapButton = event.target.closest("[data-mission-map]");
+    if (mapButton) {
+      const missionId = mapButton.dataset.missionMap;
+      const area = mapAreaFor(missionId);
+      if (!area) return;
+      if (!area.classList.contains("d-none")) {
+        area.classList.add("d-none");
+        mapButton.setAttribute("aria-expanded", "false");
+        mapButton.textContent = "Mostra mappa";
+        return;
+      }
+      area.classList.remove("d-none");
+      mapButton.setAttribute("aria-expanded", "true");
+      mapButton.textContent = "Nascondi mappa";
+      const mission = state.missions.find((item) => String(item.id) === missionId);
+      const selected = document.getElementById(`driver-${missionId}`)?.value;
+      mapButton.disabled = true;
+      await showMissionMap(missionId, selected || mission?.autistaId);
+      mapButton.disabled = false;
+      return;
+    }
     const notesButton = event.target.closest("[data-mission-notes]");
     if (notesButton) {
       const missionId = notesButton.dataset.missionNotes;
@@ -760,6 +1044,26 @@
         showInlineAlert("#missionAlert", error.message);
       } finally {
         notesButton.disabled = false;
+      }
+      return;
+    }
+    const nearestButton = event.target.closest("[data-propose-nearest]");
+    if (nearestButton) {
+      nearestButton.disabled = true;
+      try {
+        const proposal = await request(`/api/v1/missioni/${nearestButton.dataset.proposeNearest}/proposta-automatica`, {
+          method: "POST",
+          mutating: true
+        });
+        await loadMissions();
+        showInlineAlert("#missionAlert", `Proposta inviata a ${proposal.autistaNome} (base a ${proposal.distanzaKm} km).`, "success");
+      } catch (error) {
+        showInlineAlert("#missionAlert", ({
+          409: "Nessun autista libero che non abbia già risposto a questa missione.",
+          422: "Indirizzo non trovato: scegli l'autista a mano.",
+          503: "Servizio mappe non disponibile: scegli l'autista a mano."
+        })[error.status] || error.message);
+        nearestButton.disabled = false;
       }
       return;
     }
@@ -848,7 +1152,24 @@
   });
 
   document.addEventListener("submit", async (event) => {
-    if (event.target.id === "missionNoteForm") {
+    if (event.target.matches("[data-cost-form]")) {
+      event.preventDefault();
+      const form = new FormData(event.target);
+      const button = event.target.querySelector("button");
+      button.disabled = true;
+      try {
+        await request(`/api/v1/missioni/${event.target.dataset.costForm}/cost`, {
+          method: "PATCH",
+          mutating: true,
+          body: JSON.stringify({ costoFinale: Number(form.get("costoFinale")), motivo: form.get("motivo").trim() })
+        });
+        await loadMissions();
+        showInlineAlert("#missionAlert", "Costo corretto.", "success");
+      } catch (error) {
+        showInlineAlert("#missionAlert", error.message);
+        button.disabled = false;
+      }
+    } else if (event.target.id === "missionNoteForm") {
       event.preventDefault();
       const text = $("#missionNoteText").value.trim();
       if (!text || !state.driverMission) return;
@@ -884,6 +1205,23 @@
         showInlineAlert("#driverAlert", error.message);
         button.disabled = false;
       }
+    }
+  });
+
+  $("#alertButton").addEventListener("click", () => {
+    const open = $("#alertPanel").classList.toggle("d-none") === false;
+    $("#alertButton").setAttribute("aria-expanded", String(open));
+    if (open) void loadAlerts();
+  });
+  $("#alertReadButton").addEventListener("click", markAlertsRead);
+  $("#alertList").addEventListener("click", (event) => {
+    const button = event.target.closest("[data-alert-mission]");
+    if (button) void openMissionFromAlert(button.dataset.alertMission);
+  });
+  document.addEventListener("click", (event) => {
+    if (!event.target.closest("#alertBell")) {
+      $("#alertPanel").classList.add("d-none");
+      $("#alertButton").setAttribute("aria-expanded", "false");
     }
   });
 

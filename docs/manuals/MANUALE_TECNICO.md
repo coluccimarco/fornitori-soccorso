@@ -68,7 +68,10 @@ può salvare coordinate e km stimati, distinti dai km effettivi di chiusura.
 
 I provider pubblici hanno limiti/availability non garantiti e ricevono l'indirizzo
 da geocodificare. Le proprietà configurabili sono `fornitori.maps.nominatim-url`,
-`fornitori.maps.user-agent` e `fornitori.maps.osrm-url`; i default sono nel codice.
+`fornitori.maps.user-agent`, `fornitori.maps.osrm-url` e `fornitori.maps.viewbox`; i default sono nel codice.
+La ricerca è limitata alla Puglia (`15.8,42.2,18.6,39.7`, cioè `lonMin,latMax,lonMax,latMin`):
+senza limite Nominatim può restituire una via omonima di un'altra regione. Impostare la
+proprietà vuota per cercare in tutta Italia; fuori area un indirizzo risulta "non trovato".
 Gli errori provider sono riportati come servizio non disponibile o indirizzo non
 trovato. I test automatizzati coprono client e integrazione con provider simulati;
 una chiamata live e la visualizzazione cartografica nel browser restano NOT RUN.

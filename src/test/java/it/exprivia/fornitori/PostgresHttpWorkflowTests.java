@@ -111,9 +111,12 @@ class PostgresHttpWorkflowTests {
         propose(manager, id, 1);
         MockHttpSession driver = login("autista1@demo.it");
         mvc.perform(get("/api/v1/autista/missioni").session(driver))
-                .andExpect(jsonPath("$[0].id").value(id)).andExpect(jsonPath("$[0].clienteTelefono").isString());
+                .andExpect(jsonPath("$[0].id").value(id)).andExpect(jsonPath("$[0].clienteTelefono").doesNotExist())
+                .andExpect(jsonPath("$[0].clienteNome").doesNotExist());
         send(driver, post("/api/v1/missioni/{id}/accept", id), "").andExpect(status().isOk());
         assertEquals("accettata", persistedStatus(id));
+        mvc.perform(get("/api/v1/autista/missioni").session(driver))
+                .andExpect(jsonPath("$[0].clienteTelefono").isString()).andExpect(jsonPath("$[0].clienteNome").isString());
         send(driver, post("/api/v1/missioni/{id}/notes", id), "{\"testo\":\"In viaggio\"}")
                 .andExpect(status().isCreated()).andExpect(jsonPath("$.testo").value("In viaggio"));
         send(driver, post("/api/v1/missioni/{id}/complete", id), "{\"kmEffettivi\":18.25}")

@@ -78,8 +78,11 @@ class MissionPostgresIntegrationTests {
                 missions.propose("responsabile@demo.it", created.id(), new MissionDtos.ProposeMissionRequest(1L));
         assertEquals("proposta", proposal.stato());
         assertNotNull(proposal.scadenzaIl());
-        assertEquals(created.id(), missions.addNote(
-                "autista1@demo.it", created.id(), new MissionDtos.CreateNoteRequest("In viaggio")).missionId());
+        MissionDtos.MissionNoteResponse note = missions.addNote(
+                "autista1@demo.it", created.id(), new MissionDtos.CreateNoteRequest("In viaggio"));
+        assertEquals(created.id(), note.missionId());
+        assertEquals("Luca Bianchi", note.autoreNome());
+        assertEquals("Luca Bianchi", missions.getNotes("responsabile@demo.it", created.id()).get(0).autoreNome());
 
         assertThrows(ForbiddenOperationException.class, () -> missions.accept("autista2@demo.it", created.id()));
         MissionDtos.MissionResponse accepted = missions.accept("autista1@demo.it", created.id());

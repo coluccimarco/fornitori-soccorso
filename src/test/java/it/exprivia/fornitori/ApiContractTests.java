@@ -30,6 +30,8 @@ class ApiContractTests {
     @MockitoBean MissionService missions;
     @MockitoBean ChatService chat;
     @MockitoBean MapService maps;
+    @MockitoBean NearestDriverService nearestDriver;
+    @MockitoBean CentreAlertService centreAlerts;
 
     @Test
     void diagnosticsDoNotExposeLoginOrCsrfSecrets() {

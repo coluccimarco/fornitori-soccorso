@@ -333,7 +333,13 @@ public class MissionService {
         AppUser actor = currentUser(email);
         Mission mission = missions.findById(missionId).orElseThrow(MissionNotFoundException::new);
         authorizeMissionAccess(actor, mission);
-        return toResponse(mission);
+        return forViewer(actor, toResponse(mission));
+    }
+
+    /** Alla centrale i contatti del cliente servono sempre; all'autista solo dopo l'accettazione. */
+    private MissionDtos.MissionResponse forViewer(AppUser viewer, MissionDtos.MissionResponse response) {
+        boolean hidden = AUTISTA.equals(viewer.getRuolo()) && !ACCETTATA.equals(response.stato());
+        return hidden ? response.withoutCustomerContacts() : response;
     }
 
     @Transactional(readOnly = true)
@@ -353,7 +359,51 @@ public class MissionService {
         Driver driver = requireDriver(requireRole(email, AUTISTA));
         return missions.findByDriverIdAndFixtureFalseAndStatoInOrderByCreataIlDesc(
                         driver.getId(), ACTIVE_STATES)
-                .stream().map(this::toResponse).toList();
+                .stream().map(mission -> toResponse(mission).withoutContactsUnless(ACCETTATA)).toList();
+    }
+
+    /**
+     * Solo per l'autista destinatario e finché la missione è aperta. Su una proposta i dati del cliente restano
+     * nascosti; dopo l'accettazione compaiono nome, telefono e targa.
+     */
+    @Transactional(readOnly = true)
+    public MissionDtos.DriverMissionDetailResponse driverMissionDetail(String email, Long missionId) {
+        Driver driver = requireDriver(requireRole(email, AUTISTA));
+        Mission mission = missions.findById(missionId)
+                .filter(candidate -> !candidate.isFixture())
+                .orElseThrow(MissionNotFoundException::new);
+        if (!driver.getId().equals(mission.getDriverId())) {
+            throw new ForbiddenOperationException();
+        }
+        if (!ACTIVE_STATES.contains(mission.getStato())) {
+            throw conflict("I dettagli sono disponibili solo per le missioni proposte o accettate");
+        }
+        Customer customer = customers.findById(mission.getCustomerId())
+                .orElseThrow(() -> new IllegalStateException("Mission customer is missing"));
+        MissionDtos.DriverWorkshopDetail workshop = mission.getWorkshopId() == null ? null
+                : workshops.findById(mission.getWorkshopId())
+                        .map(item -> new MissionDtos.DriverWorkshopDetail(
+                                item.getNome(), item.getIndirizzo(), item.getCitta(), item.getLat(), item.getLng()))
+                        .orElseThrow(() -> new IllegalStateException("Mission workshop is missing"));
+        // Come chiede il PDF, nome, telefono e targa si vedono solo dopo l'accettazione: chi rifiuta non li ha.
+        boolean accepted = ACCETTATA.equals(mission.getStato());
+        return new MissionDtos.DriverMissionDetailResponse(
+                toResponse(mission).withoutContactsUnless(ACCETTATA),
+                new MissionDtos.DriverCustomerDetail(
+                        accepted ? customer.getNome() : null,
+                        accepted ? customer.getTelefono() : null,
+                        accepted ? customer.getTarga() : null,
+                        customer.getModelloVeicolo()),
+                workshop,
+                estimatedEarning(mission));
+    }
+
+    private BigDecimal estimatedEarning(Mission mission) {
+        if (mission.getKmStimati() == null) {
+            return null;
+        }
+        Instant acceptedAt = mission.getAccettataIl() != null ? mission.getAccettataIl().toInstant() : clock.instant();
+        return pricing.calculate(mission.getKmStimati(), acceptedAt).amount();
     }
 
     @Transactional(readOnly = true)
@@ -610,8 +660,9 @@ public class MissionService {
     }
 
     private MissionDtos.MissionNoteResponse toNoteResponse(MissionNote note) {
+        String authorName = users.findById(note.getUserId()).map(AppUser::getNome).orElse(null);
         return new MissionDtos.MissionNoteResponse(
-                note.getId(), note.getMissionId(), note.getUserId(), note.getTesto(), note.getCreatedAt());
+                note.getId(), note.getMissionId(), note.getUserId(), authorName, note.getTesto(), note.getCreatedAt());
     }
 
     private static final class DriverAggregate {

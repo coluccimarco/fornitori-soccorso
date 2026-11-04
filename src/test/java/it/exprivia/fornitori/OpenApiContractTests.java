@@ -80,7 +80,7 @@ class OpenApiContractTests {
     void everyImplementedOperationHasControllerAndViceVersa() throws Exception {
         Set<String> actual = new TreeSet<>();
         for (Class<?> controller : List.of(AuthController.class, RegistryController.class,
-                MissionController.class, MapController.class, ChatController.class)) {
+                MissionController.class, MapController.class, ChatController.class, AssignmentController.class)) {
             String base = controller.getAnnotation(RequestMapping.class).value()[0];
             for (var method : controller.getDeclaredMethods()) {
                 if (method.isAnnotationPresent(GetMapping.class)) actual.add("get " + base + method.getAnnotation(GetMapping.class).value()[0]);

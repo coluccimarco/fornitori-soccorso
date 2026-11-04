@@ -3,7 +3,6 @@ from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
 
 from .backend import (
-    Conflict,
     LookupResult,
     MissionCreated,
     MissionRequest,
@@ -48,8 +47,6 @@ class FakeBackend:
         existing = self._by_request.get(request.request_id)
         if existing is not None:
             return existing
-        if request.tipo_intervento == "traino" and request.officina_id is None:
-            raise Conflict("traino senza officina")
         mission_id = len(self._missions) + 1
         created = MissionCreated(mission_id, f"M-TEST-{mission_id:05d}", "nuova")
         self._by_request[request.request_id] = created

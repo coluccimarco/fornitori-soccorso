@@ -11,9 +11,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import it.exprivia.fornitori.config.SecurityConfig;
 import it.exprivia.fornitori.dto.ChatDtos;
 import it.exprivia.fornitori.service.AuthService;
+import it.exprivia.fornitori.service.CentreAlertService;
 import it.exprivia.fornitori.service.ChatService;
 import it.exprivia.fornitori.service.DatabaseUserDetailsService;
 import it.exprivia.fornitori.service.MapService;
+import it.exprivia.fornitori.service.NearestDriverService;
 import it.exprivia.fornitori.service.MissionService;
 import it.exprivia.fornitori.service.RegistryService;
 import org.junit.jupiter.api.Nested;
@@ -59,6 +61,12 @@ class ChatApiSecurityTests {
 
         @MockitoBean
         MapService mapService;
+
+        @MockitoBean
+        NearestDriverService nearestDriverService;
+
+        @MockitoBean
+        CentreAlertService centreAlertService;
     }
 
     @Nested

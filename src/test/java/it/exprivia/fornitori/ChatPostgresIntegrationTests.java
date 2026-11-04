@@ -2,6 +2,11 @@ package it.exprivia.fornitori;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -10,10 +15,16 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.jayway.jsonpath.JsonPath;
 import it.exprivia.fornitori.common.MissionConflictException;
 import it.exprivia.fornitori.dto.MissionDtos;
+import it.exprivia.fornitori.entity.Mission;
 import it.exprivia.fornitori.repository.MissionRepository;
 import it.exprivia.fornitori.repository.NotificationOutboxRepository;
+import it.exprivia.fornitori.service.MapProviders;
+import it.exprivia.fornitori.service.MapProviders.GeoPoint;
+import it.exprivia.fornitori.service.MapProviders.ProviderUnavailableException;
 import it.exprivia.fornitori.service.MissionService;
 import java.math.BigDecimal;
+import java.util.Map;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +32,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
@@ -37,6 +49,9 @@ class ChatPostgresIntegrationTests {
     private static final String CHAT = "chat-di-prova";
     private static final String RESPONSABILE = "responsabile@demo.it";
     private static final String AUTISTA = "autista1@demo.it";
+
+    @MockitoBean
+    private MapProviders.GeocodingClient geocoding;
 
     @Autowired
     private MockMvc mockMvc;
@@ -79,6 +94,81 @@ class ChatPostgresIntegrationTests {
                          "origineIndirizzo":"Via Roma 1, Molfetta","origineLat":41.2,"origineLng":16.6,
                          "officinaId":null,"canaleOrigine":"telegram","destinatario":"%s"}
                         """.formatted(SESSION, requestId, customerId, chat)));
+    }
+
+    private ResultActions createTowing(String requestId, String coordinates) throws Exception {
+        // Dopo l'hardening la creazione richiede un riconoscimento della targa nella stessa sessione.
+        lookup(SESSION, PLATE).andExpect(jsonPath("$.verificato").value(true));
+        return mockMvc.perform(asBot(post("/api/v1/chat/missioni"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"sessionId":"%s","requestId":"%s","clienteId":1,
+                         "tipoIntervento":"traino","descrizioneProblema":"Motore in panne",
+                         "origineIndirizzo":"Via Roma 1, Molfetta",%s
+                         "canaleOrigine":"telegram","destinatario":"%s"}
+                        """.formatted(SESSION, requestId, coordinates, CHAT)));
+    }
+
+    private Map<String, Object> workshop(long id) {
+        return jdbcTemplate.queryForMap("SELECT lat, lng FROM workshops WHERE id = ?", id);
+    }
+
+    @Test
+    void towingFromSharedPositionGetsNearestWorkshopWithoutGeocoding() throws Exception {
+        Map<String, Object> target = workshop(3L);
+        long missionId = createdId(createTowing("richiesta-traino-01",
+                "\"origineLat\":%s,\"origineLng\":%s,".formatted(target.get("lat"), target.get("lng")))
+                .andExpect(status().isCreated()));
+
+        Mission mission = missionRepository.findById(missionId).orElseThrow();
+        assertEquals("traino", mission.getTipoIntervento());
+        assertEquals(3L, mission.getWorkshopId());
+        verify(geocoding, never()).geocode(any());
+    }
+
+    @Test
+    void towingFromAddressIsGeocodedAndKeepsCoordinates() throws Exception {
+        Map<String, Object> target = workshop(1L);
+        when(geocoding.geocode("Via Roma 1, Molfetta")).thenReturn(Optional.of(new GeoPoint(
+                (BigDecimal) target.get("lat"), (BigDecimal) target.get("lng"))));
+
+        long missionId = createdId(createTowing("richiesta-traino-02", "").andExpect(status().isCreated()));
+
+        Mission mission = missionRepository.findById(missionId).orElseThrow();
+        assertEquals(1L, mission.getWorkshopId());
+        assertEquals(0, ((BigDecimal) target.get("lat")).compareTo(mission.getOrigineLat()));
+    }
+
+    @Test
+    void towingWithUnknownAddressIsRejectedWithoutMission() throws Exception {
+        when(geocoding.geocode(any())).thenReturn(Optional.empty());
+        long count = missionRepository.count();
+        createTowing("richiesta-traino-03", "").andExpect(status().isUnprocessableContent())
+                .andExpect(jsonPath("$.error").value("address_not_found"));
+        assertEquals(count, missionRepository.count());
+    }
+
+    @Test
+    void towingDuringGeocodingOutageIsUnavailable() throws Exception {
+        when(geocoding.geocode(any())).thenThrow(new ProviderUnavailableException("giu"));
+        createTowing("richiesta-traino-04", "").andExpect(status().isServiceUnavailable());
+    }
+
+    @Test
+    void towingRetryDoesNotGeocodeAgain() throws Exception {
+        Map<String, Object> target = workshop(1L);
+        when(geocoding.geocode(any())).thenReturn(Optional.of(new GeoPoint(
+                (BigDecimal) target.get("lat"), (BigDecimal) target.get("lng"))));
+        long first = createdId(createTowing("richiesta-traino-05", ""));
+        long second = createdId(createTowing("richiesta-traino-05", ""));
+        assertEquals(first, second);
+        verify(geocoding, times(1)).geocode(any());
+    }
+
+    @Test
+    void repairFromChatDoesNotGeocode() throws Exception {
+        create("richiesta-riparazione-01", 1L, CHAT).andExpect(status().isCreated());
+        verify(geocoding, never()).geocode(any());
     }
 
     private long createdId(ResultActions result) throws Exception {

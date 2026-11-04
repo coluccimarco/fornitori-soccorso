@@ -31,6 +31,10 @@ class InvalidRequest(BackendError):
     """HTTP 400."""
 
 
+class AddressNotFound(BackendError):
+    """HTTP 422: indirizzo non convertibile in coordinate."""
+
+
 @dataclass(frozen=True)
 class LookupResult:
     verificato: bool

@@ -30,7 +30,9 @@ import java.util.Optional;
 import java.util.stream.Stream;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.server.ResponseStatusException;
 
 @Service
@@ -50,6 +52,8 @@ public class ChatService {
     private final ChatMissionRequestRepository requests;
     private final MissionService missionService;
     private final ChatLookupLimiter limiter;
+    private final NearestWorkshopResolver workshopResolver;
+    private final TransactionTemplate transactions;
     private final Clock clock;
     private final ChatLookupGrantRepository grants;
     private final RequestRateLimiter globalLimiter;
@@ -63,6 +67,8 @@ public class ChatService {
             ChatMissionRequestRepository requests,
             MissionService missionService,
             ChatLookupLimiter limiter,
+            NearestWorkshopResolver workshopResolver,
+            PlatformTransactionManager transactionManager,
             Clock clock,
             ChatLookupGrantRepository grants,
             RequestRateLimiter globalLimiter) {
@@ -74,6 +80,8 @@ public class ChatService {
         this.requests = requests;
         this.missionService = missionService;
         this.limiter = limiter;
+        this.workshopResolver = workshopResolver;
+        this.transactions = new TransactionTemplate(transactionManager);
         this.clock = clock;
         this.grants = grants;
         this.globalLimiter = globalLimiter;
@@ -101,9 +109,27 @@ public class ChatService {
                 true, customer.get().getId(), customer.get().getNome(), company);
     }
 
-    @Transactional
+    /** La ricerca dell'officina chiama un servizio esterno: resta fuori dalla transazione che blocca il cliente. */
     public ChatDtos.MissionCreatedResponse createMission(ChatDtos.CreateMissionRequest request) {
         String channel = validChannel(request.canaleOrigine());
+        ChatDtos.CreateMissionRequest resolved = needsNearestWorkshop(request)
+                ? workshopResolver.withNearestWorkshop(request)
+                : request;
+        return transactions.execute(status -> persistMission(resolved, fingerprint(request), channel));
+    }
+
+    private boolean needsNearestWorkshop(ChatDtos.CreateMissionRequest request) {
+        return request.officinaId() == null
+                && "traino".equals(request.tipoIntervento().trim().toLowerCase(Locale.ROOT))
+                && !requests.existsById(request.requestId());
+    }
+
+    /**
+     * L'impronta anti-duplicato si calcola sulla richiesta ricevuta dal bot, non su quella arricchita con
+     * officina e coordinate: un nuovo invio identico deve dare lo stesso risultato, non 409.
+     */
+    private ChatDtos.MissionCreatedResponse persistMission(
+            ChatDtos.CreateMissionRequest request, String requestFingerprint, String channel) {
         // Serializza i tentativi concorrenti con lo stesso requestId, così il secondo trova il primo.
         Customer customer = customers.lockById(request.clienteId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cliente inesistente"));
@@ -117,7 +143,7 @@ public class ChatService {
                     || !request.destinatario().trim().equals(existing.get().getDestinatario())
                     || !channel.equals(mission.getCanaleOrigine())
                     || (existing.get().getRequestFingerprint() != null
-                        && !fingerprint(request).equals(existing.get().getRequestFingerprint()))) {
+                        && !requestFingerprint.equals(existing.get().getRequestFingerprint()))) {
                 throw new MissionConflictException("Chiave di idempotenza già usata");
             }
             return new ChatDtos.MissionCreatedResponse(mission.getId(), mission.getCodice(), mission.getStato());
@@ -139,7 +165,7 @@ public class ChatService {
                 channel));
         ChatMissionRequest stored = new ChatMissionRequest(
                 request.requestId(), created.id(), request.sessionId(), request.destinatario().trim(), now());
-        stored.setRequestFingerprint(fingerprint(request));
+        stored.setRequestFingerprint(requestFingerprint);
         requests.save(stored);
         return new ChatDtos.MissionCreatedResponse(created.id(), created.codice(), created.stato());
     }

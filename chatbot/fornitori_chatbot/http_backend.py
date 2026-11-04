@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional
 from urllib.parse import quote
 
 from .backend import (
+    AddressNotFound,
     BackendError,
     BackendUnavailable,
     Conflict,
@@ -129,6 +130,8 @@ def _map_status(status: int) -> BackendError:
         return NotFound()
     if status == 409:
         return Conflict()
+    if status == 422:
+        return AddressNotFound()
     if status == 429:
         return RateLimited()
     return BackendUnavailable(f"HTTP {status}")

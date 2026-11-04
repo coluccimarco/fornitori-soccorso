@@ -10,6 +10,7 @@ from typing import Callable, Deque, Dict, List, Optional, Set, Tuple
 
 from . import messages as msg
 from .backend import (
+    AddressNotFound,
     BackendClient,
     BackendError,
     Conflict,
@@ -25,8 +26,15 @@ MAX_INVALID_INPUTS = 3
 DIALOG_TTL_SECONDS = 30 * 60
 MAX_REMEMBERED_MESSAGE_IDS = 50
 
-# Il bot non conosce le officine: se serve il traino lo imposta la centrale dopo la creazione.
-DEFAULT_TIPO_INTERVENTO = "riparazione_sul_posto"
+REPAIR = "riparazione_sul_posto"
+TOWING = "traino"
+INTERVENTION_WORDS = {
+    "1": REPAIR,
+    "riparazione": REPAIR,
+    "riparazione sul posto": REPAIR,
+    "2": TOWING,
+    TOWING: TOWING,
+}
 
 CANCEL_WORDS = {"annulla", "cancel", "stop"}
 HELP_WORDS = {"aiuto", "help"}
@@ -38,10 +46,28 @@ CHANNELS = {"telegram", "whatsapp"}
 class State(str, Enum):
     START = "START"
     WAIT_LOCATION = "WAIT_LOCATION"
+    WAIT_INTERVENTION = "WAIT_INTERVENTION"
     WAIT_PROBLEM = "WAIT_PROBLEM"
 
 
-ACTIVE_DIALOG_STATES = {State.WAIT_LOCATION, State.WAIT_PROBLEM}
+ACTIVE_DIALOG_STATES = {State.WAIT_LOCATION, State.WAIT_INTERVENTION, State.WAIT_PROBLEM}
+
+
+class Reply(str):
+    """Risposta testuale con tasti opzionali: (etichetta, testo inviato alla pressione)."""
+
+    buttons: Tuple[Tuple[str, str], ...] = ()
+
+    def __new__(cls, text: str, buttons: Tuple[Tuple[str, str], ...] = ()):
+        reply = super().__new__(cls, text)
+        reply.buttons = buttons
+        return reply
+
+
+INTERVENTION_QUESTION = Reply(
+    msg.ASK_INTERVENTION,
+    ((msg.BUTTON_REPAIR, "riparazione"), (msg.BUTTON_TOWING, TOWING)),
+)
 
 
 @dataclass(frozen=True)
@@ -66,6 +92,7 @@ class Session:
     location: Optional[str] = None
     latitude: Optional[float] = None
     longitude: Optional[float] = None
+    intervention: Optional[str] = None
     request_id: Optional[str] = None
     seen_message_ids: Deque[str] = field(
         default_factory=lambda: deque(maxlen=MAX_REMEMBERED_MESSAGE_IDS)
@@ -78,6 +105,7 @@ class Session:
         self.location = None
         self.latitude = None
         self.longitude = None
+        self.intervention = None
         self.request_id = None
 
 
@@ -141,6 +169,8 @@ class ChatEngine:
             return self._show_status(session)
         if session.state == State.WAIT_LOCATION:
             return self._on_location(session, message)
+        if session.state == State.WAIT_INTERVENTION:
+            return self._on_intervention(session, message)
         if session.state == State.WAIT_PROBLEM:
             return self._on_problem(session, message)
         return self._on_start(session, message)
@@ -177,6 +207,15 @@ class ChatEngine:
             session.latitude, session.longitude = None, None
             session.location = text
         session.invalid_inputs = 0
+        session.state = State.WAIT_INTERVENTION
+        return [INTERVENTION_QUESTION]
+
+    def _on_intervention(self, session: Session, message: InboundMessage) -> List[str]:
+        intervention = INTERVENTION_WORDS.get(message.text.strip().lower())
+        if intervention is None:
+            return self._invalid(session, INTERVENTION_QUESTION)
+        session.intervention = intervention
+        session.invalid_inputs = 0
         session.state = State.WAIT_PROBLEM
         return [msg.ASK_PROBLEM]
 
@@ -192,7 +231,7 @@ class ChatEngine:
             session_id=session.session_id,
             request_id=session.request_id,
             cliente_id=session.customer_id,
-            tipo_intervento=DEFAULT_TIPO_INTERVENTO,
+            tipo_intervento=session.intervention,
             descrizione_problema=problem,
             origine_indirizzo=session.location,
             canale_origine=session.channel,
@@ -202,6 +241,9 @@ class ChatEngine:
         )
         try:
             created = self._backend.create_mission(request)
+        except AddressNotFound:
+            session.state = State.WAIT_LOCATION
+            return [msg.ADDRESS_NOT_FOUND]
         except RateLimited:
             return [msg.RATE_LIMITED]
         except Conflict:

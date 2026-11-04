@@ -54,7 +54,30 @@ class MapProviderClientsTests {
     }
 
     private NominatimGeocodingClient nominatim() {
-        return new NominatimGeocodingClient(baseUrl, "agente-di-prova");
+        return new NominatimGeocodingClient(baseUrl, "agente-di-prova", "");
+    }
+
+    private NominatimGeocodingClient nominatimIn(String viewbox) {
+        return new NominatimGeocodingClient(baseUrl, "agente-di-prova", viewbox);
+    }
+
+    @Test
+    void geocodingStaysInsideTheConfiguredArea() {
+        nominatimIn("15.8,42.2,18.6,39.7").geocode("Via Roma, Bitonto");
+        assertTrue(requestUri.contains("viewbox=15.8,42.2,18.6,39.7"), requestUri);
+        assertTrue(requestUri.contains("bounded=1"), requestUri);
+    }
+
+    @Test
+    void geocodingIsNotLimitedWhenAreaIsEmpty() {
+        nominatim().geocode("Via Roma, Bitonto");
+        assertTrue(!requestUri.contains("viewbox") && !requestUri.contains("bounded"), requestUri);
+    }
+
+    @Test
+    void invalidAreaIsRejectedAtStartup() {
+        assertThrows(IllegalArgumentException.class, () -> nominatimIn("Puglia"));
+        assertThrows(IllegalArgumentException.class, () -> nominatimIn("1,2,3"));
     }
 
     @Test void redirectsAreNotFollowed() {

@@ -6,6 +6,8 @@
   <meta name="theme-color" content="#ffffff">
   <title>Soccorso stradale — Fornitori</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
   <link rel="stylesheet" href="./styles.css">
   <link rel="stylesheet" href="./public-site.css">
 </head>
@@ -166,9 +168,20 @@
       <header class="topbar">
         <button id="menuButton" class="menu-button" type="button" aria-label="Apri navigazione" aria-expanded="false">☰</button>
         <div class="breadcrumb-label"><span id="workspaceLabel">Centrale operativa</span> <span>/</span> <strong id="currentSection">Panoramica</strong></div>
-        <div class="user-chip">
-          <span class="user-avatar" id="userAvatar">—</span>
-          <span class="user-name" id="userName">Utente</span>
+        <div class="topbar-actions">
+          <div class="alert-bell" id="alertBell" data-manager-only>
+            <button id="alertButton" class="btn btn-light alert-bell-button" type="button" aria-label="Avvisi" aria-expanded="false" aria-controls="alertPanel">
+              <span aria-hidden="true">&#128276;</span><span id="alertBadge" class="alert-badge d-none">0</span>
+            </button>
+            <section id="alertPanel" class="alert-panel d-none" aria-label="Avvisi dagli autisti">
+              <div class="alert-panel-header"><strong>Avvisi dagli autisti</strong><button id="alertReadButton" class="btn btn-link btn-sm" type="button">Segna come letti</button></div>
+              <div id="alertList" class="alert-list"></div>
+            </section>
+          </div>
+          <div class="user-chip">
+            <span class="user-avatar" id="userAvatar">—</span>
+            <span class="user-name" id="userName">Utente</span>
+          </div>
         </div>
       </header>
 
@@ -254,10 +267,11 @@
             <button id="newMissionButton" class="btn btn-primary" type="button" data-bs-toggle="modal" data-bs-target="#missionModal">+ Nuova missione</button>
           </div>
           <div class="row g-3 mb-3">
-            <div class="col-6 col-xl-3"><article class="stat-card mission-stat"><span class="stat-label">Missioni in corso</span><p class="stat-value" id="missionPendingCount">—</p></article></div>
-            <div class="col-6 col-xl-3"><article class="stat-card mission-stat"><span class="stat-label">Missioni eseguite</span><p class="stat-value" id="missionDoneCount">—</p></article></div>
-            <div class="col-6 col-xl-3"><article class="stat-card mission-stat"><span class="stat-label">Proposte scadute</span><p class="stat-value" id="missionExpiredCount">—</p></article></div>
-            <div class="col-6 col-xl-3"><article class="stat-card mission-stat"><span class="stat-label">Totale missioni</span><p class="stat-value" id="missionRevenue">—</p></article></div>
+            <div class="col-6 col-xl"><article class="stat-card mission-stat"><span class="stat-label">Missioni in corso</span><p class="stat-value" id="missionPendingCount">—</p></article></div>
+            <div class="col-6 col-xl"><article class="stat-card mission-stat"><span class="stat-label">Missioni eseguite</span><p class="stat-value" id="missionDoneCount">—</p></article></div>
+            <div class="col-6 col-xl"><article class="stat-card mission-stat"><span class="stat-label">Proposte scadute</span><p class="stat-value" id="missionExpiredCount">—</p></article></div>
+            <div class="col-6 col-xl"><article class="stat-card mission-stat"><span class="stat-label">Proposte non accettate</span><p class="stat-value" id="missionRejectedCount">—</p></article></div>
+            <div class="col-6 col-xl"><article class="stat-card mission-stat"><span class="stat-label">Costo missioni eseguite</span><p class="stat-value" id="missionRevenue">—</p></article></div>
           </div>
           <section class="panel driver-totals-panel">
             <div class="panel-heading mb-2"><div><h2 class="h6 mb-1">Guadagni per autista</h2><p class="small text-secondary mb-0">Totali sulle missioni eseguite nella vista selezionata.</p></div></div>
@@ -413,6 +427,8 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script src="./app.js" defer></script>
 </body>
 </html>

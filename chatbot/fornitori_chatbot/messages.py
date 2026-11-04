@@ -16,6 +16,16 @@ PLATE_NOT_FOUND = "Non trovo la targa tra i nostri assicurati. Controlla e ripro
 
 INVALID_LOCATION = "Non ho capito la posizione. Scrivi via e città oppure condividi la posizione."
 SHARED_LOCATION = "Posizione condivisa ({lat:.6f}, {lng:.6f})"
+ASK_INTERVENTION = (
+    "Che intervento ti serve? Premi un tasto, oppure scrivi 1 per la riparazione sul posto "
+    "o 2 per il traino."
+)
+BUTTON_REPAIR = "Riparazione sul posto"
+BUTTON_TOWING = "Traino"
+ADDRESS_NOT_FOUND = (
+    "Non trovo l'indirizzo per scegliere l'officina più vicina. "
+    "Scrivi via e città oppure condividi la posizione."
+)
 ASK_PROBLEM = "Descrivi in poche parole il problema."
 INVALID_PROBLEM = "Descrivi il problema con qualche parola in più."
 CREATED = (
