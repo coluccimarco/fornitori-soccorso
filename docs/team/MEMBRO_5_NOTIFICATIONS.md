@@ -34,7 +34,7 @@ PENDING → SENDING → SENT
 
 1. Il dispatcher del bot chiama `POST /api/v1/chat/notifiche/claim`: il backend riserva fino
    a 20 righe con `FOR UPDATE SKIP LOCKED`, quindi due dispatcher non ricevono la stessa riga.
-2. Il dispatcher invia e registra l'esito con `POST /api/v1/chat/notifiche/{id}/esito`.
+2. Il dispatcher invia e registra l'esito con `POST /api/v1/chat/notifiche/{id}/esito`, riportando il `tentativo` ricevuto: un esito di una riserva vecchia viene ignorato.
 3. Se manca l'esito, la riserva scade dopo 5 minuti: la riga torna disponibile e conta come
    tentativo.
 

@@ -28,11 +28,11 @@ Gli errori hanno la forma `{status, error, message}`: `error` è un codice stabi
 ## Regole operative
 
 - **Lookup chat:** un lookup positivo autorizza la creazione per 15 minuti, con stessa
-  sessione e stesso cliente. Oltre questo limite il backend risponde 403 e il bot rifà
+  sessione e stesso cliente, per una sola pratica. Oltre questo limite il backend risponde 403 e il bot rifà
   il lookup una volta, quindi prosegue. Un `requestId` riusato con dati diversi dà 409.
 - **Notifiche:** `claim` porta le righe da `PENDING` a `SENDING` in modo atomico. Una
   riserva senza esito scade dopo 5 minuti, un invio fallito riprova dopo 30 secondi,
-  dopo 5 tentativi la riga passa a `FAILED`.
+  dopo 5 tentativi la riga passa a `FAILED`. L'esito deve riportare il `tentativo` ricevuto con la riserva.
 - **Mappe:** la `GET` richiede `X-CSRF-TOKEN` perché può salvare coordinate e km stimati.
 
 ## Provider esterni

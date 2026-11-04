@@ -66,11 +66,12 @@ psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/05_chat_reques
 psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/06_chat_recipient.sql
 psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/07_backend_hardening.sql
 psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/08_cleanup_and_delivery.sql
+psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/09_integrity_and_indexes.sql
 ```
 
-Hibernate è in `validate`: senza tutti gli script, 07 e 08 compresi, l'applicazione non si avvia. Su un
+Hibernate è in `validate`: senza gli script fino a 08 l'applicazione non si avvia; il 09 aggiunge vincoli e indici. Su un
 database esistente applicare solo gli script mancanti, nell'ordine, dopo un backup: chi è già a 07 esegue
-solo 08. Dopo 08 non rieseguire 01 e 02: `08_cleanup_and_delivery.sql` rimuove `chat_sessions` e
+solo 08 e 09. Dopo 08 non rieseguire 01 e 02: `08_cleanup_and_delivery.sql` rimuove `chat_sessions` e
 `drivers.stato_seed`.
 
 Le righe del docente in `missions` sono marcate `is_fixture=TRUE` e costituiscono lo storico di riferimento
@@ -88,6 +89,11 @@ login, l'area riservata usa la sessione e le API dello stesso server.
 
 La pipeline [backend-ci.yml](./.github/workflows/backend-ci.yml) compila il progetto, applica gli script a
 un PostgreSQL effimero e verifica l'avvio dell'applicazione con un ruolo senza privilegi di amministratore.
+
+## Test
+
+I test su database cancellano i dati live: partono solo con `FORNITORI_TEST_DATABASE=isolated` e un database `fornitori_e2e*`. Comandi e risultati in
+[SECURITY_TEST_REPORT.md](./docs/security/SECURITY_TEST_REPORT.md).
 
 ## API
 
@@ -135,4 +141,4 @@ non è pronto per dati reali. Vedi [sicurezza](./docs/architecture/SECURITY_DESI
 
 Altri riferimenti: [manuale tecnico](./docs/manuals/MANUALE_TECNICO.md),
 [manuale utente](./docs/manuals/MANUALE_UTENTE.md), [database](./docs/architecture/DATABASE_DESIGN.md),
-[Word editabili](./docs/word/).
+[sicurezza del backend](./docs/security/BACKEND_SECURITY_AUDIT.md), [Word editabili](./docs/word/).

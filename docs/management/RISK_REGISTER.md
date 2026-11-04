@@ -7,7 +7,7 @@ Scale qualitative: Alto / Medio / Basso.
 |---|---|---:|---:|---|---|---|
 | R-01 | PDF del docente ed Excel originale non sono nel repository | Alta | Alto | Acquisirli prima di approvare BUR e dataset | Team | Aperto |
 | R-02 | Contratto OpenAPI e comportamento possono divergere | Media | Medio | Aggiornare il contratto insieme al codice | Vincenzo Minervini | Mitigato |
-| R-03 | Nessuna suite automatica nel repository: una modifica può introdurre regressioni | Media | Alto | Prova manuale dei flussi prima di ogni merge e della demo | Tutti | Aperto |
+| R-03 | La pipeline non esegue i test su database: una modifica può introdurre regressioni | Media | Alto | Eseguire la suite su un database `fornitori_e2e*` prima di ogni merge e della demo | Tutti | Aperto |
 | R-04 | Nominatim e OSRM pubblici possono non rispondere | Media | Medio | Errori espliciti; la chiusura missione resta possibile | Marco Colucci | Mitigato |
 | R-05 | Setup locale errato: script non applicati | Media | Medio | Seguire gli script del README; Hibernate `validate` lo segnala all'avvio | Tutti | Mitigato |
 | R-06 | La targa non prova la titolarità | Alta | Alto | Limite noto della demo: solo dati sintetici | Marco Colucci | Accettato per la demo |

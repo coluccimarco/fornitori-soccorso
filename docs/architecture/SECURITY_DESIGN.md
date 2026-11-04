@@ -18,6 +18,8 @@ Descrive i controlli presenti nel codice; non è un penetration test né una cer
 - Contatti del cliente visibili all'autista solo dopo l'accettazione.
 - Le missioni della centrale non conservano il telefono del cliente in outbox.
 - SQL parametrizzato ed escaping HTML dei dati dinamici nel client.
+- CSP, Referrer-Policy, Permissions-Policy, corpo massimo 64 KiB, controllo della configurazione all'avvio.
+- 10 login falliti al minuto per account, 10 ricerche di targa al minuto per sessione, autorizzazione del lookup monouso.
 
 ## Limiti noti della demo
 
@@ -32,4 +34,4 @@ Descrive i controlli presenti nel codice; non è un penetration test né una cer
 WhatsApp e webhook in ingresso sono fuori ambito. Se venissero introdotti, dovrebbero verificare la
 firma sul payload grezzo, timestamp e replay, limitare dimensione e frequenza.
 
-Rischi nel [registro](../management/RISK_REGISTER.md).
+Audit, vulnerabilità e prove in [`docs/security`](../security/BACKEND_SECURITY_AUDIT.md); rischi nel [registro](../management/RISK_REGISTER.md).

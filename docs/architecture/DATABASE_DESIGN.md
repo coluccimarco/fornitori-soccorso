@@ -66,9 +66,10 @@ psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/05_chat_reques
 psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/06_chat_recipient.sql
 psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/07_backend_hardening.sql
 psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/08_cleanup_and_delivery.sql
+psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/09_integrity_and_indexes.sql
 ```
 
-Hibernate usa `validate`: senza tutti gli script l'applicazione non parte. Su un database esistente
+Hibernate usa `validate`: senza gli script fino a 08 l'applicazione non parte. Il 09 è additivo: vincoli di coerenza e indici. Su un database esistente
 applicare solo gli script mancanti, dopo un backup. `08_cleanup_and_delivery.sql` rimuove
 `chat_sessions` e `drivers.stato_seed`: dopo di esso non rieseguire 01 e 02. Se fallisce la
 validazione di `missions_origin_pair` in 07, verificare i dati: non inventare coordinate. Non

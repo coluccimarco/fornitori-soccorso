@@ -59,6 +59,14 @@ Il bot resta attivo finché il comando è in esecuzione. Usa il long polling, qu
 serve ngrok né un indirizzo pubblico; risponde solo nelle chat private. Il token non va
 mai scritto in file del repo o in chat.
 
+## Test
+
+Dalla cartella `chatbot/`:
+
+```bash
+python3 -m unittest discover
+```
+
 ## Struttura
 
 | File | Contenuto |
@@ -81,7 +89,7 @@ ogni stato; un messaggio che non è una targa riceve il testo di aiuto.
 - **Tentativi:** 3 input non validi fanno ricominciare il dialogo; il backend risponde
   429 dopo 5 targhe non trovate nella stessa sessione.
 - **Scadenze:** un dialogo inattivo scade dopo 30 minuti.
-- **Riconoscimento:** il backend autorizza la creazione per 15 minuti dopo la targa; se scade durante il
+- **Riconoscimento:** il backend autorizza una sola richiesta, per 15 minuti, dopo la targa; se scade durante il
   dialogo, il bot rifà il controllo una volta e prosegue.
 - **Anti-duplicati:** `requestId` resta lo stesso nei tentativi dopo un errore di rete,
   e i `message_id` già visti vengono ignorati.

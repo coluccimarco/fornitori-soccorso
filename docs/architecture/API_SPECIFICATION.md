@@ -36,5 +36,5 @@ Gli errori hanno la forma `{status, error, message}`. `error` è un codice stabi
 `not_found`, `invalid_request`…); `message` è un testo per l'utente scritto dal servizio, presente
 su alcuni 400, 404, 409 e 422. Non contengono mai eccezioni o SQL.
 
-Limiti dei campi: nome cliente 150, telefono 32, targa 20, modello e città 150, polizza 100; km e
+Il corpo delle richieste ha un limite di 64 KiB (413) e deve dichiarare la lunghezza (411). Limiti dei campi: nome cliente 150, telefono 32, targa 20, modello e città 150, polizza 100; km e
 importi `NUMERIC(10,2)`. Il bearer del chatbot è opaco, non un JWT.

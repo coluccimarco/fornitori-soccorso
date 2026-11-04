@@ -30,6 +30,7 @@ psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/05_chat_reques
 psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/06_chat_recipient.sql
 psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/07_backend_hardening.sql
 psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/08_cleanup_and_delivery.sql
+psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/09_integrity_and_indexes.sql
 ```
 
 Su un database esistente applicare solo gli script mancanti, dopo un backup. Hibernate usa `validate`: se manca uno
@@ -94,6 +95,11 @@ git diff --check
 ```
 
 Poi avviare l'applicazione e provare a mano il flusso modificato.
+
+## Test
+
+I test su database cancellano i dati live: partono solo con `FORNITORI_TEST_DATABASE=isolated` e si fermano se il database non si chiama `fornitori_e2e*`.
+Comandi e risultati in [`SECURITY_TEST_REPORT.md`](../security/SECURITY_TEST_REPORT.md).
 
 ## Risoluzione dei problemi
 
