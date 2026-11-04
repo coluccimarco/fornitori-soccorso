@@ -54,6 +54,13 @@ public class MissionController {
         return missions.updateIntervention(authentication.getName(), id, request);
     }
 
+    @GetMapping("/missioni/{id}/proposte")
+    public List<MissionDtos.ProposalHistoryEntry> proposalHistory(
+            Authentication authentication,
+            @PathVariable Long id) {
+        return missions.proposalHistory(authentication.getName(), id);
+    }
+
     @PostMapping("/missioni/{id}/proposte")
     public MissionDtos.ProposalResponse propose(
             Authentication authentication,

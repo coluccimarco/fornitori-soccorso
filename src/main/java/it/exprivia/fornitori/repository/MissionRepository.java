@@ -12,8 +12,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface MissionRepository extends JpaRepository<Mission, Long> {
-    long countByFixtureTrue();
-
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select m from Mission m where m.id = :id and m.fixture = false")
     Optional<Mission> lockLiveById(@Param("id") Long id);
@@ -26,8 +24,6 @@ public interface MissionRepository extends JpaRepository<Mission, Long> {
             Long driverId, Collection<String> stati);
 
     List<Mission> findByDriverIdAndFixtureFalseAndStatoOrderByChiusaIlDesc(Long driverId, String stato);
-
-    List<Mission> findByFixtureAndStatoOrderByChiusaIlDesc(boolean fixture, String stato);
 
     @Query("""
             select m from Mission m, ChatMissionRequest r

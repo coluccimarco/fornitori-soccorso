@@ -16,8 +16,6 @@ public class Driver {
     private String telefono;
     @Column(name = "vehicle_id", nullable = false)
     private Long vehicleId;
-    @Column(name = "stato_seed")
-    private String statoSeed;
     private String zona;
 
     protected Driver() {
@@ -28,6 +26,5 @@ public class Driver {
     public String getNome() { return nome; }
     public String getTelefono() { return telefono; }
     public Long getVehicleId() { return vehicleId; }
-    public String getStatoSeed() { return statoSeed; }
     public String getZona() { return zona; }
 }

@@ -93,6 +93,16 @@ public final class MissionDtos {
     public record ProposalResponse(String stato, OffsetDateTime scadenzaIl, Long offertaId) {
     }
 
+    public record ProposalHistoryEntry(
+            Long id,
+            Long autistaId,
+            String autistaNome,
+            String stato,
+            OffsetDateTime propostaIl,
+            OffsetDateTime scadenzaIl,
+            OffsetDateTime rispostaIl) {
+    }
+
     public record NearestProposalResponse(
             Long autistaId,
             String autistaNome,

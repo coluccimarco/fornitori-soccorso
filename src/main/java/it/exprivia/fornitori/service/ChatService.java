@@ -43,6 +43,8 @@ public class ChatService {
             List.of("nuova", "proposta", "accettata", "non_accettata", "scaduta");
     private static final String DRIVER_VISIBLE_STATE = "accettata";
     private static final int MAX_NOTIFICATION_ATTEMPTS = 5;
+    private static final int NOTIFICATION_LEASE_MINUTES = 5;
+    private static final int NOTIFICATION_RETRY_SECONDS = 30;
 
     private final NotificationOutboxRepository outbox;
     private final CustomerRepository customers;
@@ -189,12 +191,24 @@ public class ChatService {
         return new ChatDtos.MissionStatusResponse(mission.getCodice(), mission.getStato(), driverName, updatedAt);
     }
 
-    @Transactional(readOnly = true)
-    public ChatDtos.NotificationsResponse pendingNotifications(String channel) {
-        return new ChatDtos.NotificationsResponse(
-                outbox.findTop20ByChannelAndStatoOrderByIdAsc(validChannel(channel), "PENDING").stream()
-                        .map(ChatService::toNotification)
-                        .toList());
+    /**
+     * PENDING -> SENDING nella stessa transazione del lock. Una riga SENDING con riserva scaduta indica un
+     * dispatcher caduto: conta come tentativo e torna disponibile.
+     */
+    @Transactional
+    public ChatDtos.NotificationsResponse claimNotifications(String channel) {
+        OffsetDateTime now = now();
+        List<ChatDtos.NotificationResponse> claimed = new java.util.ArrayList<>();
+        for (NotificationOutbox notification : outbox.lockClaimable(validChannel(channel), now)) {
+            if ("SENDING".equals(notification.getStato())) {
+                notification.recordFailure("Riserva scaduta senza esito", MAX_NOTIFICATION_ATTEMPTS, now);
+            }
+            if ("PENDING".equals(notification.getStato())) {
+                notification.claim(now.plusMinutes(NOTIFICATION_LEASE_MINUTES));
+                claimed.add(toNotification(notification));
+            }
+        }
+        return new ChatDtos.NotificationsResponse(claimed);
     }
 
     @Transactional
@@ -202,13 +216,14 @@ public class ChatService {
         NotificationOutbox notification = outbox.lockById(id)
                 .filter(candidate -> CHAT_CHANNELS.contains(candidate.getChannel()))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Notification not found"));
-        if (!"PENDING".equals(notification.getStato())) {
+        if (!List.of("PENDING", "SENDING").contains(notification.getStato())) {
             return;
         }
         if (result.inviata()) {
             notification.markSent(now());
         } else {
-            notification.recordFailure(result.errore(), MAX_NOTIFICATION_ATTEMPTS);
+            notification.recordFailure(
+                    result.errore(), MAX_NOTIFICATION_ATTEMPTS, now().plusSeconds(NOTIFICATION_RETRY_SECONDS));
         }
     }
 

@@ -52,6 +52,9 @@ public final class ChatDtos {
     public record NotificationsResponse(List<NotificationResponse> notifiche) {
     }
 
+    public record NotificationClaimRequest(@NotBlank @Size(max = 20) String canale) {
+    }
+
     public record NotificationResultRequest(
             @NotNull Boolean inviata,
             @Size(max = 200) String errore) {

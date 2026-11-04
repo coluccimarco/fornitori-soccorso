@@ -85,7 +85,8 @@ class ChatApiSecurityTests {
 
         @Test
         void wrongTokenIsUnauthorized() throws Exception {
-            mockMvc.perform(get("/api/v1/chat/notifiche").param("canale", "telegram")
+            mockMvc.perform(post("/api/v1/chat/notifiche/claim")
+                            .contentType(MediaType.APPLICATION_JSON).content("{\"canale\":\"telegram\"}")
                             .header("Authorization", "Bearer token-sbagliato"))
                     .andExpect(status().isUnauthorized());
             verifyNoInteractions(chatService);

@@ -71,6 +71,8 @@ public class ApiExceptionHandler {
             case 503 -> "service_unavailable";
             default -> "internal_error";
         };
-        return ResponseEntity.status(exception.getStatusCode()).body(new ApiError(status, error));
+        // Solo gli stati con motivi scritti dai service: i 503 possono riportare testi dei provider.
+        String message = java.util.List.of(400, 404, 409, 422).contains(status) ? exception.getReason() : null;
+        return ResponseEntity.status(exception.getStatusCode()).body(new ApiError(status, error, message));
     }
 }

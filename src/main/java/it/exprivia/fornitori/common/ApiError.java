@@ -1,5 +1,11 @@
 package it.exprivia.fornitori.common;
 
-/** Stable public error envelope; never contains exception messages or SQL. */
-public record ApiError(int status, String error) {
+import com.fasterxml.jackson.annotation.JsonInclude;
+
+/** Errore pubblico: codice stabile e, se disponibile, un testo scritto dal servizio. Mai eccezioni o SQL. */
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public record ApiError(int status, String error, String message) {
+    public ApiError(int status, String error) {
+        this(status, error, null);
+    }
 }

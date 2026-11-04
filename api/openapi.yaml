@@ -5,8 +5,8 @@ info:
   description: >
     Contratto condiviso per FORNITORI. Auth, anagrafiche, missioni, dashboard,
     chatbot e API di geocodifica/percorso sono implementati; gestione utenti e
-    webhook in ingresso restano progettati. Lo stato di ogni operation è indicato
-    da x-implementation-status e non certifica da solo una verifica end-to-end.
+    webhook in ingresso sono fuori ambito (status designed). Lo stato di ogni operation
+    è indicato da x-implementation-status.
 servers:
   - url: /
 tags:
@@ -154,7 +154,7 @@ paths:
     get:
       tags: [Utenti]
       summary: Elenco profili utente senza credenziali
-      description: Progettato per la centrale; password e hash non vengono restituiti.
+      description: Gestione utenti fuori ambito della consegna; operazione non esposta dal backend.
       x-implementation-status: designed
       x-required-role: RESPONSABILE
       responses:
@@ -167,6 +167,7 @@ paths:
     get:
       tags: [Utenti]
       summary: Dettaglio profilo utente senza credenziali
+      description: Gestione utenti fuori ambito della consegna; operazione non esposta dal backend.
       x-implementation-status: designed
       x-required-role: RESPONSABILE
       responses:
@@ -290,6 +291,19 @@ paths:
   /api/v1/missioni/{id}/proposte:
     parameters:
       - {$ref: '#/components/parameters/MissionId'}
+    get:
+      tags: [Missioni]
+      summary: Storico delle proposte di una missione
+      description: Sola lettura, dalla prima alla più recente, anche per le missioni dello storico di riferimento.
+      x-implementation-status: implemented
+      x-required-role: RESPONSABILE
+      security:
+        - sessionCookie: []
+      responses:
+        '200': {description: Storico proposte, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/ProposalHistoryEntry'}}}}}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
     post:
       tags: [Missioni]
       summary: Proponi o riproponi la missione a un autista libero (centrale)
@@ -429,6 +443,7 @@ paths:
             example: {testo: "Cliente non presente, attendo 10 minuti"}
       responses:
         '201': {description: Nota persistita, content: {application/json: {schema: {$ref: '#/components/schemas/MissionNote'}}}}
+        '409': {$ref: '#/components/responses/Conflict'}
         '400': {$ref: '#/components/responses/BadRequest'}
         '401': {$ref: '#/components/responses/Unauthorized'}
         '403': {$ref: '#/components/responses/Forbidden'}
@@ -578,17 +593,20 @@ paths:
         '400': {$ref: '#/components/responses/BadRequest'}
         '401': {$ref: '#/components/responses/Unauthorized'}
         '404': {description: Nessuna richiesta aperta per questa chat}
-  /api/v1/chat/notifiche:
-    get:
+  /api/v1/chat/notifiche/claim:
+    post:
       tags: [Chat]
-      summary: Notifiche in attesa di invio al cliente
-      description: Restituisce fino a 20 messaggi per il canale indicato, generati all'accettazione e alla chiusura delle missioni create da chat.
+      summary: Riserva le notifiche da inviare al cliente
+      description: Porta in modo atomico fino a 20 messaggi del canale da PENDING a SENDING e li restituisce, così due dispatcher non ricevono la stessa riga. Una riserva senza esito scade dopo 5 minuti, conta come tentativo e la riga torna disponibile.
       x-implementation-status: implemented
       x-required-role: SERVICE_CHATBOT
       security:
         - serviceBearer: []
-      parameters:
-        - {name: canale, in: query, required: true, schema: {type: string, enum: [telegram, whatsapp]}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ChatNotificationClaim'}
       responses:
         '200': {description: Notifiche da inviare, content: {application/json: {schema: {$ref: '#/components/schemas/ChatNotifications'}}}}
         '400': {$ref: '#/components/responses/BadRequest'}
@@ -599,7 +617,7 @@ paths:
     post:
       tags: [Chat]
       summary: Registra l'esito dell'invio di una notifica
-      description: Dopo 5 invii falliti la notifica passa a FAILED e non viene più restituita. Una notifica già chiusa ignora gli esiti successivi.
+      description: Un invio fallito torna disponibile dopo 30 secondi; dopo 5 tentativi la notifica passa a FAILED. Una notifica già chiusa ignora gli esiti successivi.
       x-implementation-status: implemented
       x-required-role: SERVICE_CHATBOT
       security:
@@ -618,6 +636,7 @@ paths:
     post:
       tags: [Integrazioni]
       summary: Ingresso pubblico Telegram (secret header validato)
+      description: Webhook fuori ambito della consegna; operazione non esposta dal backend.
       x-implementation-status: designed
       x-required-role: TELEGRAM_WEBHOOK_SIGNATURE
       security: []
@@ -633,6 +652,7 @@ paths:
     post:
       tags: [Integrazioni]
       summary: Ingresso gateway WhatsApp/Twilio, firma provider validata
+      description: Webhook fuori ambito della consegna; operazione non esposta dal backend.
       x-implementation-status: designed
       x-required-role: WHATSAPP_PROVIDER_SIGNATURE
       security: []
@@ -848,6 +868,16 @@ components:
           enum: [nuova, proposta, accettata, eseguita, non_accettata, scaduta]
         autistaNome: {type: string, nullable: true}
         aggiornataIl: {type: string, format: date-time}
+    ProposalHistoryEntry:
+      type: object
+      properties:
+        id: {type: integer, format: int64}
+        autistaId: {type: integer, format: int64}
+        autistaNome: {type: string, nullable: true}
+        stato: {type: string, enum: [proposta, accettata, non_accettata, scaduta, chiusa]}
+        propostaIl: {type: string, format: date-time}
+        scadenzaIl: {type: string, format: date-time}
+        rispostaIl: {type: string, format: date-time, nullable: true}
     NearestProposal:
       type: object
       properties:
@@ -947,6 +977,11 @@ components:
         notifiche:
           type: array
           items: {$ref: '#/components/schemas/ChatNotification'}
+    ChatNotificationClaim:
+      type: object
+      required: [canale]
+      properties:
+        canale: {type: string, enum: [telegram, whatsapp]}
     ChatNotificationResult:
       type: object
       required: [inviata]
@@ -1035,7 +1070,8 @@ components:
       required: [status, error]
       properties:
         status: {type: integer}
-        error: {type: string}
+        error: {type: string, description: Codice stabile, per esempio conflict}
+        message: {type: string, nullable: true, description: Testo per l'utente scritto dal servizio; presente su alcuni 400, 404, 409 e 422}
     CsrfToken:
       type: object
       properties:

@@ -55,7 +55,6 @@ public class MissionService {
             List.of(NUOVA, PROPOSTA, ACCETTATA, ESEGUITA, NON_ACCETTATA, SCADUTA);
     private static final List<String> PENDING_STATES = List.of(NUOVA, PROPOSTA, ACCETTATA);
     private static final BigDecimal ZERO = BigDecimal.ZERO.setScale(2);
-    private static final String INTERNAL_CHANNEL = "internal";
 
     private final MissionRepository missions;
     private final MissionProposalRepository proposals;
@@ -336,6 +335,25 @@ public class MissionService {
         return forViewer(actor, toResponse(mission));
     }
 
+    /** Solo alla centrale: all'autista non servono i nomi dei colleghi che hanno rifiutato. */
+    @Transactional(readOnly = true)
+    public List<MissionDtos.ProposalHistoryEntry> proposalHistory(String email, Long missionId) {
+        requireRole(email, RESPONSABILE);
+        if (!missions.existsById(missionId)) {
+            throw new MissionNotFoundException();
+        }
+        return proposals.findByMissionIdOrderByIdAsc(missionId).stream()
+                .map(proposal -> new MissionDtos.ProposalHistoryEntry(
+                        proposal.getId(),
+                        proposal.getDriverId(),
+                        drivers.findById(proposal.getDriverId()).map(Driver::getNome).orElse(null),
+                        proposal.getStato(),
+                        proposal.getPropostaIl(),
+                        proposal.getScadenzaIl(),
+                        proposal.getRispostaIl()))
+                .toList();
+    }
+
     /** Alla centrale i contatti del cliente servono sempre; all'autista solo dopo l'accettazione. */
     private MissionDtos.MissionResponse forViewer(AppUser viewer, MissionDtos.MissionResponse response) {
         boolean hidden = AUTISTA.equals(viewer.getRuolo()) && !ACCETTATA.equals(response.stato());
@@ -475,6 +493,9 @@ public class MissionService {
         AppUser actor = currentUser(email);
         Mission mission = missions.findById(missionId).orElseThrow(MissionNotFoundException::new);
         authorizeMissionAccess(actor, mission);
+        if (mission.isFixture()) {
+            throw conflict("Le missioni dello storico di riferimento non accettano note");
+        }
         String text = request.testo().trim();
         if (text.isEmpty()) {
             throw badRequest("La nota non può essere vuota");
@@ -511,8 +532,6 @@ public class MissionService {
 
     private void addOutboxEvent(
             Mission mission, String eventType, Long actorId, String driverName, OffsetDateTime occurredAt) {
-        Customer customer = customers.findById(mission.getCustomerId())
-                .orElseThrow(() -> new IllegalStateException("Mission customer is missing"));
         Map<String, Object> payload = Map.of(
                 "eventType", eventType,
                 "missionId", mission.getId(),
@@ -521,14 +540,14 @@ public class MissionService {
                 "actorUserId", actorId,
                 "autistaNome", driverName,
                 "occurredAt", occurredAt.toString());
-        // Solo le missioni nate in chat hanno una chat a cui rispondere; le altre restano interne.
+        // Solo le missioni nate in chat hanno una chat a cui rispondere; le altre si chiudono subito.
+        String eventKey = eventType + ":" + mission.getId();
         String chatRecipient = chatRequests.findByMissionId(mission.getId())
                 .map(ChatMissionRequest::getDestinatario)
                 .orElse(null);
-        outbox.save(new NotificationOutbox(
-                eventType + ":" + mission.getId(), mission.getId(),
-                chatRecipient != null ? mission.getCanaleOrigine() : INTERNAL_CHANNEL,
-                chatRecipient != null ? chatRecipient : customer.getTelefono(), payload));
+        outbox.save(chatRecipient != null
+                ? new NotificationOutbox(eventKey, mission.getId(), mission.getCanaleOrigine(), chatRecipient, payload)
+                : NotificationOutbox.skippedInternal(eventKey, mission.getId(), payload));
     }
 
     private MissionProposal currentProposal(Long missionId, String expectedStatus) {
@@ -610,7 +629,7 @@ public class MissionService {
     private void validateNonNegative(BigDecimal value, String field) {
         if (value != null && (value.compareTo(new BigDecimal("99999999.99")) > 0
                 || value.stripTrailingZeros().scale() > 2)) {
-            throw badRequest(field + " fuori precisione NUMERIC(10,2)");
+            throw badRequest(field + " fuori intervallo o con più di due decimali");
         }
         if (value != null && value.signum() < 0) {
             throw badRequest(field + " non può essere negativo");

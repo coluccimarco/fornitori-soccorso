@@ -1,6 +1,7 @@
 package it.exprivia.fornitori;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -63,9 +64,22 @@ class MissionPostgresIntegrationTests {
     private PlatformTransactionManager transactionManager;
 
     @Test
+    void notesAreRefusedOnFixturesAndProposalHistoryIsReadable() {
+        Long fixtureId = jdbcTemplate.queryForObject(
+                "select min(mission_id) from mission_proposals where is_fixture", Long.class);
+        assertThrows(it.exprivia.fornitori.common.MissionConflictException.class, () -> missions.addNote(
+                "responsabile@demo.it", fixtureId, new MissionDtos.CreateNoteRequest("nota")));
+        assertFalse(missions.proposalHistory("responsabile@demo.it", fixtureId).isEmpty());
+        assertThrows(it.exprivia.fornitori.common.ForbiddenOperationException.class,
+                () -> missions.proposalHistory("autista1@demo.it", fixtureId));
+        assertThrows(it.exprivia.fornitori.common.MissionNotFoundException.class,
+                () -> missions.proposalHistory("responsabile@demo.it", 999999999L));
+    }
+
+    @Test
     @Transactional
     void createsProposesAcceptsAndCompletesLiveMissionWithoutChangingFixtures() {
-        long fixtureCount = missionRepository.countByFixtureTrue();
+        long fixtureCount = jdbcTemplate.queryForObject("select count(*) from missions where is_fixture", Long.class);
         MissionDtos.MissionResponse created = missions.create(
                 "responsabile@demo.it",
                 new MissionDtos.CreateMissionRequest(
@@ -115,7 +129,7 @@ class MissionPostgresIntegrationTests {
         assertThrows(MissionConflictException.class, () -> missions.complete(
                 "autista1@demo.it", created.id(),
                 new MissionDtos.CompleteMissionRequest(new BigDecimal("18.00"))));
-        assertEquals(fixtureCount, missionRepository.countByFixtureTrue());
+        assertEquals(fixtureCount, jdbcTemplate.queryForObject("select count(*) from missions where is_fixture", Long.class));
     }
 
     @Test
@@ -218,10 +232,10 @@ class MissionPostgresIntegrationTests {
 
     private void deleteMission(long missionId) {
         new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
-            outbox.deleteByMissionId(missionId);
-            noteRepository.deleteByMissionId(missionId);
-            eventRepository.deleteByMissionId(missionId);
-            proposalRepository.deleteByMissionId(missionId);
+            jdbcTemplate.update("delete from notifications_outbox where mission_id = ?", missionId);
+            jdbcTemplate.update("delete from mission_notes where mission_id = ?", missionId);
+            jdbcTemplate.update("delete from mission_events where mission_id = ?", missionId);
+            jdbcTemplate.update("delete from mission_proposals where mission_id = ?", missionId);
             missionRepository.deleteById(missionId);
         });
     }

@@ -68,6 +68,9 @@ class ChatPostgresIntegrationTests {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    @Autowired
+    private jakarta.persistence.EntityManager entityManager;
+
     private MockHttpServletRequestBuilder asBot(MockHttpServletRequestBuilder request) {
         return request.header("Authorization", "Bearer token-di-prova");
     }
@@ -185,7 +188,8 @@ class ChatPostgresIntegrationTests {
     }
 
     private ResultActions pendingNotifications() throws Exception {
-        return mockMvc.perform(asBot(get("/api/v1/chat/notifiche")).param("canale", "telegram"));
+        return mockMvc.perform(asBot(post("/api/v1/chat/notifiche/claim"))
+                .contentType(MediaType.APPLICATION_JSON).content("{\"canale\":\"telegram\"}"));
     }
 
     private ResultActions report(long id, String body) throws Exception {
@@ -334,6 +338,11 @@ class ChatPostgresIntegrationTests {
         for (int attempt = 0; attempt < 4; attempt++) {
             report(id, "{\"inviata\":false,\"errore\":\"HTTP 500\"}").andExpect(status().isNoContent());
         }
+        // Dopo un fallimento la notifica attende il tentativo successivo.
+        pendingNotifications().andExpect(jsonPath("$.notifiche.length()").value(0));
+        outbox.flush();
+        jdbcTemplate.update("update notifications_outbox set prossimo_tentativo_il = now() - interval '1 second' where id = ?", id);
+        entityManager.clear();
         pendingNotifications().andExpect(jsonPath("$.notifiche.length()").value(1));
         report(id, "{\"inviata\":false,\"errore\":\"HTTP 500\"}").andExpect(status().isNoContent());
         pendingNotifications().andExpect(jsonPath("$.notifiche.length()").value(0));
@@ -341,6 +350,24 @@ class ChatPostgresIntegrationTests {
 
         report(id, "{\"inviata\":true}").andExpect(status().isNoContent());
         assertEquals("FAILED", outbox.findById(id).orElseThrow().getStato());
+    }
+
+    @Test
+    void claimedNotificationIsNotReturnedTwiceUntilItsLeaseExpires() throws Exception {
+        long missionId = createdId(create("richiesta-di-prova-09", 1L, CHAT));
+        missions.propose(RESPONSABILE, missionId, new MissionDtos.ProposeMissionRequest(1L));
+        missions.accept(AUTISTA, missionId);
+        long id = notificationIdFor("MISSION_ACCEPTED:" + missionId);
+
+        pendingNotifications().andExpect(jsonPath("$.notifiche.length()").value(1));
+        assertEquals("SENDING", outbox.findById(id).orElseThrow().getStato());
+        pendingNotifications().andExpect(jsonPath("$.notifiche.length()").value(0));
+
+        outbox.flush();
+        jdbcTemplate.update("update notifications_outbox set prossimo_tentativo_il = now() - interval '1 second' where id = ?", id);
+        entityManager.clear();
+        pendingNotifications().andExpect(jsonPath("$.notifiche.length()").value(1));
+        assertEquals(1, outbox.findById(id).orElseThrow().getTentativi());
     }
 
     @Test
@@ -354,12 +381,15 @@ class ChatPostgresIntegrationTests {
         pendingNotifications().andExpect(jsonPath("$.notifiche.length()").value(0));
         long id = notificationIdFor("MISSION_ACCEPTED:" + created.id());
         assertEquals("internal", outbox.findById(id).orElseThrow().getChannel());
+        assertEquals("SKIPPED", outbox.findById(id).orElseThrow().getStato());
+        assertEquals("internal", outbox.findById(id).orElseThrow().getDestinatario());
         report(id, "{\"inviata\":true}").andExpect(status().isNotFound());
     }
 
     @Test
     void unknownChannelIsRejected() throws Exception {
-        mockMvc.perform(asBot(get("/api/v1/chat/notifiche")).param("canale", "internal"))
+        mockMvc.perform(asBot(post("/api/v1/chat/notifiche/claim"))
+                        .contentType(MediaType.APPLICATION_JSON).content("{\"canale\":\"internal\"}"))
                 .andExpect(status().isBadRequest());
     }
 

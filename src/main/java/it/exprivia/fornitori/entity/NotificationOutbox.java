@@ -51,6 +51,9 @@ public class NotificationOutbox {
     @Column(name = "sent_at")
     private OffsetDateTime sentAt;
 
+    @Column(name = "prossimo_tentativo_il")
+    private OffsetDateTime prossimoTentativoIl;
+
     protected NotificationOutbox() {
     }
 
@@ -62,18 +65,32 @@ public class NotificationOutbox {
         this.payload = Map.copyOf(payload);
     }
 
+    /** Le missioni senza chat non hanno un destinatario: la riga resta come traccia e non viene mai inviata. */
+    public static NotificationOutbox skippedInternal(String eventKey, Long missionId, Map<String, Object> payload) {
+        NotificationOutbox row = new NotificationOutbox(eventKey, missionId, "internal", "internal", payload);
+        row.stato = "SKIPPED";
+        return row;
+    }
+
+    /** Riserva la notifica a un dispatcher: gli altri non la vedono finché la riserva non scade. */
+    public void claim(OffsetDateTime leaseUntil) {
+        this.stato = "SENDING";
+        this.prossimoTentativoIl = leaseUntil;
+    }
+
     public void markSent(OffsetDateTime when) {
         this.stato = "SENT";
         this.sentAt = when;
         this.ultimoErrore = null;
+        this.prossimoTentativoIl = null;
     }
 
-    public void recordFailure(String error, int maxAttempts) {
+    public void recordFailure(String error, int maxAttempts, OffsetDateTime retryAt) {
         this.tentativi++;
         this.ultimoErrore = error;
-        if (this.tentativi >= maxAttempts) {
-            this.stato = "FAILED";
-        }
+        boolean exhausted = this.tentativi >= maxAttempts;
+        this.stato = exhausted ? "FAILED" : "PENDING";
+        this.prossimoTentativoIl = exhausted ? null : retryAt;
     }
 
     public Long getId() { return id; }
@@ -87,4 +104,5 @@ public class NotificationOutbox {
     public String getUltimoErrore() { return ultimoErrore; }
     public OffsetDateTime getCreatedAt() { return createdAt; }
     public OffsetDateTime getSentAt() { return sentAt; }
+    public OffsetDateTime getProssimoTentativoIl() { return prossimoTentativoIl; }
 }

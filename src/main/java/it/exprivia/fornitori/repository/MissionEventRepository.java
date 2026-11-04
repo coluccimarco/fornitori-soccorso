@@ -9,8 +9,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface MissionEventRepository extends JpaRepository<MissionEvent, Long> {
-    void deleteByMissionId(Long missionId);
-
     @Query("""
             select e from MissionEvent e
             where e.eventType in :types

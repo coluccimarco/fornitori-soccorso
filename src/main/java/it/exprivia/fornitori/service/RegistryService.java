@@ -79,13 +79,13 @@ public class RegistryService {
     @Transactional
     public RegistryDtos.CustomerDto createCustomer(RegistryDtos.CreateCustomerRequest request) {
         InsuranceCompany company = companies.findById(request.compagniaId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid insurance company"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Compagnia assicurativa inesistente"));
         String normalizedPlate = request.targa().toUpperCase(Locale.ROOT).replaceAll("[^A-Z0-9]", "");
         if (normalizedPlate.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid vehicle plate");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Targa non valida");
         }
         if (customers.existsByTargaNorm(normalizedPlate)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Vehicle plate already exists");
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Targa già presente");
         }
         Customer saved = customers.save(new Customer(
                 request.nome().trim(),

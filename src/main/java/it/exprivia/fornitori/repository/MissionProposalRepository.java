@@ -13,5 +13,5 @@ public interface MissionProposalRepository extends JpaRepository<MissionProposal
 
     List<MissionProposal> findByMissionIdAndFixtureFalseOrderByIdAsc(Long missionId);
 
-    void deleteByMissionId(Long missionId);
+    List<MissionProposal> findByMissionIdOrderByIdAsc(Long missionId);
 }

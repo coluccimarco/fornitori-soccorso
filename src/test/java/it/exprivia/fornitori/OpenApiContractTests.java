@@ -36,6 +36,8 @@ class OpenApiContractTests {
             Arguments.of("UpdateIntervention", MissionDtos.UpdateInterventionRequest.class),
             Arguments.of("ProposeMission", MissionDtos.ProposeMissionRequest.class),
             Arguments.of("Proposal", MissionDtos.ProposalResponse.class),
+            Arguments.of("ProposalHistoryEntry", MissionDtos.ProposalHistoryEntry.class),
+            Arguments.of("ChatNotificationClaim", ChatDtos.NotificationClaimRequest.class),
             Arguments.of("CompleteMission", MissionDtos.CompleteMissionRequest.class),
             Arguments.of("CostAdjustment", MissionDtos.CostAdjustmentRequest.class),
             Arguments.of("CreateMissionNote", MissionDtos.CreateNoteRequest.class),
