@@ -184,9 +184,10 @@ class MapPostgresIntegrationTests {
         missions.propose(RESPONSABILE, mission.id(), new MissionDtos.ProposeMissionRequest(1L));
 
         MissionDtos.DriverMissionDetailResponse beforeRoute = missions.driverMissionDetail(AUTISTA_1, mission.id());
-        assertEquals("Lucia Gallo", beforeRoute.cliente().nome());
-        assertEquals("PW 660 SW", beforeRoute.cliente().targa());
-        assertNotNull(beforeRoute.cliente().telefono());
+        assertNull(beforeRoute.cliente().nome());
+        assertNull(beforeRoute.cliente().telefono());
+        assertNull(beforeRoute.cliente().targa());
+        assertEquals("Audi A3", beforeRoute.cliente().modelloVeicolo());
         assertNotNull(beforeRoute.officina().nome());
         assertNull(beforeRoute.guadagnoStimato());
 
@@ -199,13 +200,30 @@ class MapPostgresIntegrationTests {
                 "stima: " + afterRoute.guadagnoStimato());
 
         missions.accept(AUTISTA_1, mission.id());
-        assertEquals("accettata", missions.driverMissionDetail(AUTISTA_1, mission.id()).missione().stato());
+        MissionDtos.DriverMissionDetailResponse accepted = missions.driverMissionDetail(AUTISTA_1, mission.id());
+        assertEquals("accettata", accepted.missione().stato());
+        assertEquals("Lucia Gallo", accepted.cliente().nome());
+        assertEquals("PW 660 SW", accepted.cliente().targa());
+        assertNotNull(accepted.cliente().telefono());
 
         assertThrows(ForbiddenOperationException.class, () -> missions.driverMissionDetail(AUTISTA_2, mission.id()));
         assertThrows(ForbiddenOperationException.class, () -> missions.driverMissionDetail(RESPONSABILE, mission.id()));
 
         missions.complete(AUTISTA_1, mission.id(), new MissionDtos.CompleteMissionRequest(new BigDecimal("20.00")));
         assertThrows(MissionConflictException.class, () -> missions.driverMissionDetail(AUTISTA_1, mission.id()));
+    }
+
+    @Test
+    void rejectingDriverNeverReceivesCustomerContacts() {
+        MissionDtos.MissionResponse mission = repair(null, null);
+        missions.propose(RESPONSABILE, mission.id(), new MissionDtos.ProposeMissionRequest(1L));
+        MissionDtos.DriverCustomerDetail seen = missions.driverMissionDetail(AUTISTA_1, mission.id()).cliente();
+        assertNull(seen.nome());
+        assertNull(seen.telefono());
+
+        missions.reject(AUTISTA_1, mission.id());
+
+        assertThrows(ForbiddenOperationException.class, () -> missions.driverMissionDetail(AUTISTA_1, mission.id()));
     }
 
     @Test

@@ -303,6 +303,10 @@
     if (!customer) {
       return `<div><span class="field-label">Cliente</span><strong>Cliente #${safe(mission.clienteId)}</strong><span class="data-unavailable">Dettagli cliente non disponibili</span></div>`;
     }
+    if (!customer.nome) {
+      const model = customer.modelloVeicolo ? `<span>${safe(customer.modelloVeicolo)}</span>` : "";
+      return `<div><span class="field-label">Cliente</span><span class="data-unavailable">Nome e recapito visibili dopo l'accettazione</span>${model}</div>`;
+    }
     const vehicle = [customer.targa, customer.modelloVeicolo].filter(Boolean).map(safe).join(" · ");
     return `<div><span class="field-label">Cliente</span><strong>${safe(customer.nome)}</strong><a href="tel:${safe(customer.telefono)}">${safe(customer.telefono)}</a><span>${vehicle}</span></div>`;
   }

@@ -475,7 +475,7 @@ paths:
     get:
       tags: [Autisti]
       summary: Dettaglio di una missione proposta o accettata all'autista autenticato
-      description: Aggiunge cliente, contatti e officina. guadagnoStimato è null finché non è stato calcolato il percorso. Chiusa la missione risponde 409.
+      description: Aggiunge cliente, contatti e officina. Finché la missione è solo proposta nome, telefono e targa del cliente sono null; compaiono dopo l'accettazione. guadagnoStimato è null finché non è stato calcolato il percorso. Chiusa la missione risponde 409.
       x-implementation-status: implemented
       x-required-role: ASSIGNED_AUTISTA
       responses:
@@ -848,9 +848,9 @@ components:
         cliente:
           type: object
           properties:
-            nome: {type: string}
-            telefono: {type: string}
-            targa: {type: string}
+            nome: {type: string, nullable: true}
+            telefono: {type: string, nullable: true}
+            targa: {type: string, nullable: true}
             modelloVeicolo: {type: string, nullable: true}
         officina:
           type: object

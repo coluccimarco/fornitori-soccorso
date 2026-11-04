@@ -345,7 +345,10 @@ public class MissionService {
                 .stream().map(this::toResponse).toList();
     }
 
-    /** Solo per l'autista destinatario e finché la missione è aperta: nello storico i contatti non servono più. */
+    /**
+     * Solo per l'autista destinatario e finché la missione è aperta. Su una proposta i dati del cliente restano
+     * nascosti; dopo l'accettazione compaiono nome, telefono e targa.
+     */
     @Transactional(readOnly = true)
     public MissionDtos.DriverMissionDetailResponse driverMissionDetail(String email, Long missionId) {
         Driver driver = requireDriver(requireRole(email, AUTISTA));
@@ -365,10 +368,15 @@ public class MissionService {
                         .map(item -> new MissionDtos.DriverWorkshopDetail(
                                 item.getNome(), item.getIndirizzo(), item.getCitta(), item.getLat(), item.getLng()))
                         .orElseThrow(() -> new IllegalStateException("Mission workshop is missing"));
+        // Come chiede il PDF, nome, telefono e targa si vedono solo dopo l'accettazione: chi rifiuta non li ha.
+        boolean accepted = ACCETTATA.equals(mission.getStato());
         return new MissionDtos.DriverMissionDetailResponse(
                 toResponse(mission),
                 new MissionDtos.DriverCustomerDetail(
-                        customer.getNome(), customer.getTelefono(), customer.getTarga(), customer.getModelloVeicolo()),
+                        accepted ? customer.getNome() : null,
+                        accepted ? customer.getTelefono() : null,
+                        accepted ? customer.getTarga() : null,
+                        customer.getModelloVeicolo()),
                 workshop,
                 estimatedEarning(mission));
     }
