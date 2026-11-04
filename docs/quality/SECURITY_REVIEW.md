@@ -82,3 +82,9 @@ remota del nuovo modello di privilegi.
 SEC-03 e SEC-12 restano aperti; i test sintetici non dimostrano autorizzazione
 reale del cliente, consegna exactly-once, configurazione HTTPS operativa o
 protezione dei dati reali.
+
+La suite browser è stata ripetuta dopo l'integrazione locale del frontend
+`origin/main=bb8e548`: 2/2 scenari PASS in ordine standard e 2/2 in ordine
+inverso su PostgreSQL temporaneo. Le prove confermano le regole di privacy e
+autorizzazione descritte sopra e il percorso di persistenza; non sostituiscono
+una nuova esecuzione CI sul commit né i controlli esterni ancora aperti.

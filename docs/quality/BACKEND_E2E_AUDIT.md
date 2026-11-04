@@ -320,5 +320,25 @@ Il database locale `fornitori` è stato verificato come `fornitori_app`
 non-superuser su PostgreSQL 18.6: 15 tabelle, 30 missioni, 16 foreign key e
 assertion baseline PASS. `mvnw clean verify` ha usato questo datasource; al
 termine la baseline è stata nuovamente verificata e risultava invariata.
-I test browser riportati sopra restano prove separate su database temporanei e
-non sono stati rieseguiti nel controllo backend senza frontend.
+
+### Verifica end-to-end dopo l'integrazione frontend — 04/11/2026
+
+È stato integrato nel branch `feature/backend` il riferimento localmente
+disponibile `origin/main=bb8e548` con merge commit `ffccfa2`, senza conflitti.
+`git fetch origin --prune` non è riuscito per mancata connessione HTTPS a
+GitHub; l'eventuale avanzamento remoto successivo non è verificato.
+
+Su questo merge sono stati eseguiti i due scenari browser contro Spring Boot e
+un cluster PostgreSQL 18 temporaneo, sia nell'ordine standard sia nell'ordine
+inverso: **2/2 PASS per esecuzione**. Il flusso responsabile crea cliente e
+missione dalla UI, assegna e completa la missione; il test legge autonomamente
+lo stato dal DB e verifica che API/UI restituiscano gli stessi dati, costi e
+storico. Il flusso autista verifica privacy pre-accettazione, accesso autorizzato
+post-accettazione, isolamento tra autisti, rifiuto, scadenza e riproposizione.
+Il database personale non è usato dal browser runner.
+
+Frontend Node: 4/4 PASS e sintassi JavaScript valida. Chatbot: 74/74 PASS.
+`python tools/validate_docs.py` PASS; rendering visivo Word non eseguito. La
+suite Maven e il controllo della baseline sul database locale sono registrati
+nella tabella finale di `TEST_EVIDENCE.md`; nessun file di test è stato eliminato,
+poiché le suite sono attive e costituiscono la copertura di regressione.
