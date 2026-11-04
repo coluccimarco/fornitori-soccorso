@@ -65,7 +65,7 @@ PostgreSQL 18.6, Python3.14.6, Node24.15.0, Playwright1.64.1/Chromium156.
 
 | Suite | Test | Esito |
 |---|---:|---|
-| ApiSecurityTests / ChatApiSecurityTests / ApiContractTests | 14 / 6 / 9 | PASS |
+| ApiSecurityTests / ChatApiSecurityTests / ApiContractTests | 14 / 6 / 11 | PASS |
 | OpenApiContractTests | 33 | PASS |
 | ChatPostgresIntegrationTests | 15 | PASS |
 | MapPostgresIntegrationTests / MapProviderClientsTests | 13 / 11 | PASS |
@@ -73,14 +73,14 @@ PostgreSQL 18.6, Python3.14.6, Node24.15.0, Playwright1.64.1/Chromium156.
 | PostgresHttpWorkflowTests | 5 | PASS |
 | ChatSupportTests / PricingServiceTests / RateLimitTests | 2 / 1 / 1 | PASS |
 | FornitoriApplicationTests | 1 | PASS |
-| Totale Java | 116 | PASS;0failure,0error,0skip |
+| Totale Java | 118 | PASS;0failure,0error,0skip |
 | Node tools/test_frontend.cjs | 4 | PASS |
 | Chromium browser_e2e.py | 2 | PASS; commit DB e lettura indipendente |
 | Python chatbot unittest discover | 64 | PASS |
 | OSV | 124 versioni Maven | 0 advisory corrispondenti nella scansione locale |
 
 `clean verify` con datasource temporaneo e Java 25; report XML in target/surefire-reports.
-Log locale `%TEMP%/fornitori-hardening-20261104/maven-postgres.log` (pgdata-03).
+Log locale `%TEMP%/fornitori-hardening-20261104/maven-postgres.log` (pgdata-05).
 Browser finale: `%TEMP%/fornitori-e2e-qubw7b5l/browser-tests.log`, screenshot centrale
 completata/storico autista; app avviata con ruolo e2e_app non-superuser. I primi
 runner browser fallivano per selettore nascosto e timestamp simulato incompatibile
@@ -92,3 +92,11 @@ Connessione locale 5432 read-only PASS; tabella missions assente, setup applicat
 BLOCKED. Provider live e WhatsApp NOT RUN. Run CI nuovi da consultare nella PR;
 le righe sopra il presente aggiornamento restano evidenze storiche03/11.
 Non versionare i log integrali, che possono contenere dati sintetici o token di test.
+
+### CI del fix finale e integrazione successiva
+
+[Run 41808673238](https://github.com/coluccimarco/fornitori-soccorso/actions/runs/41808673238)
+su `f1f84fc`: entrambi i job PASS, incluso browser con commit PostgreSQL.
+Il successivo merge di `origin/main` nel backend integra il merge esterno della
+PR #5, senza modificare src/api/database/tools/workflow rispetto al codice
+collaudato. L'ultimo SHA documentale e il suo run sono indicati nella PR finale.

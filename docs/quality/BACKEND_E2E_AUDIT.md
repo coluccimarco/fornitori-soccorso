@@ -151,14 +151,14 @@ missioni live, inclusi vincoli di concorrenza e letture dashboard.
 
 | Categoria | Risultato locale | Limite |
 |---|---|---|
-| Java 25 / PostgreSQL 18.6 | 116 test, 0 failure/error/skip | Dettaglio in TEST_EVIDENCE |
-| Contract OpenAPI | 33 test inclusi nei 116 | 32 record/tipi + mapping operazioni; non convalida ogni vincolo semantico OAS |
+| Java 25 / PostgreSQL 18.6 | 118 test, 0 failure/error/skip | Dettaglio in TEST_EVIDENCE |
+| Contract OpenAPI | 33 test inclusi nei 118 | 32 record/tipi + mapping operazioni; non convalida ogni vincolo semantico OAS |
 | Python chatbot | 64 test | Provider simulati; nessun Telegram reale |
 | JavaScript Node | 4 test PASS | Countdown e escaping, non browser |
 | Browser Chromium 156 / DB | 2 scenari PASS | Due scenari e connessione SQL indipendente |
 | OSV dipendenze Maven | 124 dipendenze; 0 advisory corrispondenti al momento della scansione | Non garantisce assenza vulnerabilità o copertura futura |
 | Provider live / WhatsApp | NOT RUN / non implementato | Non usare dati reali per collaudo indiscriminato |
-| CI remota nuovo branch | Da verificare dopo push | Run storici non attribuiti ai nuovi commit |
+| CI remota fix finale | PASS run41808673238 su f1f84fc | Entrambi i job, incluso browser/DB; non attribuito a SHA differenti |
 
 Prima delle correzioni: 8 nuovi contract test hanno prodotto 4 failure reali
 (nome troppo lungo, due distanze non valide, ID non convertibile). Dopo le
@@ -248,3 +248,33 @@ progetto. Un elemento incompleto conta zero, anche se parzialmente implementato.
 | Integrazione frontend | Login/logout, registri, cliente, creazione missione, proposta, risposta/rifiuto, note, chiusura, dashboard/storico | Rettifica, modifica intervento, mappa | 9/12 = 75% |
 | Test | Unit/MVC, PostgreSQL, contract, Python, Node, browser Chromium | Provider live, browser multipli/accessibilità completa | 6/8 = 75% delle categorie scelte |
 | Documentazione | Canonici architettura/API, tracciabilità, manuali/team, evidenze/rischi, generazione derivati | Fonte originale docente e controllo visuale Word | 5/7 = 71% dei gate documentali |
+
+### Regressione HEAD e CI remota
+
+Il controllo finale ha riprodotto un bypass sul metodo HEAD implicito del GET
+mappe: risposta200 senza CSRF. Un nuovo test MVC falliva prima della correzione;
+il matcher copre ora GET **e HEAD**, mantenendo le protezioni delle mutazioni.
+La suite completa successiva comprende118 test. Il primo run della PR#5,
+[41807529992](https://github.com/coluccimarco/fornitori-soccorso/actions/runs/41807529992),
+è PASS su entrambi i job al commit7dc0aa3 (precedente al fix HEAD), incluso browser
+con PostgreSQL. Il nuovo run sul commit correttivo è riportato nella PR e nel
+report finale: non attribuire il run precedente a un nuovo SHA.
+
+Anche `CsrfTokenResponse.toString()` è redatto; il test diagnostica verifica
+che password e token casuali non compaiano nelle rappresentazioni dei DTO.
+
+### Aggiornamento Git esterno e verifica del fix
+
+La PR #5, aperta dall'agente come Draft, è stata convertita e unita da
+`vicente490x` il 04/11/2026 alle 09:29:06 UTC, mentre la revisione proseguiva.
+L'agente non ha richiesto né eseguito quel merge. Main remoto è quindi avanzato
+a `daafd30de3c75f8e0c5211fc2d3e4c8fba1ec826`; è stato integrato **nel backend**
+con merge senza conflitti, lasciando invariato il codice del fix `f1f84fc`.
+Il main locale non è stato modificato. Il fix successivo è oggetto di una nuova
+Draft PR verso main, senza merge finale da parte dell'agente.
+
+Il run [41808673238](https://github.com/coluccimarco/fornitori-soccorso/actions/runs/41808673238)
+su `f1f84fcc87751642304f046299624a1f523016d1` è PASS in entrambi i job:
+Java/PostgreSQL, Python, Node, OpenAPI, documenti, OSV e browser/PostgreSQL.
+Le verifiche locali finali comprendono **118 test Java, zero failure/error/skip**;
+il browser sul medesimo codice è stato verificato nuovamente dalla CI.

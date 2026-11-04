@@ -20,7 +20,7 @@ riassume evidenze, deliverable e attività ancora bloccate.
 | Area | Stato |
 |---|---|
 | Java 25 LTS / Maven | **IMPLEMENTATO**; verificato con Temurin 25.0.5 |
-| Backend Spring Boot: sessione, CSRF, ruoli, anagrafiche e rotte missioni | **IMPLEMENTATO**; 29 test MVC/security passati nella revisione locale |
+| Backend Spring Boot: sessione, CSRF, ruoli, anagrafiche e rotte missioni | **IMPLEMENTATO**; 31 test MVC/security e diagnostica passati nella revisione locale |
 | Schema, seed e baseline PostgreSQL | Script **IMPLEMENTATI**; baseline PostgreSQL CI **PASS**; servizio locale attivo, ma accesso app locale da configurare con credenziali |
 | Missioni, timeout, pricing, note, dashboard e storico autista | **IMPLEMENTATO** in `main`; PostgreSQL CI **PASS** |
 | Chatbot (`chatbot/`) e API `chat/*` | **IMPLEMENTATO**; prova Telegram dichiarata nel README del modulo |
@@ -223,7 +223,7 @@ dashboard collegata a Jira.
 [Audit E2E](docs/quality/BACKEND_E2E_AUDIT.md),
 [security review](docs/quality/SECURITY_REVIEW.md) e
 [evidenze](docs/quality/TEST_EVIDENCE.md) distinguono prove locali, CI e limiti.
-116 test Java su PostgreSQL 18 senza skip, 4 Node e 2 browser con DB reale isolato.
+118 test Java su PostgreSQL 18 senza skip, 4 Node e 2 browser con DB reale isolato.
 Applicare la migrazione additiva `database/07_backend_hardening.sql` dopo 01–06.
 Login rinnova CSRF; anche GET mappe richiede CSRF; creazione chat richiede lookup
 positivo valido per la stessa sessione/cliente. Protocollo Python invariato.

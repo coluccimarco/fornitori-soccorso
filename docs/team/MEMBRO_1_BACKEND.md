@@ -55,7 +55,7 @@ promosse a `implemented`. **Riferimenti:**
 Responsabile backend comunicato: **Minervini Vincenzo**. Java 25 mantenuto.
 Eseguire migrazione 07 e suite su database isolato; separare account migrazione e
 runtime come nel runner E2E. API stabili, aggiunte DTO retrocompatibili e due
-precondizioni esplicite: CSRF route e grant lookup chat. Prove:116 Java senza
+precondizioni esplicite: CSRF route e grant lookup chat. Prove:118 Java senza
 skip, 4 Node, 2 browser con commit SQL. Database personale ancora da inizializzare.
 Prima di uso reale risolvere identità chatbot e delivery outbox. Le evidenze CI
 precedenti descrivono solo i rispettivi commit, non il nuovo branch.

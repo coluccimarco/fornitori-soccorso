@@ -96,7 +96,7 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.csrfTokenRepository(csrfTokenRepository)
                         .requireCsrfProtectionMatcher(request ->
                                 !java.util.Set.of("GET", "HEAD", "TRACE", "OPTIONS").contains(request.getMethod())
-                                || ("GET".equals(request.getMethod()) && request.getRequestURI()
+                                || (java.util.Set.of("GET", "HEAD").contains(request.getMethod()) && request.getRequestURI()
                                     .equals(request.getContextPath() + "/api/v1/maps/route"))))
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
