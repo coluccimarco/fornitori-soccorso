@@ -19,7 +19,7 @@ public interface CustomerRepository extends JpaRepository<Customer, Long> {
             FROM customers c
             JOIN insurance_companies co ON co.id = c.company_id
             WHERE lower(c.nome) LIKE concat('%', lower(:search), '%')
-               OR c.targa_norm LIKE concat('%', :plate, '%')
+               OR (:plate <> '' AND c.targa_norm LIKE concat('%', :plate, '%'))
             ORDER BY c.id
             """, nativeQuery = true)
     List<CustomerRow> search(@Param("search") String search, @Param("plate") String normalizedPlate);

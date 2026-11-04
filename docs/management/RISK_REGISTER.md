@@ -18,3 +18,14 @@ Scale qualitative: Alto / Medio / Basso. Owner indica il ruolo proposto, non un 
 
 Non rappresenta un registro ufficiale approvato. Le righe di `R-01` e `R-06` vanno
 risolte prima di dichiarare idoneità a uso reale.
+
+## Aggiornamento hardening e prove del 04/11/2026
+
+R-02 mitigato con 33 contract test OpenAPI. R-03 mitigato per 2 scenari browser/DB,
+non per UI rettifica/intervento/mappe o accessibilità. R-05: autenticazione locale
+PASS, schema missions assente; test su PG18 isolato PASS. R-06 resta APERTO:
+grant sessione/cliente e limiti mitigano abuso, non titolarità. Aggiungere come
+rischio di rilascio la consegna outbox concorrente/crash senza lease: nessuna
+garanzia exactly-once. Prod HTTPS, permessi operativi, logging/retention e fonti
+originali restano gate. Nessuna nuova accettazione del rischio dichiarata per
+conto del team; Draft PR finché i gate essenziali non sono chiusi.

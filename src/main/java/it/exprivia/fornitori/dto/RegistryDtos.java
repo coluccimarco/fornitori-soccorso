@@ -2,6 +2,8 @@ package it.exprivia.fornitori.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.Positive;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
@@ -45,13 +47,13 @@ public final class RegistryDtos {
     }
 
     public record CreateCustomerRequest(
-            @NotBlank String nome,
-            @NotBlank String telefono,
-            @NotBlank String targa,
-            String modelloVeicolo,
-            @NotNull Long compagniaId,
-            @NotBlank String numeroPolizza,
+            @NotBlank @Size(max = 150) String nome,
+            @NotBlank @Size(max = 32) String telefono,
+            @NotBlank @Size(max = 20) String targa,
+            @Size(max = 150) String modelloVeicolo,
+            @NotNull @Positive Long compagniaId,
+            @NotBlank @Size(max = 100) String numeroPolizza,
             @NotNull LocalDate scadenzaPolizza,
-            String cittaResidenza) {
+            @Size(max = 150) String cittaResidenza) {
     }
 }

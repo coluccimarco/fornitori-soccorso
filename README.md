@@ -20,14 +20,14 @@ riassume evidenze, deliverable e attività ancora bloccate.
 | Area | Stato |
 |---|---|
 | Java 25 LTS / Maven | **IMPLEMENTATO**; verificato con Temurin 25.0.5 |
-| Backend Spring Boot: sessione, CSRF, ruoli, anagrafiche e rotte missioni | **IMPLEMENTATO**; 11 test MVC passati |
+| Backend Spring Boot: sessione, CSRF, ruoli, anagrafiche e rotte missioni | **IMPLEMENTATO**; 29 test MVC/security passati nella revisione locale |
 | Schema, seed e baseline PostgreSQL | Script **IMPLEMENTATI**; baseline PostgreSQL CI **PASS**; servizio locale attivo, ma accesso app locale da configurare con credenziali |
 | Missioni, timeout, pricing, note, dashboard e storico autista | **IMPLEMENTATO** in `main`; PostgreSQL CI **PASS** |
 | Chatbot (`chatbot/`) e API `chat/*` | **IMPLEMENTATO**; prova Telegram dichiarata nel README del modulo |
 | Notifiche al cliente | Outbox/backend e dispatcher Telegram presenti; prova reale dichiarata nel README del modulo; WhatsApp **PIANIFICATO** |
-| UI web | **PRESENTE** in `src/main/resources/static/`: pagina pubblica, login, centrale e area autista; browser E2E **NOT RUN** |
+| UI web | **PRESENTE** in `src/main/resources/static/`: pagina pubblica, login, centrale e area autista; 2 scenari browser/DB **PASS** locali; copertura limitata ai flussi descritti |
 | API mappe | **PRESENTE** per geocodifica, percorso e distanza stimata; la UI non mostra ancora la mappa |
-| CI Java 25 | Build, test, OpenAPI e PostgreSQL baseline/integration **PASS** (run `41656606659`, commit `f763d53`) |
+| CI Java 25 | Build, test, OpenAPI e PostgreSQL baseline/integration **PASS storico** (run `41656606659`, commit `f763d53`); nuovo run da consultare nella PR |
 
 ## Requisiti locali
 
@@ -217,3 +217,16 @@ dashboard collegata a Jira.
 - Manuale tecnico: [docs/manuals/MANUALE_TECNICO.md](./docs/manuals/MANUALE_TECNICO.md)
 - Manuale utente: [docs/manuals/MANUALE_UTENTE.md](./docs/manuals/MANUALE_UTENTE.md)
 - Word editabili: [docs/word/](./docs/word/)
+
+## Hardening backend è 04/11/2026
+
+[Audit E2E](docs/quality/BACKEND_E2E_AUDIT.md),
+[security review](docs/quality/SECURITY_REVIEW.md) e
+[evidenze](docs/quality/TEST_EVIDENCE.md) distinguono prove locali, CI e limiti.
+116 test Java su PostgreSQL 18 senza skip, 4 Node e 2 browser con DB reale isolato.
+Applicare la migrazione additiva `database/07_backend_hardening.sql` dopo 01–06.
+Login rinnova CSRF; anche GET mappe richiede CSRF; creazione chat richiede lookup
+positivo valido per la stessa sessione/cliente. Protocollo Python invariato.
+Il DB personale localhost:5432 accetta autenticazione ma non contiene `missions`;
+non è stato modificato. Il verde dei test isolati non inizializza quel database.
+Nessuna modifica grafica; titolarità chatbot e consegna outbox restano gate aperti.

@@ -6,11 +6,9 @@ import it.exprivia.fornitori.service.MapProviders.ProviderUnavailableException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URI;
-import java.time.Duration;
 import java.util.Optional;
 import java.util.regex.Pattern;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
@@ -41,12 +39,8 @@ public class NominatimGeocodingClient implements MapProviders.GeocodingClient {
                     "fornitori.maps.viewbox deve essere lonMin,latMax,lonMax,latMin oppure vuoto");
         }
         this.viewbox = viewbox.trim();
-        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-        factory.setConnectTimeout(Duration.ofSeconds(3));
-        factory.setReadTimeout(Duration.ofSeconds(8));
         this.baseUrl = baseUrl;
-        this.client = RestClient.builder()
-                .requestFactory(factory)
+        this.client = ProviderHttp.client(baseUrl)
                 .defaultHeader("User-Agent", userAgent)
                 .build();
     }

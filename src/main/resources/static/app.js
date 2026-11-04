@@ -16,7 +16,9 @@
     maps: new Map(),
     alerts: [],
     alertTimer: null,
-    deadlineTimer: null
+    deadlineTimer: null,
+    deadlineRefreshAt: 0,
+    deadlineRefreshPending: false
   };
 
   const ALERT_POLL_MS = 15000;
@@ -92,6 +94,11 @@
     if (!response.ok) {
       const error = new Error(errorMessage(response.status, payload));
       error.status = response.status;
+      if (response.status === 403 && state.user && options.mutating) {
+        // A lost session can fail CSRF first. Never replay a mutation.
+        state.csrf = null;
+        try { await request("/api/v1/auth/me"); } catch (ignored) { /* request handles 401 */ }
+      }
       if (response.status === 401 && state.user) {
         state.csrf = null;
         showLogin("La sessione è scaduta. Accedi di nuovo.");
@@ -105,6 +112,7 @@
     if (status === 401) return "Sessione scaduta o credenziali non valide. Accedi di nuovo.";
     if (status === 403) return "Non hai i permessi necessari per questa operazione.";
     if (payload && typeof payload === "object" && payload.message) return payload.message;
+    if (status === 429) return "Troppe richieste. Attendi un minuto e riprova.";
     if (status === 400) return "Controlla i dati inseriti e riprova.";
     if (status === 409) return "L'operazione è in conflitto con lo stato attuale dei dati. Aggiorna e riprova.";
     return `Richiesta non riuscita (errore ${status}). Riprova.`;
@@ -124,6 +132,7 @@
 
   function showLogin(message = "") {
     state.user = null;
+    state.csrf = null;
     publicView.classList.add("d-none");
     appView.classList.add("d-none");
     loginView.classList.remove("d-none");
@@ -158,6 +167,7 @@
   function showPublic() {
     stopAlertPolling();
     state.user = null;
+    state.csrf = null;
     loginView.classList.add("d-none");
     appView.classList.add("d-none");
     publicView.classList.remove("d-none");
@@ -268,7 +278,7 @@
   function missionCustomerMarkup(mission, useRegistry = false) {
     const customer = useRegistry
       ? state.data.clienti.find((item) => item.id === mission.clienteId)
-      : null;
+      : mission.clienteNome ? { nome: mission.clienteNome, telefono: mission.clienteTelefono } : null;
     const customerId = mission.clienteId ?? "non disponibile";
     const name = customer?.nome || `Cliente #${customerId}`;
     const contact = customer?.telefono
@@ -289,7 +299,7 @@
     }
     const workshop = useRegistry
       ? state.data.officine.find((item) => item.id === mission.officinaId)
-      : null;
+      : mission.officinaNome ? { nome: mission.officinaNome, indirizzo: mission.officinaIndirizzo, citta: mission.officinaCitta } : null;
     const detail = workshop
       ? [workshop.indirizzo, workshop.citta].filter(Boolean).map(safe).join(", ")
       : useRegistry && state.errors.officine
@@ -350,7 +360,8 @@
     const params = new URLSearchParams({ missionId });
     if (driverId) params.set("driverId", driverId);
     try {
-      const route = await request(`/api/v1/maps/route?${params}`);
+      // Dopo l'hardening del backend anche questa GET richiede il token CSRF.
+      const route = await request(`/api/v1/maps/route?${params}`, { mutating: true });
       const current = mapAreaFor(missionId);
       if (!current) return route;
       drawMissionMap(missionId, current, route);
@@ -670,11 +681,13 @@
     const params = new URLSearchParams({ mode });
     if (status) params.set("stato", status);
     try {
-      const [missions, dashboard] = await Promise.all([
+      const [missions, dashboard, drivers] = await Promise.all([
         request(`/api/v1/missioni?${params}`),
-        request(`/api/v1/dashboard?mode=${encodeURIComponent(mode)}`)
+        request(`/api/v1/dashboard?mode=${encodeURIComponent(mode)}`),
+        request("/api/v1/autisti")
       ]);
       state.missions = missions;
+      state.data.autisti = drivers;
       $("#missionPendingCount").textContent = dashboard.pending;
       $("#missionDoneCount").textContent = dashboard.eseguite;
       $("#missionExpiredCount").textContent = dashboard.scadute;
@@ -836,21 +849,26 @@
   }
 
   function updateCountdowns() {
+    let expired = false;
     document.querySelectorAll("[data-deadline]").forEach((element) => {
       const milliseconds = new Date(element.dataset.deadline).getTime() - Date.now();
+      if (!Number.isFinite(milliseconds)) { element.textContent = ""; return; }
       if (milliseconds <= 0) {
         element.textContent = "Scaduta";
-        if (element.dataset.refreshed !== "true") {
-          element.dataset.refreshed = "true";
-          if (state.user?.ruolo === "autista") void loadDriverMissions();
-          else if (state.currentView === "missioni") void loadMissions();
-        }
+        expired = true;
         return;
       }
       const seconds = Math.floor(milliseconds / 1000);
-      const minutes = Math.floor(seconds / 60);
-      element.textContent = `${String(minutes).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")} rimanenti`;
+      element.textContent = `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")} rimanenti`;
     });
+    // Throttle across DOM replacement; fixture proposals never expire server-side.
+    const liveManager = state.currentView === "missioni" && $("#missionMode").value === "live";
+    if (!expired || !state.user || (!liveManager && state.currentView !== "autista")
+        || state.deadlineRefreshPending || Date.now() < state.deadlineRefreshAt) return;
+    state.deadlineRefreshAt = Date.now() + 30000;
+    state.deadlineRefreshPending = true;
+    const refresh = state.user.ruolo === "autista" ? loadDriverMissions() : loadMissions();
+    Promise.resolve(refresh).finally(() => { state.deadlineRefreshPending = false; });
   }
 
   $("#loginForm").addEventListener("submit", async (event) => {
@@ -871,11 +889,14 @@
           password: form.get("password")
         })
       });
+      state.csrf = null;
       if (!["responsabile", "autista"].includes(user.ruolo)) {
         await request("/api/v1/auth/logout", { method: "POST", mutating: true });
         showLogin("Il profilo non è abilitato all'accesso all'area riservata.");
         return;
       }
+      state.csrf = null;
+      await loadCsrf();
       formElement.reset();
       showApp(user);
     } catch (error) {

@@ -114,3 +114,20 @@ solo `/api/v1/chat/*`, mai il database direttamente.
 Branch e PR seguono [`07_GIT_WORKFLOW.md`](../07_GIT_WORKFLOW.md). Per una modifica
 coordinare story, contratto API/schema, test, manuali e diagrammi nello stesso
 change. Gli esiti non eseguiti vanno indicati come BLOCKED o NOT RUN.
+
+## Aggiornamento hardening e prove del 04/11/2026
+
+Su DB vuoto applicare database/01–07 in ordine; su baseline01–06 applicare 07.
+Il DB personale non è inizializzato automaticamente. Fornire credenziali via
+ambiente; account runtime non-superuser con USAGE schema/sequenze e DML tabelle,
+account separato per DDL/migrazioni. Hibernate resta validate.
+Per HTTPS usare SPRING_PROFILES_ACTIVE=prod; il cookie Secure non è inviato su
+HTTP. Configurare il reverse proxy esplicitamente; non fidarsi di header forwarded
+arbitrari. Sessione inattiva30min; rate login20/min/IP. Dopo login recuperare un
+nuovo CSRF, anche prima di GET mappe. Bot deve completare lookup→create entro15min.
+Test browser: installare tools/requirements-e2e.txt e Chromium via Playwright;
+configurare JAVA_HOME JDK25 e PG_BIN con binari PostgreSQL 18; dopo Maven verify,
+python tools/run_isolated_browser.py crea un nuovo cluster effimero su 55438 e
+server 58880, usa password casuali, arresta i processi e stampa directory evidenze.
+Non usare il runner generico browser_e2e.py su DB condivisi. Le fixture vengono
+applicate solo al cluster nuovo. Vedere audit/security review per limiti operativi.

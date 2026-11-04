@@ -35,3 +35,17 @@ Per contratti aggiornati consultare OpenAPI e verificare `x-required-role`,
 Chatbot: `SERVICE_CHATBOT` tramite `FORNITORI_CHAT_TOKEN`; credenziale assente o
 non valida viene rifiutata. Il client non deve considerare un endpoint `designed`
 disponibile solo perché definito nello YAML.
+
+## Aggiornamento hardening e prove del 04/11/2026
+
+Le 30 operazioni implementate coincidono con i mapping dei 5 controller; 4 rimangono
+designed. `OpenApiContractTests` confronta 32 record (nomi/tipi) e operazioni.
+Errori pubblici `{status,error}` includono conversioni parametri 400, metodo 405 e
+media type 415. Nome cliente 150, telefono 32, targa 20, modello/città 150, polizza 100;
+km/importi NUMERIC(10,2), costo calcolato oltre capacità restituisce 400 senza chiusura.
+MissionResponse aggiunge 5 campi contatto/officina opzionali negli stati attivi;
+Dashboard dichiara fonte/riferimentoAl. Bearer chatbot è opaco, non JWT.
+Schema chat distinto da CreateMission: nessun kmStimati, canale solo telegram/whatsapp.
+GET route richiede header CSRF; nuove pratiche chat richiedono lookup valido,
+retry difforme 409. Nessun URL rinominato. Inventario consumer e JSON completo
+in [audit E2E](../quality/BACKEND_E2E_AUDIT.md).

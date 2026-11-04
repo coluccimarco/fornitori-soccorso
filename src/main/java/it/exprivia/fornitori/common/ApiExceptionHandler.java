@@ -1,6 +1,9 @@
 package it.exprivia.fornitori.common;
 
-import it.exprivia.fornitori.controller.AuthController.ApiError;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -15,6 +18,21 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RestControllerAdvice
 public class ApiExceptionHandler {
     private static final Logger logger = LoggerFactory.getLogger(ApiExceptionHandler.class);
+
+    @ExceptionHandler({MethodArgumentTypeMismatchException.class, MissingServletRequestParameterException.class})
+    public ResponseEntity<ApiError> invalidParameter(Exception exception) {
+        return ResponseEntity.badRequest().body(new ApiError(400, "invalid_request"));
+    }
+
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<ApiError> wrongMethod(HttpRequestMethodNotSupportedException exception) {
+        return ResponseEntity.status(405).body(new ApiError(405, "method_not_allowed"));
+    }
+
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    public ResponseEntity<ApiError> wrongMediaType(HttpMediaTypeNotSupportedException exception) {
+        return ResponseEntity.status(415).body(new ApiError(415, "unsupported_media_type"));
+    }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiError> invalidRequest(MethodArgumentNotValidException exception) {

@@ -7,13 +7,13 @@
 ## Maturità funzionale
 
 Le API backend per auth, anagrafiche, missioni, dashboard e chatbot sono presenti;
-il chatbot Python supporta console/Telegram. Il frontend browser e il routing non
-sono presenti. L'operatività Telegram e le notifiche su provider sono dichiarate
+il chatbot Python supporta console/Telegram. Frontend statico e API routing sono
+presenti; la vista cartografica non è integrata. L'operatività Telegram e le notifiche su provider sono dichiarate
 nel README del modulo; la CI automatizza test software ma non il servizio Telegram.
 
 **Attori:** RESPONSABILE, AUTISTA autenticato, cliente via bot, servizio chatbot,
-dispatcher notifiche. I casi che dipendono da UI sono design funzionale, non
-schermate esistenti.
+dispatcher notifiche. Due scenari browser con PostgreSQL isolato sono verificati
+nel rapporto BACKEND_E2E_AUDIT; la copertura UX completa resta da approvare.
 
 ## UC-001 — Accesso operatore
 
@@ -106,7 +106,8 @@ valida stato e calcola costo → completa e crea evento/outbox.
 **Alternativi:** missione non chiudibile, km invalidi, ruolo/driver non assegnato;
 nessun esito OK falso. **API:** `/intervento`, `/complete`, `/notes`.
 **Test:** test PostgreSQL missione, note e completamento.
-**Stato:** API backend IMPLEMENTATE; interfaccia utente non disponibile.
+**Stato:** API backend e UI note/chiusura presenti e verificate nel browser;
+la modifica intervento rimane disponibile solo via API.
 
 ## UC-008 — Calcolare o rettificare costo
 
@@ -129,7 +130,7 @@ autista limita l'identità all'utente autenticato. **Eccezioni:** `401/403`,
 risultato vuoto; mai includere altri autisti nello storico personale.
 **API:** `GET /api/v1/dashboard`, `/api/v1/autista/missioni`,
 `/api/v1/autista/storico`. **Test:** `MissionPostgresIntegrationTests`,
-`ApiSecurityTests`. **Stato:** API e client web presenti; browser E2E non eseguito.
+`ApiSecurityTests`. **Stato:** API e client web presenti; 2 scenari Chromium/PostgreSQL PASS locali (04/11).
 
 ## UC-010 — Conversazione cliente e consultazione stato
 

@@ -11,6 +11,7 @@ import it.exprivia.fornitori.entity.InsuranceCompany;
 import it.exprivia.fornitori.entity.Mission;
 import it.exprivia.fornitori.entity.NotificationOutbox;
 import it.exprivia.fornitori.repository.ChatMissionRequestRepository;
+import it.exprivia.fornitori.repository.ChatLookupGrantRepository;
 import it.exprivia.fornitori.repository.CustomerRepository;
 import it.exprivia.fornitori.repository.DriverRepository;
 import it.exprivia.fornitori.repository.InsuranceCompanyRepository;
@@ -54,6 +55,8 @@ public class ChatService {
     private final NearestWorkshopResolver workshopResolver;
     private final TransactionTemplate transactions;
     private final Clock clock;
+    private final ChatLookupGrantRepository grants;
+    private final RequestRateLimiter globalLimiter;
 
     public ChatService(
             NotificationOutboxRepository outbox,
@@ -66,7 +69,9 @@ public class ChatService {
             ChatLookupLimiter limiter,
             NearestWorkshopResolver workshopResolver,
             PlatformTransactionManager transactionManager,
-            Clock clock) {
+            Clock clock,
+            ChatLookupGrantRepository grants,
+            RequestRateLimiter globalLimiter) {
         this.outbox = outbox;
         this.customers = customers;
         this.companies = companies;
@@ -78,20 +83,25 @@ public class ChatService {
         this.workshopResolver = workshopResolver;
         this.transactions = new TransactionTemplate(transactionManager);
         this.clock = clock;
+        this.grants = grants;
+        this.globalLimiter = globalLimiter;
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public ChatDtos.VehicleLookupResponse lookup(ChatDtos.VehicleLookupRequest request) {
+        globalLimiter.check("chat-lookup", 100);
         if (limiter.isBlocked(request.sessionId())) {
             throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "Too many lookup attempts");
         }
         Optional<Customer> customer = customers.findByTargaNorm(normalize(request.targa()))
                 .filter(this::hasActivePolicy);
         if (customer.isEmpty()) {
+            grants.revoke(request.sessionId());
             limiter.recordFailure(request.sessionId());
             return ChatDtos.VehicleLookupResponse.notVerified();
         }
         limiter.reset(request.sessionId());
+        grants.grant(request.sessionId(), customer.get().getId(), now().plusMinutes(15), now());
         String company = companies.findById(customer.get().getCompanyId())
                 .map(InsuranceCompany::getNome)
                 .orElseThrow(() -> new IllegalStateException("Customer company is missing"));
@@ -105,7 +115,7 @@ public class ChatService {
         ChatDtos.CreateMissionRequest resolved = needsNearestWorkshop(request)
                 ? workshopResolver.withNearestWorkshop(request)
                 : request;
-        return transactions.execute(status -> persistMission(resolved, channel));
+        return transactions.execute(status -> persistMission(resolved, fingerprint(request), channel));
     }
 
     private boolean needsNearestWorkshop(ChatDtos.CreateMissionRequest request) {
@@ -114,19 +124,33 @@ public class ChatService {
                 && !requests.existsById(request.requestId());
     }
 
-    private ChatDtos.MissionCreatedResponse persistMission(ChatDtos.CreateMissionRequest request, String channel) {
+    /**
+     * L'impronta anti-duplicato si calcola sulla richiesta ricevuta dal bot, non su quella arricchita con
+     * officina e coordinate: un nuovo invio identico deve dare lo stesso risultato, non 409.
+     */
+    private ChatDtos.MissionCreatedResponse persistMission(
+            ChatDtos.CreateMissionRequest request, String requestFingerprint, String channel) {
         // Serializza i tentativi concorrenti con lo stesso requestId, così il secondo trova il primo.
-        customers.lockById(request.clienteId())
+        Customer customer = customers.lockById(request.clienteId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cliente inesistente"));
 
         Optional<ChatMissionRequest> existing = requests.findById(request.requestId());
         if (existing.isPresent()) {
             Mission mission = missions.findById(existing.get().getMissionId())
                     .orElseThrow(() -> new IllegalStateException("Chat request mission is missing"));
-            if (!request.clienteId().equals(mission.getCustomerId())) {
+            if (!request.clienteId().equals(mission.getCustomerId())
+                    || !request.sessionId().equals(existing.get().getSessionId())
+                    || !request.destinatario().trim().equals(existing.get().getDestinatario())
+                    || !channel.equals(mission.getCanaleOrigine())
+                    || (existing.get().getRequestFingerprint() != null
+                        && !requestFingerprint.equals(existing.get().getRequestFingerprint()))) {
                 throw new MissionConflictException("Chiave di idempotenza già usata");
             }
             return new ChatDtos.MissionCreatedResponse(mission.getId(), mission.getCodice(), mission.getStato());
+        }
+
+        if (!hasActivePolicy(customer) || !grants.permits(request.sessionId(), customer.getId(), now())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Lookup richiesto o scaduto");
         }
 
         MissionDtos.MissionResponse created = missionService.createFromChat(new MissionDtos.CreateMissionRequest(
@@ -139,8 +163,10 @@ public class ChatService {
                 request.officinaId(),
                 null,
                 channel));
-        requests.save(new ChatMissionRequest(
-                request.requestId(), created.id(), request.sessionId(), request.destinatario().trim(), now()));
+        ChatMissionRequest stored = new ChatMissionRequest(
+                request.requestId(), created.id(), request.sessionId(), request.destinatario().trim(), now());
+        stored.setRequestFingerprint(requestFingerprint);
+        requests.save(stored);
         return new ChatDtos.MissionCreatedResponse(created.id(), created.codice(), created.stato());
     }
 
@@ -198,6 +224,25 @@ public class ChatService {
 
     private OffsetDateTime now() {
         return OffsetDateTime.ofInstant(clock.instant(), ZoneOffset.UTC);
+    }
+
+    private static String fingerprint(ChatDtos.CreateMissionRequest request) {
+        // Length-prefix each canonical field to avoid separator ambiguity; no plaintext payload persisted.
+        StringBuilder canonical = new StringBuilder();
+        for (Object value : java.util.Arrays.asList(request.clienteId(), request.sessionId(),
+                request.destinatario().trim(), validChannel(request.canaleOrigine()),
+                request.tipoIntervento().trim().toLowerCase(Locale.ROOT), request.descrizioneProblema().trim(),
+                request.origineIndirizzo().trim(), request.origineLat(), request.origineLng(), request.officinaId())) {
+            String text = value instanceof java.math.BigDecimal number
+                    ? number.stripTrailingZeros().toPlainString() : Objects.toString(value, "");
+            canonical.append(text.length()).append(':').append(text);
+        }
+        try {
+            return java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256")
+                    .digest(canonical.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8)));
+        } catch (java.security.NoSuchAlgorithmException exception) {
+            throw new IllegalStateException("SHA-256 unavailable", exception);
+        }
     }
 
     private boolean hasActivePolicy(Customer customer) {

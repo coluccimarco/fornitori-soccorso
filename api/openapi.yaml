@@ -222,7 +222,7 @@ paths:
     get:
       tags: [Missioni]
       summary: Dettaglio missione secondo ruolo
-      description: RESPONSABILE può consultare tutte le missioni; AUTISTA solo missioni proprie, anche nello storico delle proposte.
+      description: RESPONSABILE può consultare tutte le missioni; AUTISTA solo missioni live attualmente assegnate o eseguite dal medesimo autista; una proposta passata non autorizza accesso dopo riassegnazione.
       x-implementation-status: implemented
       x-required-role: [RESPONSABILE, ASSIGNED_AUTISTA]
       responses:
@@ -336,14 +336,14 @@ paths:
     post:
       tags: [Autisti]
       summary: Rifiuta proposta corrente
-      description: Solo il destinatario della proposta. La risposta rimane nello storico e la missione può essere riproposta.
+      description: Solo il destinatario della proposta. La risposta rimane nello storico e la missione può essere riproposta. Alla deadline o dopo scade con risposta 409, anche prima dello scheduler.
       x-implementation-status: implemented
       x-required-role: ASSIGNED_AUTISTA
       security:
         - sessionCookie: []
           csrfHeader: []
       responses:
-        '200': {description: Missione non accettata}
+        '200': {description: Missione non accettata, content: {application/json: {schema: {$ref: '#/components/schemas/Mission'}}}}
         '409': {$ref: '#/components/responses/Conflict'}
         '401': {$ref: '#/components/responses/Unauthorized'}
         '403': {$ref: '#/components/responses/Forbidden'}
@@ -392,7 +392,7 @@ paths:
             schema: {$ref: '#/components/schemas/CostAdjustment'}
             example: {costoFinale: 80.00, motivo: "Correzione autorizzata dopo verifica"}
       responses:
-        '200': {description: Nuovo importo e evento audit}
+        '200': {description: Nuovo importo e evento audit, content: {application/json: {schema: {$ref: '#/components/schemas/Mission'}}}}
         '400': {$ref: '#/components/responses/BadRequest'}
         '401': {$ref: '#/components/responses/Unauthorized'}
         '403': {$ref: '#/components/responses/Forbidden'}
@@ -404,7 +404,7 @@ paths:
     get:
       tags: [Missioni]
       summary: Note della missione
-      description: RESPONSABILE o AUTISTA che ha ricevuto una proposta per la missione.
+      description: RESPONSABILE o AUTISTA attualmente assegnato alla missione live; accesso revocato dopo rifiuto o riassegnazione.
       x-implementation-status: implemented
       x-required-role: [RESPONSABILE, ASSIGNED_AUTISTA]
       responses:
@@ -415,7 +415,7 @@ paths:
     post:
       tags: [Autisti]
       summary: Nota autorizzata sulla missione
-      description: RESPONSABILE o AUTISTA che ha ricevuto una proposta per la missione.
+      description: RESPONSABILE o AUTISTA attualmente assegnato alla missione live; accesso revocato dopo rifiuto o riassegnazione.
       x-implementation-status: implemented
       x-required-role: [RESPONSABILE, ASSIGNED_AUTISTA]
       security:
@@ -499,9 +499,12 @@ paths:
     get:
       tags: [Mappe]
       summary: Calcola base → sinistro → officina, se traino; solo base → sinistro se riparazione
-      description: Se la missione ha solo l'indirizzo, lo converte in coordinate con Nominatim e le salva. Salva i km stimati finché la missione non è eseguita e solo per l'autista assegnato, se presente. L'AUTISTA usa sempre il proprio mezzo; il RESPONSABILE sceglie driverId, altrimenti vale l'autista assegnato.
+      description: Se la missione ha solo l'indirizzo, lo converte in coordinate con Nominatim e le salva. Richiede X-CSRF-TOKEN anche se GET per gli effetti di persistenza legacy. Salva i km stimati finché la missione non è eseguita e solo per l'autista assegnato, se presente. L'AUTISTA usa sempre il proprio mezzo; il RESPONSABILE sceglie driverId, altrimenti vale l'autista assegnato.
       x-implementation-status: implemented
       x-required-role: [RESPONSABILE, ASSIGNED_AUTISTA]
+      security:
+        - sessionCookie: []
+          csrfHeader: []
       parameters:
         - {name: missionId, in: query, required: true, schema: {type: integer, format: int64}}
         - {name: driverId, in: query, required: false, schema: {type: integer, format: int64}}
@@ -554,6 +557,7 @@ paths:
         '201': {description: Missione creata o già esistente per requestId, content: {application/json: {schema: {$ref: '#/components/schemas/ChatMissionCreated'}}}}
         '400': {$ref: '#/components/responses/BadRequest'}
         '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
         '409': {$ref: '#/components/responses/Conflict'}
   /api/v1/chat/stato:
     post:
@@ -653,7 +657,7 @@ components:
     serviceBearer:
       type: http
       scheme: bearer
-      bearerFormat: JWT
+      bearerFormat: opaque
   parameters:
     MissionId:
       name: id
@@ -666,23 +670,27 @@ components:
       required: true
       schema: {type: integer, format: int64}
   responses:
-    Unauthorized: {description: Autenticazione richiesta}
-    Forbidden: {description: Operazione non autorizzata}
-    Conflict: {description: Stato missione, disponibilità o duplicato in conflitto}
-    BadRequest: {description: Input non valido}
-    NotFound: {description: Risorsa non trovata o non accessibile}
+    Unauthorized: {description: Autenticazione richiesta, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}
+    Forbidden: {description: Operazione non autorizzata, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}
+    Conflict: {description: Stato missione, disponibilità o duplicato in conflitto, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}
+    BadRequest: {description: Input non valido, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}
+    NotFound: {description: Risorsa non trovata o non accessibile, content: {application/json: {schema: {$ref: '#/components/schemas/ApiError'}}}}
   schemas:
     LoginRequest:
       type: object
       required: [email, password]
-      properties: {email: {type: string, format: email}, password: {type: string, minLength: 1}}
+      properties:
+        email: {type: string, format: email}
+        password: {type: string, minLength: 1}
     CurrentUser:
       type: object
       properties:
         id: {type: integer, format: int64}
         nome: {type: string}
         email: {type: string}
-        ruolo: {type: string, enum: [responsabile, autista]}
+        ruolo:
+          type: string
+          enum: [responsabile, autista]
         autistaId: {type: integer, format: int64, nullable: true}
     UserSummary:
       type: object
@@ -690,7 +698,9 @@ components:
         id: {type: integer, format: int64}
         nome: {type: string}
         email: {type: string, format: email}
-        ruolo: {type: string, enum: [responsabile, autista]}
+        ruolo:
+          type: string
+          enum: [responsabile, autista]
         autistaId: {type: integer, format: int64, nullable: true}
     Customer:
       type: object
@@ -713,7 +723,9 @@ components:
         telefono: {type: string}
         mezzoId: {type: integer, format: int64}
         zona: {type: string}
-        disponibilita: {type: string, enum: [disponibile, occupato]}
+        disponibilita:
+          type: string
+          enum: [disponibile, occupato]
     Vehicle:
       type: object
       properties:
@@ -745,41 +757,50 @@ components:
       type: object
       required: [nome, telefono, targa, compagniaId, numeroPolizza, scadenzaPolizza]
       properties:
-        nome: {type: string}
-        telefono: {type: string}
-        targa: {type: string}
-        modelloVeicolo: {type: string}
-        compagniaId: {type: integer, format: int64}
-        numeroPolizza: {type: string}
+        nome: {type: string, maxLength: 150, minLength: 1}
+        telefono: {type: string, maxLength: 32, minLength: 1}
+        targa: {type: string, maxLength: 20, minLength: 1}
+        modelloVeicolo: {type: string, maxLength: 150}
+        compagniaId: {type: integer, format: int64, minimum: 1}
+        numeroPolizza: {type: string, maxLength: 100, minLength: 1}
         scadenzaPolizza: {type: string, format: date}
-        cittaResidenza: {type: string}
+        cittaResidenza: {type: string, maxLength: 150}
     CreateMission:
       description: Coordinate origine devono essere entrambe omesse o entrambe valorizzate; traino richiede officinaId.
       type: object
       required: [clienteId, tipoIntervento, descrizioneProblema, origineIndirizzo, canaleOrigine]
       properties:
-        clienteId: {type: integer, format: int64}
-        tipoIntervento: {type: string, enum: [traino, riparazione_sul_posto]}
-        descrizioneProblema: {type: string}
-        origineIndirizzo: {type: string}
+        clienteId: {type: integer, format: int64, minimum: 1}
+        tipoIntervento:
+          type: string
+          enum: &id001 [traino, riparazione_sul_posto]
+        descrizioneProblema: {type: string, minLength: 1, maxLength: 2000}
+        origineIndirizzo: {type: string, minLength: 1, maxLength: 500}
         origineLat: {type: number, minimum: -90, maximum: 90, nullable: true}
         origineLng: {type: number, minimum: -180, maximum: 180, nullable: true}
-        officinaId: {type: integer, format: int64, nullable: true}
-        kmStimati: {type: number, minimum: 0, nullable: true, description: Distanza stimata dalla mappa, non utilizzata come distanza effettiva}
-        canaleOrigine: {type: string, enum: [centrale, whatsapp, telegram]}
+        officinaId: {type: integer, format: int64, nullable: true, minimum: 1}
+        kmStimati: {type: number, minimum: 0, nullable: true, description: Distanza stimata dalla mappa, non utilizzata come distanza effettiva: null, maximum: 99999999.99,
+          multipleOf: 0.01}
+        canaleOrigine:
+          type: string
+          enum: [centrale, whatsapp, telegram]
     UpdateIntervention:
       description: Il traino richiede officinaId.
       type: object
       required: [tipoIntervento]
       properties:
-        tipoIntervento: {type: string, enum: [traino, riparazione_sul_posto]}
+        tipoIntervento:
+          type: string
+          enum: [traino, riparazione_sul_posto]
         officinaId: {type: integer, format: int64, minimum: 1, nullable: true}
     ChatMissionCreated:
       type: object
       properties:
         id: {type: integer, format: int64}
         codice: {type: string}
-        stato: {type: string, enum: [nuova, proposta, accettata, eseguita, non_accettata, scaduta]}
+        stato:
+          type: string
+          enum: [nuova, proposta, accettata, eseguita, non_accettata, scaduta]
     ProposeMission:
       type: object
       required: [autistaId]
@@ -789,12 +810,13 @@ components:
       type: object
       required: [kmEffettivi]
       properties:
-        kmEffettivi: {type: number, minimum: 0}
+        kmEffettivi: {type: number, minimum: 0, maximum: 99999999.99, multipleOf: 0.01}
+      description: Precisione NUMERIC(10,2); anche il costo calcolato deve rientrare in 99999999.99 EUR, altrimenti 400 e nessuna chiusura.
     CostAdjustment:
       type: object
       required: [costoFinale, motivo]
       properties:
-        costoFinale: {type: number, minimum: 0}
+        costoFinale: {type: number, minimum: 0, maximum: 99999999.99, multipleOf: 0.01}
         motivo: {type: string, minLength: 3, maxLength: 1000}
     CreateMissionNote:
       type: object
@@ -813,13 +835,17 @@ components:
     DriverHistory:
       type: object
       properties:
-        missioni: {type: array, items: {$ref: '#/components/schemas/Mission'}}
+        missioni:
+          type: array
+          items: {$ref: '#/components/schemas/Mission'}
         totaleEur: {type: number, minimum: 0}
     MissionStatus:
       type: object
       properties:
         codice: {type: string}
-        stato: {type: string, enum: [nuova, proposta, accettata, eseguita, non_accettata, scaduta]}
+        stato:
+          type: string
+          enum: [nuova, proposta, accettata, eseguita, non_accettata, scaduta]
         autistaNome: {type: string, nullable: true}
         aggiornataIl: {type: string, format: date-time}
     NearestProposal:
@@ -873,39 +899,54 @@ components:
       type: object
       required: [canale, destinatario]
       properties:
-        canale: {type: string, enum: [telegram, whatsapp]}
+        canale:
+          type: string
+          enum: [telegram, whatsapp]
         destinatario: {type: string, maxLength: 120, description: Id della chat}
-    ProviderWebhookPayload:
-      type: object
-      description: Payload raw del provider; schema provider-specific da definire in implementazione.
-      additionalProperties: true
+    ProviderWebhookPayload: {type: object, description: Payload raw del provider; schema provider-specific da definire in implementazione., additionalProperties: true}
     ChatVehicleLookup:
       type: object
       required: [sessionId, targa]
       properties:
-        sessionId: {type: string, minLength: 16}
+        sessionId: {type: string, minLength: 16, maxLength: 64}
         targa: {type: string, minLength: 5, maxLength: 20}
     ChatMissionRequest:
-      allOf:
-        - {$ref: '#/components/schemas/CreateMission'}
-        - type: object
-          required: [sessionId, requestId, destinatario]
-          properties:
-            sessionId: {type: string, minLength: 16}
-            requestId: {type: string, minLength: 16, description: Chiave di idempotenza}
-            destinatario: {type: string, maxLength: 120, description: Id della chat a cui inviare le notifiche}
+      type: object
+      description: Nuova pratica richiede lookup positivo della stessa sessione/cliente negli ultimi 15 minuti e polizza ancora valida. Retry della stessa richiesta
+        conserva sessione, destinatario e payload; mismatch 409. Non prova titolarita del cliente.
+      required: [clienteId, tipoIntervento, descrizioneProblema, origineIndirizzo, canaleOrigine, sessionId, requestId, destinatario]
+      properties:
+        clienteId: {type: integer, format: int64, minimum: 1}
+        tipoIntervento:
+          type: string
+          enum: *id001
+        descrizioneProblema: {type: string, minLength: 1, maxLength: 2000}
+        origineIndirizzo: {type: string, minLength: 1, maxLength: 500}
+        origineLat: {type: number, minimum: -90, maximum: 90, nullable: true}
+        origineLng: {type: number, minimum: -180, maximum: 180, nullable: true}
+        officinaId: {type: integer, format: int64, nullable: true, minimum: 1}
+        canaleOrigine:
+          type: string
+          enum: [telegram, whatsapp]
+        sessionId: {type: string, minLength: 16, maxLength: 64}
+        requestId: {type: string, minLength: 16, maxLength: 64}
+        destinatario: {type: string, minLength: 1, maxLength: 120}
     ChatNotification:
       type: object
       properties:
         id: {type: integer, format: int64}
-        tipo: {type: string, enum: [MISSION_ACCEPTED, MISSION_COMPLETED]}
+        tipo:
+          type: string
+          enum: [MISSION_ACCEPTED, MISSION_COMPLETED]
         destinatario: {type: string}
         codice: {type: string}
         autistaNome: {type: string, nullable: true}
     ChatNotifications:
       type: object
       properties:
-        notifiche: {type: array, items: {$ref: '#/components/schemas/ChatNotification'}}
+        notifiche:
+          type: array
+          items: {$ref: '#/components/schemas/ChatNotification'}
     ChatNotificationResult:
       type: object
       required: [inviata]
@@ -916,12 +957,18 @@ components:
       type: object
       properties:
         id: {type: integer, format: int64}
-        codice: {type: string, example: "M-2026-00031"}
-        stato: {type: string, enum: [nuova, proposta, accettata, eseguita, non_accettata, scaduta]}
+        codice: {type: string, example: M-2026-00031}
+        stato:
+          type: string
+          enum: [nuova, proposta, accettata, eseguita, non_accettata, scaduta]
         clienteId: {type: integer, format: int64}
         autistaId: {type: integer, format: int64, nullable: true}
-        tipoIntervento: {type: string, enum: [traino, riparazione_sul_posto]}
-        canaleOrigine: {type: string, enum: [centrale, whatsapp, telegram]}
+        tipoIntervento:
+          type: string
+          enum: [traino, riparazione_sul_posto]
+        canaleOrigine:
+          type: string
+          enum: [centrale, whatsapp, telegram]
         descrizioneProblema: {type: string}
         origineIndirizzo: {type: string}
         origineLat: {type: number, nullable: true}
@@ -938,6 +985,11 @@ components:
         costoCalcolato: {type: number, nullable: true}
         costoFinale: {type: number, nullable: true}
         rettificaMotivo: {type: string, nullable: true}
+        clienteNome: {type: string, nullable: true, description: Solo missioni live proposta/accettata; dati operativi per il soggetto autorizzato.}
+        clienteTelefono: {type: string, nullable: true, description: Solo missioni live proposta/accettata; dati operativi per il soggetto autorizzato.}
+        officinaNome: {type: string, nullable: true, description: Solo missioni live proposta/accettata; dati operativi per il soggetto autorizzato.}
+        officinaIndirizzo: {type: string, nullable: true, description: Solo missioni live proposta/accettata; dati operativi per il soggetto autorizzato.}
+        officinaCitta: {type: string, nullable: true, description: Solo missioni live proposta/accettata; dati operativi per il soggetto autorizzato.}
     Dashboard:
       type: object
       properties:
@@ -946,7 +998,13 @@ components:
         scadute: {type: integer}
         nonAccettate: {type: integer}
         totaleEur: {type: number}
-        totalePerAutista: {type: array, items: {$ref: '#/components/schemas/DriverTotal'}}
+        totalePerAutista:
+          type: array
+          items: {$ref: '#/components/schemas/DriverTotal'}
+        riferimentoAl: {type: string, format: date, nullable: true}
+        fonte:
+          type: string
+          enum: [live, excel_demo]
     DriverTotal:
       type: object
       properties:
@@ -965,8 +1023,27 @@ components:
           items:
             type: object
             properties:
-              tipo: {type: string, enum: [base, sinistro, officina]}
+              tipo:
+                type: string
+                enum: [base, sinistro, officina]
               descrizione: {type: string}
               lat: {type: number}
               lng: {type: number}
         geometria: {type: object, description: GeoJSON LineString}
+    ApiError:
+      type: object
+      required: [status, error]
+      properties:
+        status: {type: integer}
+        error: {type: string}
+    CsrfToken:
+      type: object
+      properties:
+        token: {type: string}
+        headerName: {type: string}
+    Proposal:
+      type: object
+      properties:
+        stato: {type: string}
+        scadenzaIl: {type: string, format: date-time}
+        offertaId: {type: integer, format: int64}

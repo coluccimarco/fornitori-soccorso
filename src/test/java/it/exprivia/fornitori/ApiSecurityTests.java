@@ -42,6 +42,9 @@ class ApiSecurityTests {
     private MockMvc mockMvc;
 
     @MockitoBean
+    private it.exprivia.fornitori.service.RequestRateLimiter rateLimiter;
+
+    @MockitoBean
     private AuthenticationManager authenticationManager;
 
     @MockitoBean
@@ -99,14 +102,14 @@ class ApiSecurityTests {
 
     @Test
     void routeRequiresLogin() throws Exception {
-        mockMvc.perform(get("/api/v1/maps/route").param("missionId", "1"))
+        mockMvc.perform(get("/api/v1/maps/route").with(csrf()).param("missionId", "1"))
                 .andExpect(status().isUnauthorized());
     }
 
     @Test
     @WithMockUser(roles = "AUTISTA")
     void driverCanRequestRoute() throws Exception {
-        mockMvc.perform(get("/api/v1/maps/route").param("missionId", "1"))
+        mockMvc.perform(get("/api/v1/maps/route").with(csrf()).param("missionId", "1"))
                 .andExpect(status().isOk());
     }
 

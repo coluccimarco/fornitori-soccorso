@@ -135,7 +135,7 @@ class MapPostgresIntegrationTests {
         missions.propose(RESPONSABILE, mission.id(), new MissionDtos.ProposeMissionRequest(1L));
         when(routing.route(anyList())).thenReturn(new RouteResult(new BigDecimal("99.00"), Map.of()));
         maps.route(RESPONSABILE, mission.id(), 2L);
-        assertEquals(0, ROUTE_KM.compareTo(savedKm(mission.id())));
+        org.junit.jupiter.api.Assertions.assertNull(savedKm(mission.id()));
 
         maps.route(AUTISTA_1, mission.id(), null);
         assertEquals(0, new BigDecimal("99.00").compareTo(savedKm(mission.id())));
@@ -227,6 +227,24 @@ class MapPostgresIntegrationTests {
     }
 
     @Test
+    void driverMissionListAndGetHideContactsUntilAcceptance() {
+        MissionDtos.MissionResponse mission = repair(null, null);
+        missions.propose(RESPONSABILE, mission.id(), new MissionDtos.ProposeMissionRequest(1L));
+
+        MissionDtos.MissionResponse listed = missions.driverMissions(AUTISTA_1).get(0);
+        MissionDtos.MissionResponse fetched = missions.get(AUTISTA_1, mission.id());
+        for (MissionDtos.MissionResponse seen : List.of(listed, fetched)) {
+            assertNull(seen.clienteNome());
+            assertNull(seen.clienteTelefono());
+        }
+        assertNotNull(missions.get(RESPONSABILE, mission.id()).clienteNome());
+
+        missions.accept(AUTISTA_1, mission.id());
+        assertEquals("Lucia Gallo", missions.driverMissions(AUTISTA_1).get(0).clienteNome());
+        assertNotNull(missions.get(AUTISTA_1, mission.id()).clienteTelefono());
+    }
+
+    @Test
     void driverCannotReadUnassignedMission() {
         MissionDtos.MissionResponse mission = repair(null, null);
         assertThrows(ForbiddenOperationException.class, () -> missions.driverMissionDetail(AUTISTA_1, mission.id()));
@@ -269,5 +287,17 @@ class MapPostgresIntegrationTests {
         maps.route(RESPONSABILE, id, 1L);
         assertEquals(fixture.get("km_stimati"), jdbcTemplate.queryForMap(
                 "SELECT km_stimati FROM missions WHERE id = ?", id).get("km_stimati"));
+    }
+
+    @Test
+    void slowRouteCannotPersistEstimateForChangedIntervention() {
+        MissionDtos.MissionResponse mission = repair(null, null);
+        when(routing.route(anyList())).thenAnswer(invocation -> {
+            missions.updateIntervention(RESPONSABILE, mission.id(), new MissionDtos.UpdateInterventionRequest("traino", 1L));
+            return new RouteResult(ROUTE_KM, Map.of("type", "LineString"));
+        });
+        maps.route(RESPONSABILE, mission.id(), 1L);
+        assertNull(savedKm(mission.id()));
+        assertEquals("traino", missions.get(RESPONSABILE, mission.id()).tipoIntervento());
     }
 }

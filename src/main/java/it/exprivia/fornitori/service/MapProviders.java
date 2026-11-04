@@ -11,9 +11,18 @@ public final class MapProviders {
     }
 
     public record GeoPoint(BigDecimal lat, BigDecimal lng) {
+        public GeoPoint {
+            if (lat == null || lng == null || lat.abs().compareTo(BigDecimal.valueOf(90)) > 0
+                    || lng.abs().compareTo(BigDecimal.valueOf(180)) > 0)
+                throw new ProviderUnavailableException("Coordinate provider non valide");
+        }
     }
 
     public record RouteResult(BigDecimal km, Map<String, Object> geometry) {
+        public RouteResult {
+            if (km == null || km.signum() < 0 || km.compareTo(new BigDecimal("99999999.99")) > 0 || geometry == null)
+                throw new ProviderUnavailableException("Percorso provider non valido");
+        }
     }
 
     public interface GeocodingClient {

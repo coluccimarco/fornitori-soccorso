@@ -41,7 +41,7 @@ accettazione/rifiuto/completamento; costi e rettifica; note, dashboard e storia
 autista; API servizio per chatbot, conversazione Python e canale Telegram;
 outbox e dispatcher Telegram per notifiche supportate; PostgreSQL e CI.
 
-**Non incluso o non dimostrato:** interfaccia web; mappa/routing/geocoding;
+**Non incluso o non dimostrato:** mappa nel browser e provider mappe live;
 WhatsApp; verifica indipendente del titolare del veicolo; produzione/monitoraggio/
 backup; funzionalità AI/Gemini. La loro obbligatorietà è **DA CONFERMARE**.
 
@@ -61,7 +61,7 @@ backup; funzionalità AI/Gemini. La loro obbligatorietà è **DA CONFERMARE**.
 | BR-010 | Inviare in Telegram notifica di presa in carico/completamento per richieste supportate | Da convalidare | PARZIALE | Outbox/backend e dispatcher sono presenti; provider reale non è certificato dalla CI |
 | BR-011 | Mostrare mappe/itinerari e chilometraggio stimato | Da confermare | API IMPLEMENTATA; mappa browser non integrata | Test CI; visualizzazione UI e provider live NOT RUN |
 | BR-012 | Usare WhatsApp come canale cliente | Da confermare | PIANIFICATO | Endpoint provider non implementato; test non disponibili |
-| BR-013 | Fornire UI web centrale/autista | Da confermare | UI PRESENTE NEL CODICE; verifica browser NOT RUN | Verificare flussi, permessi, UX e acceptance in ambiente isolato |
+| BR-013 | Fornire UI web centrale/autista | Da confermare | UI presente; due scenari browser/DB PASS locali | Prove in BACKEND_E2E_AUDIT; acceptance docente e copertura UX completa da confermare |
 
 ## Requisiti non funzionali e vincoli
 

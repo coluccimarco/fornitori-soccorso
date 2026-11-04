@@ -19,7 +19,7 @@ Non esporre entity, hash o credenziali.
 
 Login JSON, CSRF, logout, profilo, sessione HttpOnly, ruoli e API anagrafiche:
 autisti, mezzi, compagnie, clienti (ricerca e inserimento), officine. Configura
-PostgreSQL da environment; applica script `database/01...04` in ordine.
+PostgreSQL da environment; applica script `database/01...07` in ordine.
 
 ## Sprint 2 — IMPLEMENTATO IN `main`
 
@@ -49,3 +49,13 @@ se introdotto, messaggi API generici. Prima di ogni PR: JDK25
 promosse a `implemented`. **Riferimenti:**
 [runbook](../BACKEND_SPRINT1_RUNBOOK.md),
 [regole](../requirements/BUSINESS_RULES.md).
+
+## Aggiornamento hardening e prove del 04/11/2026
+
+Responsabile backend comunicato: **Minervini Vincenzo**. Java 25 mantenuto.
+Eseguire migrazione 07 e suite su database isolato; separare account migrazione e
+runtime come nel runner E2E. API stabili, aggiunte DTO retrocompatibili e due
+precondizioni esplicite: CSRF route e grant lookup chat. Prove:116 Java senza
+skip, 4 Node, 2 browser con commit SQL. Database personale ancora da inizializzare.
+Prima di uso reale risolvere identità chatbot e delivery outbox. Le evidenze CI
+precedenti descrivono solo i rispettivi commit, non il nuovo branch.

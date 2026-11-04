@@ -25,6 +25,12 @@ public class ChatMissionRequest {
     @Column(length = 120)
     private String destinatario;
 
+    @Column(name = "request_fingerprint", length = 64)
+    private String requestFingerprint;
+
+    public String getRequestFingerprint() { return requestFingerprint; }
+    public void setRequestFingerprint(String value) { this.requestFingerprint = value; }
+
     protected ChatMissionRequest() {
     }
 
