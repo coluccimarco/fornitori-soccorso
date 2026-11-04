@@ -11,7 +11,7 @@ if ($sources.Count -eq 0) {
 }
 
 foreach ($source in $sources) {
-    foreach ($extension in @("svg", "png")) {
+    foreach ($extension in @("png")) {
         $output = Join-Path $outputDirectory ($source.BaseName + "." + $extension)
         & npx --yes @mermaid-js/mermaid-cli@11.4.2 `
             --input $source.FullName `

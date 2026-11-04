@@ -53,7 +53,6 @@ HTTP. Sessione inattiva 30 minuti; login limitati a 20 al minuto per IP.
 |---|---|---|
 | `fornitori.chat.service-token` (`FORNITORI_CHAT_TOKEN`) | vuoto | Token del chatbot; se vuoto le API chat rispondono 401 |
 | `fornitori.missions.expiry-delay-ms` | 30000 | Intervallo del controllo delle scadenze |
-| `fornitori.missions.expiry-scheduler-enabled` | true | Abilita lo scheduler delle scadenze |
 | `fornitori.maps.nominatim-url`, `fornitori.maps.osrm-url` | servizi pubblici | Provider di mappe |
 | `fornitori.maps.user-agent` | `FORNITORI-project-work` | User-Agent verso Nominatim |
 | `fornitori.maps.viewbox` | Puglia | Area di ricerca; vuota per tutta Italia |
@@ -108,4 +107,3 @@ controllo con `python tools/validate_docs.py` (richiede `tools/requirements-docs
 - `503` mappe: servizio esterno non disponibile; i km si possono comunque inserire.
 - Non registrare password, bearer token, messaggi Telegram o dati personali.
 
-Branch e PR seguono [`07_GIT_WORKFLOW.md`](../07_GIT_WORKFLOW.md).

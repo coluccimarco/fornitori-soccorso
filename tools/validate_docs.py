@@ -109,7 +109,7 @@ def validate_workbook() -> list[str]:
     path = ROOT / "docs" / "quality" / "registri.xlsx"
     workbook = load_workbook(path, read_only=True, data_only=True)
     sheets = workbook.sheetnames
-    required = {"Requisiti", "Tracciabilita", "Backlog", "API", "Rischi", "RACI", "Modifiche"}
+    required = {"Requisiti", "Tracciabilita", "Backlog", "API", "Rischi"}
     missing = required.difference(sheets)
     if missing:
         raise ValueError(f"Workbook missing sheets: {sorted(missing)}")
@@ -123,11 +123,10 @@ def validate_diagrams() -> tuple[int, int]:
     if not sources:
         raise ValueError("No Mermaid sources found")
     for source in sources:
-        for extension in ("svg", "png"):
-            target = rendered / f"{source.stem}.{extension}"
-            if not target.is_file() or target.stat().st_size == 0:
-                raise FileNotFoundError(f"Missing diagram output: {target}")
-    return len(sources), len(list(rendered.glob("*.svg"))) + len(list(rendered.glob("*.png")))
+        target = rendered / f"{source.stem}.png"
+        if not target.is_file() or target.stat().st_size == 0:
+            raise FileNotFoundError(f"Missing diagram output: {target}")
+    return len(sources), len(list(rendered.glob("*.png")))
 
 
 def main() -> int:
@@ -144,7 +143,7 @@ def main() -> int:
     print(f"OpenAPI: PASS ({total} operations: {implemented} implemented, {designed} designed)")
     print(f"DOCX: PASS ({docx_count} valid files, {table_count} tables, {picture_count} pictures)")
     print(f"Workbook: PASS ({len(sheets)} sheets: {', '.join(sheets)})")
-    print(f"Mermaid: PASS ({diagram_sources} sources, {diagram_outputs} SVG/PNG outputs)")
+    print(f"Mermaid: PASS ({diagram_sources} sources, {diagram_outputs} PNG outputs)")
     print("Visual Word rendering/page count: NOT RUN (not verified with a reliable renderer)")
     return 0
 

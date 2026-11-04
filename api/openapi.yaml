@@ -539,7 +539,7 @@ paths:
     post:
       tags: [Chat]
       summary: Riconosce il cliente dalla targa
-      description: Risponde con nome e compagnia se la targa è di un cliente con polizza valida, come previsto dai dialoghi di test del docente. Altrimenti verificato è false. Dopo 5 targhe non trovate nella stessa sessione in 15 minuti risponde 429.
+      description: Risponde con nome e compagnia se la targa è di un cliente con polizza valida, come previsto dai dialoghi del docente. Altrimenti verificato è false. Dopo 5 targhe non trovate nella stessa sessione in 15 minuti risponde 429.
       x-implementation-status: implemented
       x-required-role: SERVICE_CHATBOT
       security:

@@ -11,9 +11,8 @@ Prerequisiti: Node.js/npm disponibili. Dalla root:
 powershell -ExecutionPolicy Bypass -File tools/build_diagrams.ps1
 ```
 
-Il comando usa `npx --yes @mermaid-js/mermaid-cli@11.4.2` e genera `.svg` e `.png`
-in `docs/diagrams/rendered/`. Il PNG è usato nel DOCX; l'SVG è l'output vettoriale
-per la consultazione.
+Il comando usa `npx --yes @mermaid-js/mermaid-cli@11.4.2` e genera i `.png`
+in `docs/diagrams/rendered/`.
 
 ## Catalogo
 
@@ -30,4 +29,4 @@ per la consultazione.
 | Timeout/scadenza | `mission_expiry_sequence.mmd` |
 | Completamento/outbox | `mission_completion_sequence.mmd` |
 | Chatbot/notifiche | `chat_notifications_sequence.mmd` |
-| Sequenze storiche composite | `mission_sequence.mmd`, `chatbot_sequence.mmd` |
+| Dialogo chatbot | `chatbot_sequence.mmd` |

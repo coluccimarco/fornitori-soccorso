@@ -9,7 +9,7 @@
 - [Business Requirements (BUR)](./requirements/BUR_FORNITORI.md)
 - [Functional Design (FUD)](./requirements/FUD_FORNITORI.md)
 - [Technical Architecture (TAD)](./architecture/TAD_FORNITORI.md)
-- [Piano Scrum e stato degli Sprint](./agile/README.md)
+- [Sprint](./agile/README.md) · [backlog](./agile/PRODUCT_BACKLOG.md)
 - [Matrice di tracciabilità](./requirements/REQUIREMENTS_TRACEABILITY.md)
 - [Manuale utente](./manuals/MANUALE_UTENTE.md) · [Manuale tecnico](./manuals/MANUALE_TECNICO.md)
 - [Guide del team](./team/) · [Word modificabili](./word/)
@@ -29,7 +29,6 @@
 | FOR-TRACE-001 | Matrice requisiti | Tracciabilità | `docs/requirements/REQUIREMENTS_TRACEABILITY.md` | — | Team |
 | FOR-RSK-001 | Registro rischi | Management | `docs/management/RISK_REGISTER.md` | — | Team |
 | FOR-DEC-001 | Registro decisioni | Management | `docs/management/DECISION_LOG.md` | — | Team |
-| FOR-CHG-001 | Registro modifiche | Management | `docs/management/CHANGE_LOG.md` | — | Team |
 | FOR-DATA-001 | Matrici di lavoro | Workbook | `docs/quality/registri.xlsx` | — | Team |
 
 ## Fonti

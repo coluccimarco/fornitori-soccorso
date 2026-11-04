@@ -1,5 +1,5 @@
 -- FORNITORI: ASSERT dei risultati del file Excel del docente (dataset storico).
--- Deve FALLIRE se la baseline non coincide. Non equivale a un test già eseguito.
+-- Deve FALLIRE se la baseline non coincide.
 DO $$
 DECLARE
     total_m INTEGER;

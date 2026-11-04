@@ -4,8 +4,8 @@
 
 ## Metodo
 
-Cinque aree di responsabilità e quattro Sprint secondo Scrum adattato. Le schede `docs/agile/SPRINT_1.md`–`SPRINT_4.md`
-descrivono obiettivi e attività; per lo stato vedi il [registro Sprint](../agile/README.md).
+Cinque aree di responsabilità e quattro Sprint secondo Scrum adattato; obiettivi e stato sono nel
+[registro Sprint](../agile/README.md).
 
 ## Governance
 
@@ -35,5 +35,5 @@ descrivono obiettivi e attività; per lo stato vedi il [registro Sprint](../agil
 
 ## Responsabilità e cambi
 
-La [matrice RACI](./RACI_MATRIX.md) individua i responsabili. Ogni variazione ai requisiti aggiorna insieme requisito,
+Le [guide del team](../team/README.md) individuano i responsabili. Ogni variazione ai requisiti aggiorna insieme requisito,
 OpenAPI e guide.

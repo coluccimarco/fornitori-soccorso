@@ -35,8 +35,6 @@ originali e acceptance del docente restano da confermare: non sono nel repositor
 - Le fixture storiche non sono dati live e non vengono mutate.
 - Prima dell'integrazione: OpenAPI aggiornato, guide collegate e `git diff --check`.
   Segreti e dati personali non vanno in commit o log.
-- Le schede Sprint sono piani, non verbali. Registrare review e retrospettive solo
-  se svolte, con i [template Scrum](../agile/TEMPLATES.md).
 
 ## Confini
 

@@ -57,4 +57,4 @@ Chi propone apre una issue con motivo, DTO JSON, auth, errori e consumer coinvol
 Il Membro 1 aggiorna OpenAPI, ogni consumer rivede, poi si implementa. I componenti
 non interrogano direttamente le tabelle degli altri.
 
-**Riferimenti:** [Git](../07_GIT_WORKFLOW.md), [backlog](../agile/PRODUCT_BACKLOG.md).
+**Riferimenti:** [backlog](../agile/PRODUCT_BACKLOG.md).

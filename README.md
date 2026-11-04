@@ -5,7 +5,7 @@ e autisti. Comprende backend Java/Spring, client web con mappa, workflow delle m
 Telegram. Requisiti e acceptance del docente restano da confermare: PDF ed Excel originali non sono
 nel repository.
 
-Apri la [documentazione](./docs/README.md) o l'[indice generale](./docs/00_INDICE_GENERALE.md).
+Apri l'[indice della documentazione](./docs/00_INDICE_GENERALE.md).
 
 ## Stato
 
@@ -137,5 +137,4 @@ non è pronto per dati reali. Vedi [sicurezza](./docs/architecture/SECURITY_DESI
 
 Altri riferimenti: [manuale tecnico](./docs/manuals/MANUALE_TECNICO.md),
 [manuale utente](./docs/manuals/MANUALE_UTENTE.md), [database](./docs/architecture/DATABASE_DESIGN.md),
-[Scrum](./docs/agile/README.md), [Git](./docs/07_GIT_WORKFLOW.md), [Word editabili](./docs/word/),
-[dashboard visuale](./docs/SPRING_SCRUM_DASHBOARD.html).
+[Word editabili](./docs/word/).

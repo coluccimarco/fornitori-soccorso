@@ -1,4 +1,4 @@
--- FORNITORI / report atteso baseline Excel, non è un esito di test già eseguito.
+-- FORNITORI / report atteso baseline Excel.
 SELECT 'utenti' entity, count(*) observed, 10 expected FROM app_users
 UNION ALL SELECT 'autisti',count(*),8 FROM drivers
 UNION ALL SELECT 'mezzi',count(*),8 FROM vehicles

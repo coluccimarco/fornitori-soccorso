@@ -32,5 +32,4 @@ Descrive i controlli presenti nel codice; non è un penetration test né una cer
 WhatsApp e webhook in ingresso sono fuori ambito. Se venissero introdotti, dovrebbero verificare la
 firma sul payload grezzo, timestamp e replay, limitare dimensione e frequenza.
 
-Dettagli e gravità in [SECURITY_REVIEW.md](../quality/SECURITY_REVIEW.md); rischi nel
-[registro](../management/RISK_REGISTER.md).
+Rischi nel [registro](../management/RISK_REGISTER.md).

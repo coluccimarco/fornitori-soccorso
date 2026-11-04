@@ -3,7 +3,7 @@
 **Responsabile:** Marco Colucci (Membro 3)
 
 Dialogo guidato in Python, senza dipendenze esterne (solo libreria standard, Python 3.10
-o superiore), allineato ai dialoghi di test del docente. Non accede al database: parla
+o superiore), allineato ai dialoghi del docente. Non accede al database: parla
 con il backend solo tramite gli endpoint `/api/v1/chat/*` di `api/openapi.yaml`.
 
 **Stato:** dialogo, collegamento al backend reale e notifiche al cliente funzionano su Telegram, con backend

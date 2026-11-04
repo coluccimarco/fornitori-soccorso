@@ -85,8 +85,6 @@ def build() -> Path:
     add_markdown_sheet(workbook, "Tracciabilita", docs / "requirements" / "REQUIREMENTS_TRACEABILITY.md")
     add_markdown_sheet(workbook, "Backlog", docs / "agile" / "PRODUCT_BACKLOG.md")
     add_markdown_sheet(workbook, "Rischi", docs / "management" / "RISK_REGISTER.md")
-    add_markdown_sheet(workbook, "RACI", docs / "management" / "RACI_MATRIX.md")
-    add_markdown_sheet(workbook, "Modifiche", docs / "management" / "CHANGE_LOG.md")
 
     api_sheet = workbook.create_sheet("API")
     api_sheet.append(["Metodo", "Percorso", "Stato", "Ruolo richiesto", "Sintesi"])
