@@ -92,3 +92,11 @@ Connessione locale 5432 read-only PASS; tabella missions assente, setup applicat
 BLOCKED. Provider live e WhatsApp NOT RUN. Run CI nuovi da consultare nella PR;
 le righe sopra il presente aggiornamento restano evidenze storiche03/11.
 Non versionare i log integrali, che possono contenere dati sintetici o token di test.
+
+### CI del fix finale e integrazione successiva
+
+[Run 41808673238](https://github.com/coluccimarco/fornitori-soccorso/actions/runs/41808673238)
+su `f1f84fc`: entrambi i job PASS, incluso browser con commit PostgreSQL.
+Il successivo merge di `origin/main` nel backend integra il merge esterno della
+PR #5, senza modificare src/api/database/tools/workflow rispetto al codice
+collaudato. L'ultimo SHA documentale e il suo run sono indicati nella PR finale.

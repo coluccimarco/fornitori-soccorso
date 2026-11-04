@@ -158,7 +158,7 @@ missioni live, inclusi vincoli di concorrenza e letture dashboard.
 | Browser Chromium 156 / DB | 2 scenari PASS | Due scenari e connessione SQL indipendente |
 | OSV dipendenze Maven | 124 dipendenze; 0 advisory corrispondenti al momento della scansione | Non garantisce assenza vulnerabilità o copertura futura |
 | Provider live / WhatsApp | NOT RUN / non implementato | Non usare dati reali per collaudo indiscriminato |
-| CI remota nuovo branch | Da verificare dopo push | Run storici non attribuiti ai nuovi commit |
+| CI remota fix finale | PASS run41808673238 su f1f84fc | Entrambi i job, incluso browser/DB; non attribuito a SHA differenti |
 
 Prima delle correzioni: 8 nuovi contract test hanno prodotto 4 failure reali
 (nome troppo lungo, due distanze non valide, ID non convertibile). Dopo le
@@ -262,3 +262,19 @@ report finale: non attribuire il run precedente a un nuovo SHA.
 
 Anche `CsrfTokenResponse.toString()` è redatto; il test diagnostica verifica
 che password e token casuali non compaiano nelle rappresentazioni dei DTO.
+
+### Aggiornamento Git esterno e verifica del fix
+
+La PR #5, aperta dall'agente come Draft, è stata convertita e unita da
+`vicente490x` il 04/11/2026 alle 09:29:06 UTC, mentre la revisione proseguiva.
+L'agente non ha richiesto né eseguito quel merge. Main remoto è quindi avanzato
+a `daafd30de3c75f8e0c5211fc2d3e4c8fba1ec826`; è stato integrato **nel backend**
+con merge senza conflitti, lasciando invariato il codice del fix `f1f84fc`.
+Il main locale non è stato modificato. Il fix successivo è oggetto di una nuova
+Draft PR verso main, senza merge finale da parte dell'agente.
+
+Il run [41808673238](https://github.com/coluccimarco/fornitori-soccorso/actions/runs/41808673238)
+su `f1f84fcc87751642304f046299624a1f523016d1` è PASS in entrambi i job:
+Java/PostgreSQL, Python, Node, OpenAPI, documenti, OSV e browser/PostgreSQL.
+Le verifiche locali finali comprendono **118 test Java, zero failure/error/skip**;
+il browser sul medesimo codice è stato verificato nuovamente dalla CI.
