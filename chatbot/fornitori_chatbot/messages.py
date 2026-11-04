@@ -1,7 +1,7 @@
 """Testi mostrati al cliente: seguono il foglio DialoghiChatbot dei dati di esempio."""
 
 WELCOME = (
-    "Ciao, sono l'assistente FORNITORI. Per attivare un soccorso scrivi la targa del veicolo; "
+    "Ciao, sono Soccorso Stradale Bot. Per attivare un soccorso scrivi la targa del veicolo; "
     "per conoscere lo stato scrivi STATO."
 )
 HELP = "Rispondi alla domanda che ti ho fatto, oppure scrivi ANNULLA per ricominciare da capo."

@@ -72,7 +72,7 @@ def run_telegram(engine: ChatEngine, backend) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Chatbot FORNITORI")
+    parser = argparse.ArgumentParser(description="Soccorso Stradale Bot")
     parser.add_argument("--http", action="store_true", help="usa il backend reale")
     parser.add_argument("--telegram", action="store_true", help="collega il bot a Telegram")
     args = parser.parse_args()
