@@ -102,9 +102,13 @@ H-006 sul canale outbox è stato aggiornato dal successivo H-009.
 
 ### H-008 — Traino sulle missioni da chatbot (ID originale D-008)
 
-- **Decisione:** il chatbot crea `riparazione_sul_posto`; la centrale imposta
-  traino e officina con `PATCH /api/v1/missioni/{id}/intervento` prima della proposta.
-- **Motivo:** il cliente in panne non sceglie l'officina convenzionata.
+- **Decisione aggiornata:** il cliente sceglie riparazione o traino con i tasti del bot.
+  Per il traino il backend assegna l'officina più vicina in linea d'aria alla posizione,
+  convertendo l'indirizzo se serve; la centrale può correggere con
+  `PATCH /api/v1/missioni/{id}/intervento` prima della proposta.
+- **Motivo:** il cliente in panne sa se serve il traino, ma non quale officina scegliere.
+- **Conseguenza:** i dialoghi 2-4 del foglio docente hanno un passo in più. La distanza
+  non segue le strade. Senza coordinate né indirizzo valido il traino non viene creato.
 - **Stato registrato:** API applicata; mancava il comando nella UI della centrale
   al momento del record. La baseline successiva ha frontend, ma alcuni flussi
   restano incompleti.

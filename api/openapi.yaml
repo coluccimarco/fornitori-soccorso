@@ -507,7 +507,7 @@ paths:
     post:
       tags: [Chat]
       summary: Crea richiesta missione da conversazione
-      description: Lo stesso requestId restituisce la missione già creata.
+      description: Lo stesso requestId restituisce la missione già creata. Per il traino senza officinaId il backend assegna l'officina più vicina in linea d'aria e, se mancano le coordinate, converte l'indirizzo con Nominatim e le salva. Risponde 422 se l'indirizzo non si trova, 503 se il servizio non risponde.
       x-implementation-status: implemented
       x-required-role: SERVICE_CHATBOT
       security:

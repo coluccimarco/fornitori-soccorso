@@ -5,6 +5,7 @@ import unittest
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 from fornitori_chatbot.backend import (
+    AddressNotFound,
     BackendUnavailable,
     Conflict,
     InvalidRequest,
@@ -164,6 +165,7 @@ class HttpBackendTests(unittest.TestCase):
             (401, Unauthorized),
             (403, Unauthorized),
             (409, Conflict),
+            (422, AddressNotFound),
             (429, RateLimited),
             (500, BackendUnavailable),
         ):

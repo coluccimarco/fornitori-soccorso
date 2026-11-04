@@ -11,16 +11,18 @@ allineati al foglio `DialoghiChatbot` del docente ([H-007](../management/DECISIO
 
 ## Dialogo
 
-Stati: `START → WAIT_LOCATION → WAIT_PROBLEM → START`, con `AIUTO`, `ANNULLA` e `STATO`
+Stati: `START → WAIT_LOCATION → WAIT_INTERVENTION → WAIT_PROBLEM → START`, con `AIUTO`, `ANNULLA` e `STATO`
 validi in ogni stato. Conservare stato e contesto minimo, scadenza conversazione e
 numero tentativi; non memorizzare PII non necessaria.
 
 1. Il cliente scrive la targa, che viene normalizzata e cercata.
 2. Il bot mostra nome e compagnia e chiede indirizzo o posizione.
-3. Il bot chiede il problema e crea la missione in stato `nuova`.
-4. `STATO` risponde sull'ultima richiesta aperta della chat, con il nome dell'autista
+3. Il cliente sceglie riparazione o traino con i tasti Telegram; per il traino il
+   backend assegna l'officina più vicina.
+4. Il bot chiede il problema e crea la missione in stato `nuova`.
+5. `STATO` risponde sull'ultima richiesta aperta della chat, con il nome dell'autista
    se ha accettato.
-5. Errori: input non valido, targa ignota, servizio indisponibile, rate limit.
+6. Errori: input non valido, targa ignota, servizio indisponibile, rate limit.
 
 ## API e integrazione
 

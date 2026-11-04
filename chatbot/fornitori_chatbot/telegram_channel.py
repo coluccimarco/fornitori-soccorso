@@ -30,7 +30,10 @@ class TelegramApi:
         self._url = f"{base_url.rstrip('/')}/bot{token}"
 
     def get_updates(self, offset: Optional[int]) -> List[Dict[str, Any]]:
-        payload: Dict[str, Any] = {"timeout": POLL_TIMEOUT_SECONDS, "allowed_updates": ["message"]}
+        payload: Dict[str, Any] = {
+            "timeout": POLL_TIMEOUT_SECONDS,
+            "allowed_updates": ["message", "callback_query"],
+        }
         if offset is not None:
             payload["offset"] = offset
         result = self._call("getUpdates", payload, POLL_TIMEOUT_SECONDS + 10)
@@ -38,8 +41,16 @@ class TelegramApi:
             raise TelegramError("risposta getUpdates inattesa")
         return result
 
-    def send_message(self, chat_id, text: str) -> None:
-        self._call("sendMessage", {"chat_id": chat_id, "text": text}, 10)
+    def send_message(self, chat_id, text: str, buttons=()) -> None:
+        payload: Dict[str, Any] = {"chat_id": chat_id, "text": text}
+        if buttons:
+            payload["reply_markup"] = {
+                "inline_keyboard": [[{"text": label, "callback_data": data} for label, data in buttons]]
+            }
+        self._call("sendMessage", payload, 10)
+
+    def answer_callback(self, callback_id: str) -> None:
+        self._call("answerCallbackQuery", {"callback_query_id": callback_id}, 10)
 
     def _call(self, method: str, payload: Dict[str, Any], timeout: float) -> Any:
         request = urllib.request.Request(
@@ -87,7 +98,21 @@ class TelegramBot:
         for update in self._api.get_updates(self._offset):
             # Si avanza comunque: un messaggio che fallisce non deve bloccare i successivi.
             self._offset = update["update_id"] + 1
-            self._process(update.get("message"))
+            callback = update.get("callback_query")
+            self._process(self._from_callback(callback) if callback else update.get("message"))
+
+    def _from_callback(self, callback: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """La pressione di un tasto entra nel dialogo come se il cliente avesse scritto il suo valore."""
+        try:
+            self._api.answer_callback(callback["id"])
+        except InvalidToken:
+            raise
+        except TelegramError as exc:
+            logger.warning("Tasto non confermato: %s", exc)
+        message = callback.get("message")
+        if not message:
+            return None
+        return {"chat": message.get("chat", {}), "text": callback.get("data"), "message_id": f"cb-{callback['id']}"}
 
     def _process(self, message: Optional[Dict[str, Any]]) -> None:
         if not message or message.get("chat", {}).get("type") != "private":
@@ -100,7 +125,7 @@ class TelegramBot:
             replies = [msg.UNAVAILABLE]
         for reply in replies:
             try:
-                self._api.send_message(chat_id, reply)
+                self._api.send_message(chat_id, reply, getattr(reply, "buttons", ()))
             except InvalidToken:
                 raise
             except TelegramError as exc:

@@ -76,7 +76,8 @@ mai scritto in file del repo o in chat.
 
 ## Dialogo
 
-`START → WAIT_LOCATION → WAIT_PROBLEM → START`. `AIUTO`, `ANNULLA` e `STATO` valgono in
+`START → WAIT_LOCATION → WAIT_INTERVENTION → WAIT_PROBLEM → START`. Il tipo di intervento
+si sceglie con i tasti Telegram, oppure scrivendo 1 o 2. `AIUTO`, `ANNULLA` e `STATO` valgono in
 ogni stato; un messaggio che non è una targa riceve il testo di aiuto.
 
 - **Tentativi:** 3 input non validi fanno ricominciare il dialogo; il backend risponde
@@ -108,8 +109,10 @@ risposte = engine.handle(InboundMessage(
 1. **Nessuna verifica del titolare:** come nei dialoghi del docente, basta la targa. Chi la
    conosce vede nome e compagnia e può creare una richiesta: non adatto alla produzione
    (`docs/DECISION_LOG.md`, D-007).
-2. **Traino:** il bot crea sempre `riparazione_sul_posto`. La centrale imposta traino e
-   officina con `PATCH /api/v1/missioni/{id}/intervento`, ma serve il comando nell'interfaccia.
+2. **Traino:** il backend assegna l'officina più vicina in linea d'aria, non per strada. La
+   centrale può cambiarla con `PATCH /api/v1/missioni/{id}/intervento`, ma serve il comando
+   nell'interfaccia. La scelta con i tasti non è nei dialoghi del docente: i dialoghi 2-4
+   hanno un passo in più.
 3. **Stato:** `STATO` cerca per chat, non per numero di telefono, che Telegram non comunica.
 4. **Indirizzi:** un indirizzo scritto diventa coordinate alla prima richiesta di percorso
    sulla mappa, non alla creazione della missione.

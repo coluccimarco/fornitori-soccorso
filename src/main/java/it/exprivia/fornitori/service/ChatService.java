@@ -29,7 +29,9 @@ import java.util.Optional;
 import java.util.stream.Stream;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.web.server.ResponseStatusException;
 
 @Service
@@ -49,6 +51,8 @@ public class ChatService {
     private final ChatMissionRequestRepository requests;
     private final MissionService missionService;
     private final ChatLookupLimiter limiter;
+    private final NearestWorkshopResolver workshopResolver;
+    private final TransactionTemplate transactions;
     private final Clock clock;
 
     public ChatService(
@@ -60,6 +64,8 @@ public class ChatService {
             ChatMissionRequestRepository requests,
             MissionService missionService,
             ChatLookupLimiter limiter,
+            NearestWorkshopResolver workshopResolver,
+            PlatformTransactionManager transactionManager,
             Clock clock) {
         this.outbox = outbox;
         this.customers = customers;
@@ -69,6 +75,8 @@ public class ChatService {
         this.requests = requests;
         this.missionService = missionService;
         this.limiter = limiter;
+        this.workshopResolver = workshopResolver;
+        this.transactions = new TransactionTemplate(transactionManager);
         this.clock = clock;
     }
 
@@ -91,9 +99,22 @@ public class ChatService {
                 true, customer.get().getId(), customer.get().getNome(), company);
     }
 
-    @Transactional
+    /** La ricerca dell'officina chiama un servizio esterno: resta fuori dalla transazione che blocca il cliente. */
     public ChatDtos.MissionCreatedResponse createMission(ChatDtos.CreateMissionRequest request) {
         String channel = validChannel(request.canaleOrigine());
+        ChatDtos.CreateMissionRequest resolved = needsNearestWorkshop(request)
+                ? workshopResolver.withNearestWorkshop(request)
+                : request;
+        return transactions.execute(status -> persistMission(resolved, channel));
+    }
+
+    private boolean needsNearestWorkshop(ChatDtos.CreateMissionRequest request) {
+        return request.officinaId() == null
+                && "traino".equals(request.tipoIntervento().trim().toLowerCase(Locale.ROOT))
+                && !requests.existsById(request.requestId());
+    }
+
+    private ChatDtos.MissionCreatedResponse persistMission(ChatDtos.CreateMissionRequest request, String channel) {
         // Serializza i tentativi concorrenti con lo stesso requestId, così il secondo trova il primo.
         customers.lockById(request.clienteId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cliente inesistente"));

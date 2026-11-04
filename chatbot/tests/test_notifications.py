@@ -80,7 +80,7 @@ class NotificationTests(unittest.TestCase):
 
     def test_dialog_passes_chat_as_recipient(self):
         engine = ChatEngine(self.backend)
-        for text in ("EF456GH", "Via Roma 1, Molfetta", "Motore in panne"):
+        for text in ("EF456GH", "Via Roma 1, Molfetta", "1", "Motore in panne"):
             engine.handle(InboundMessage("telegram", "chat-42", text=text))
         self.backend.set_status(2, "accettata", "Autista Prova")
         self.dispatcher.dispatch_once()
