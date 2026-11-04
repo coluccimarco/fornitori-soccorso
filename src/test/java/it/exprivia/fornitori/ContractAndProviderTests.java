@@ -233,9 +233,10 @@ class ContractAndProviderTests {
     void nominatimRejectsOutOfRangeCoordinatesAndRespectsTheRate() {
         respond("/search", 200, "[{\"lat\":\"120\",\"lon\":\"16.6\"}]".getBytes(StandardCharsets.UTF_8), Map.of("Content-Type", "application/json"));
         var client = new NominatimGeocodingClient(base, "agente-di-prova", "");
-        assertThatThrownBy(() -> client.geocode("Via Roma")).isInstanceOf(MapProviders.ProviderUnavailableException.class);
+        // Il secondo di attesa parte dall'inizio della prima richiesta: la misura deve partire prima di quella.
         long start = System.nanoTime();
         assertThatThrownBy(() -> client.geocode("Via Roma")).isInstanceOf(MapProviders.ProviderUnavailableException.class);
-        assertThat((System.nanoTime() - start) / 1_000_000).isGreaterThanOrEqualTo(900);
+        assertThatThrownBy(() -> client.geocode("Via Roma")).isInstanceOf(MapProviders.ProviderUnavailableException.class);
+        assertThat((System.nanoTime() - start) / 1_000_000).isGreaterThanOrEqualTo(950);
     }
 }
