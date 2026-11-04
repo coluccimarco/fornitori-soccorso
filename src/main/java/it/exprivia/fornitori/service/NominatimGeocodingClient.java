@@ -8,6 +8,7 @@ import java.math.RoundingMode;
 import java.net.URI;
 import java.time.Duration;
 import java.util.Optional;
+import java.util.regex.Pattern;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
@@ -24,9 +25,22 @@ public class NominatimGeocodingClient implements MapProviders.GeocodingClient {
     private final RestClient client;
     private long lastRequestAt;
 
+    /** Puglia: senza limite Nominatim può rispondere con una via omonima dall'altra parte d'Italia. */
+    static final String DEFAULT_VIEWBOX = "15.8,42.2,18.6,39.7";
+    private static final Pattern VIEWBOX = Pattern.compile(
+            "-?\\d+(\\.\\d+)?,-?\\d+(\\.\\d+)?,-?\\d+(\\.\\d+)?,-?\\d+(\\.\\d+)?");
+
+    private final String viewbox;
+
     public NominatimGeocodingClient(
             @Value("${fornitori.maps.nominatim-url:https://nominatim.openstreetmap.org}") String baseUrl,
-            @Value("${fornitori.maps.user-agent:FORNITORI-project-work}") String userAgent) {
+            @Value("${fornitori.maps.user-agent:FORNITORI-project-work}") String userAgent,
+            @Value("${fornitori.maps.viewbox:" + DEFAULT_VIEWBOX + "}") String viewbox) {
+        if (!viewbox.isBlank() && !VIEWBOX.matcher(viewbox.trim()).matches()) {
+            throw new IllegalArgumentException(
+                    "fornitori.maps.viewbox deve essere lonMin,latMax,lonMax,latMin oppure vuoto");
+        }
+        this.viewbox = viewbox.trim();
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(Duration.ofSeconds(3));
         factory.setReadTimeout(Duration.ofSeconds(8));
@@ -40,12 +54,16 @@ public class NominatimGeocodingClient implements MapProviders.GeocodingClient {
     @Override
     public Optional<GeoPoint> geocode(String address) {
         waitForRateLimit();
-        URI uri = UriComponentsBuilder.fromUriString(baseUrl)
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(baseUrl)
                 .path("/search")
                 .queryParam("q", address)
                 .queryParam("format", "jsonv2")
                 .queryParam("limit", 1)
-                .queryParam("countrycodes", "it")
+                .queryParam("countrycodes", "it");
+        if (!viewbox.isEmpty()) {
+            builder.queryParam("viewbox", viewbox).queryParam("bounded", 1);
+        }
+        URI uri = builder
                 .build()
                 .encode()
                 .toUri();
