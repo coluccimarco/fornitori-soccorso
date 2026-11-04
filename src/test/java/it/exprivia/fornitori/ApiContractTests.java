@@ -31,6 +31,15 @@ class ApiContractTests {
     @MockitoBean ChatService chat;
     @MockitoBean MapService maps;
 
+    @Test
+    void diagnosticsDoNotExposeLoginOrCsrfSecrets() {
+        String secret = java.util.UUID.randomUUID().toString();
+        org.junit.jupiter.api.Assertions.assertFalse(
+                new it.exprivia.fornitori.dto.AuthDtos.LoginRequest("test@example.test", secret).toString().contains(secret));
+        org.junit.jupiter.api.Assertions.assertFalse(
+                new it.exprivia.fornitori.dto.AuthDtos.CsrfTokenResponse(secret, "X-CSRF-TOKEN").toString().contains(secret));
+    }
+
     @Test @WithMockUser(roles = "RESPONSABILE")
     void oversizedCustomerIs400BeforePersistence() throws Exception {
         mvc.perform(post("/api/v1/clienti").with(csrf()).contentType("application/json")
@@ -67,6 +76,13 @@ class ApiContractTests {
     @Test @WithMockUser(roles = "RESPONSABILE")
     void routeWithPersistenceRequiresCsrfEvenOnGet() throws Exception {
         mvc.perform(get("/api/v1/maps/route").param("missionId", "1"))
+                .andExpect(status().isForbidden());
+        verifyNoInteractions(maps);
+    }
+
+    @Test @WithMockUser(roles = "RESPONSABILE")
+    void implicitHeadRouteCannotBypassCsrf() throws Exception {
+        mvc.perform(head("/api/v1/maps/route").param("missionId", "1"))
                 .andExpect(status().isForbidden());
         verifyNoInteractions(maps);
     }

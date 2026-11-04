@@ -451,7 +451,7 @@ paths:
     get:
       tags: [Mappe]
       summary: Calcola base → sinistro → officina, se traino; solo base → sinistro se riparazione
-      description: Se la missione ha solo l'indirizzo, lo converte in coordinate con Nominatim e le salva. Richiede X-CSRF-TOKEN anche se GET per gli effetti di persistenza legacy. Salva i km stimati finché la missione non è eseguita e solo per l'autista assegnato, se presente. L'AUTISTA usa sempre il proprio mezzo; il RESPONSABILE sceglie driverId, altrimenti vale l'autista assegnato.
+      description: Se la missione ha solo l'indirizzo, lo converte in coordinate con Nominatim e le salva. Richiede X-CSRF-TOKEN anche su GET e HEAD implicito per gli effetti di persistenza legacy. Salva i km stimati finché la missione non è eseguita e solo per l'autista assegnato, se presente. L'AUTISTA usa sempre il proprio mezzo; il RESPONSABILE sceglie driverId, altrimenti vale l'autista assegnato.
       x-implementation-status: implemented
       x-required-role: [RESPONSABILE, ASSIGNED_AUTISTA]
       security:

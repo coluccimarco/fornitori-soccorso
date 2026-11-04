@@ -476,5 +476,5 @@ impatti per frontend e chatbot e prove nuove sono registrati in
 [BACKEND_E2E_AUDIT.md](BACKEND_E2E_AUDIT.md) e [SECURITY_REVIEW.md](SECURITY_REVIEW.md).
 F-03/F-04/F-05 corretti nei casi verificati; F-02 e F-09/F-10 mitigati;
 F-01 resta aperto per titolarità reale, F-08 per delivery concorrente/crash.
-Java 25/PostgreSQL 18: 116 test PASS senza skip; Node4 PASS; browser2 PASS con
+Java 25/PostgreSQL 18: 118 test PASS senza skip; Node4 PASS; browser2 PASS con
 commit SQL riletto da connessione indipendente. Non si dichiara produzione pronta.

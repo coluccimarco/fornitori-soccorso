@@ -151,8 +151,8 @@ missioni live, inclusi vincoli di concorrenza e letture dashboard.
 
 | Categoria | Risultato locale | Limite |
 |---|---|---|
-| Java 25 / PostgreSQL 18.6 | 116 test, 0 failure/error/skip | Dettaglio in TEST_EVIDENCE |
-| Contract OpenAPI | 33 test inclusi nei 116 | 32 record/tipi + mapping operazioni; non convalida ogni vincolo semantico OAS |
+| Java 25 / PostgreSQL 18.6 | 118 test, 0 failure/error/skip | Dettaglio in TEST_EVIDENCE |
+| Contract OpenAPI | 33 test inclusi nei 118 | 32 record/tipi + mapping operazioni; non convalida ogni vincolo semantico OAS |
 | Python chatbot | 64 test | Provider simulati; nessun Telegram reale |
 | JavaScript Node | 4 test PASS | Countdown e escaping, non browser |
 | Browser Chromium 156 / DB | 2 scenari PASS | Due scenari e connessione SQL indipendente |
@@ -248,3 +248,17 @@ progetto. Un elemento incompleto conta zero, anche se parzialmente implementato.
 | Integrazione frontend | Login/logout, registri, cliente, creazione missione, proposta, risposta/rifiuto, note, chiusura, dashboard/storico | Rettifica, modifica intervento, mappa | 9/12 = 75% |
 | Test | Unit/MVC, PostgreSQL, contract, Python, Node, browser Chromium | Provider live, browser multipli/accessibilità completa | 6/8 = 75% delle categorie scelte |
 | Documentazione | Canonici architettura/API, tracciabilità, manuali/team, evidenze/rischi, generazione derivati | Fonte originale docente e controllo visuale Word | 5/7 = 71% dei gate documentali |
+
+### Regressione HEAD e CI remota
+
+Il controllo finale ha riprodotto un bypass sul metodo HEAD implicito del GET
+mappe: risposta200 senza CSRF. Un nuovo test MVC falliva prima della correzione;
+il matcher copre ora GET **e HEAD**, mantenendo le protezioni delle mutazioni.
+La suite completa successiva comprende118 test. Il primo run della PR#5,
+[41807529992](https://github.com/coluccimarco/fornitori-soccorso/actions/runs/41807529992),
+è PASS su entrambi i job al commit7dc0aa3 (precedente al fix HEAD), incluso browser
+con PostgreSQL. Il nuovo run sul commit correttivo è riportato nella PR e nel
+report finale: non attribuire il run precedente a un nuovo SHA.
+
+Anche `CsrfTokenResponse.toString()` è redatto; il test diagnostica verifica
+che password e token casuali non compaiano nelle rappresentazioni dei DTO.
