@@ -134,7 +134,7 @@ class MissionLifecycleTests extends IsolatedPostgresTest {
         perform(driver, post("/api/v1/missioni/{id}/accept", mission)).andExpect(status().isOk());
         perform(driver, post("/api/v1/missioni/{id}/complete", mission), "{\"kmEffettivi\":-1}").andExpect(status().isBadRequest());
         perform(driver, post("/api/v1/missioni/{id}/complete", mission), "{\"kmEffettivi\":1.234}").andExpect(status().isBadRequest());
-        jdbc.update("update missions set accettata_il = (timestamp '2026-11-04 20:00:00' at time zone 'Europe/Rome') where id = ?", mission);
+        jdbc.update("update missions set accettata_il = (timestamp '2026-11-04 22:00:00' at time zone 'Europe/Rome') where id = ?", mission);
         perform(driver, post("/api/v1/missioni/{id}/complete", mission), "{\"kmEffettivi\":18.25,\"costoFinale\":1}")
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.costoFinale").value(89.88))
@@ -145,7 +145,7 @@ class MissionLifecycleTests extends IsolatedPostgresTest {
     }
 
     @ParameterizedTest
-    @CsvSource({"20:00,true,77.50", "07:59,true,77.50", "08:00,false,62.00", "19:59,false,62.00"})
+    @CsvSource({"22:00,true,77.50", "07:59,true,77.50", "08:00,false,62.00", "21:59,false,62.00", "20:00,false,62.00"})
     void nightSurchargeFollowsTheAcceptanceTime(String time, boolean night, double cost) throws Exception {
         Actor manager = login(RESPONSABILE);
         long mission = createMission(manager);

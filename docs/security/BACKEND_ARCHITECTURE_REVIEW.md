@@ -1,6 +1,6 @@
 # Revisione dell'architettura del backend
 
-**Data:** 04/11/2026 · **Ambito:** backend FORNITORI, albero di lavoro locale (base `62e0943`) · **Modifiche:** non committate
+**Data:** 04/11/2026 · **Ambito:** backend FORNITORI (base `62e0943`) · **Correzioni:** commit `a5be483`
 
 ## Flusso
 

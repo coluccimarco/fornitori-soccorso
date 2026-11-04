@@ -67,6 +67,7 @@ psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/06_chat_recipi
 psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/07_backend_hardening.sql
 psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/08_cleanup_and_delivery.sql
 psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/09_integrity_and_indexes.sql
+psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/10_night_rate_22.sql
 ```
 
 Hibernate è in `validate`: senza gli script fino a 08 l'applicazione non si avvia; il 09 aggiunge vincoli e indici. Su un
@@ -88,7 +89,8 @@ Su macOS e Linux usare `./mvnw`. Aprire `http://localhost:8080/`: la pagina pubb
 login, l'area riservata usa la sessione e le API dello stesso server.
 
 La pipeline [backend-ci.yml](./.github/workflows/backend-ci.yml) compila il progetto, applica gli script a
-un PostgreSQL effimero e verifica l'avvio dell'applicazione con un ruolo senza privilegi di amministratore.
+un PostgreSQL effimero, esegue tutti i test su un database `fornitori_e2e_ci` e verifica l'avvio
+dell'applicazione, sempre con un ruolo senza privilegi di amministratore.
 
 ## Test
 

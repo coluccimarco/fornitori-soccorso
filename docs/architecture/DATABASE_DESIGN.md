@@ -67,6 +67,7 @@ psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/06_chat_recipi
 psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/07_backend_hardening.sql
 psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/08_cleanup_and_delivery.sql
 psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/09_integrity_and_indexes.sql
+psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/10_night_rate_22.sql
 ```
 
 Hibernate usa `validate`: senza gli script fino a 08 l'applicazione non parte. Il 09 è additivo: vincoli di coerenza e indici. Su un database esistente

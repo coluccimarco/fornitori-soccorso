@@ -24,7 +24,7 @@ entity e le credenziali non vengono mai esposte.
 - Scadenza da `pricing_config`, scheduler solo sulle missioni live, controllo anche al
   momento della risposta dell'autista.
 - Lock pessimista su missione e autista; indice DB contro le doppie assegnazioni.
-- Chiusura con tariffa server-side, `BigDecimal`, `HALF_UP`, fascia notturna 20:00–08:00
+- Chiusura con tariffa server-side, `BigDecimal`, `HALF_UP`, fascia notturna 22:00–08:00
   sull'ora di accettazione, Europe/Rome. Rettifica motivata con audit.
 - Dashboard reference e live con totale e subtotali per autista.
 - Note solo su missioni live: su una fixture la risposta è 409.

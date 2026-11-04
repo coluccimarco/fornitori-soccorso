@@ -1,12 +1,13 @@
 # Rapporto dei test di sicurezza
 
-**Data:** 04/11/2026 · **Ambito:** backend FORNITORI, albero di lavoro locale (base `62e0943`) · **Modifiche:** non committate
+**Data:** 04/11/2026 · **Ambito:** backend FORNITORI (base `62e0943`) · **Correzioni:** commit `a5be483`
 
 ## Risultati
 
 | Prova | Prima delle correzioni | Dopo |
 |---|---|---|
 | `./mvnw clean verify`, Java 25, PostgreSQL 18.6 | 134 test: 16 falliti, 5 in errore | **138 test: 0 falliti, 0 errori, 0 saltati** |
+| Stessi test con ruolo a soli DML, come nella pipeline, dopo la fascia delle 22:00 | — | **139 test: 0 falliti, 0 errori, 0 saltati** |
 | Test del chatbot | Assenti | 6 superati |
 | Flussi HTTP reali sul jar | — | 154 su 154 |
 | Stessi flussi con ruolo DML, senza script 09 | — | 154 su 154; DDL negato |
@@ -87,6 +88,6 @@ Senza quella variabile girano solo i test che non usano il database. I flussi HT
 | HTTPS e profilo `prod` su un server reale | NON VERIFICATO: provato solo il controllo all'avvio |
 | Timeout dei provider | NON VERIFICATO: durata configurata, non provata |
 | Script 09 sul database `fornitori` | NON ESEGUITO per regola; provato solo sul seed e su dati di prova |
-| Pipeline GitHub Actions | NON ESEGUITA: i test su database non vi partono finché non viene aggiunto un database `fornitori_e2e*` |
+| Pipeline GitHub Actions | Superata su `5b0bf8c` senza i test su database. Il passo con il database `fornitori_e2e_ci` è stato provato solo in locale: NON ANCORA ESEGUITO su GitHub |
 | Browser diversi da Chromium, accessibilità | NON VERIFICATO |
 | Vulnerabilità delle dipendenze | NON VERIFICATO: lo strumento è stato rimosso |

@@ -26,7 +26,7 @@
 | FOR-TEAM-001 | Guide del team | Operativo | `docs/team/` | `docs/word/GUIDA_TEAM.docx` | Membri 1-5 |
 | FOR-USER-001 | Manuale utente | Manuale | `docs/manuals/MANUALE_UTENTE.md` | `docs/word/MANUALE_UTENTE.docx` | Frontend e chatbot |
 | FOR-TECH-001 | Manuale tecnico | Manuale | `docs/manuals/MANUALE_TECNICO.md` | `docs/word/MANUALE_TECNICO.docx` | Vincenzo Minervini |
-| FOR-SEC-002 | Audit di sicurezza del backend | Sicurezza | `docs/security/` | — | Vincenzo Minervini |
+| FOR-SEC-002 | Audit di sicurezza del backend | Sicurezza | `docs/security/` | `docs/word/AUDIT_SICUREZZA.docx` | Vincenzo Minervini |
 | FOR-TRACE-001 | Matrice requisiti | Tracciabilità | `docs/requirements/REQUIREMENTS_TRACEABILITY.md` | — | Team |
 | FOR-RSK-001 | Registro rischi | Management | `docs/management/RISK_REGISTER.md` | — | Team |
 | FOR-DEC-001 | Registro decisioni | Management | `docs/management/DECISION_LOG.md` | — | Team |

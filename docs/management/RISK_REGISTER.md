@@ -7,7 +7,7 @@ Scale qualitative: Alto / Medio / Basso.
 |---|---|---:|---:|---|---|---|
 | R-01 | PDF del docente ed Excel originale non sono nel repository | Alta | Alto | Acquisirli prima di approvare BUR e dataset | Team | Aperto |
 | R-02 | Contratto OpenAPI e comportamento possono divergere | Media | Medio | Aggiornare il contratto insieme al codice | Vincenzo Minervini | Mitigato |
-| R-03 | La pipeline non esegue i test su database: una modifica può introdurre regressioni | Media | Alto | Eseguire la suite su un database `fornitori_e2e*` prima di ogni merge e della demo | Tutti | Aperto |
+| R-03 | Una modifica può introdurre regressioni | Media | Alto | La pipeline esegue tutti i test su un database temporaneo `fornitori_e2e_ci` | Tutti | Mitigato; da confermare alla prima esecuzione su GitHub |
 | R-04 | Nominatim e OSRM pubblici possono non rispondere | Media | Medio | Errori espliciti; la chiusura missione resta possibile | Marco Colucci | Mitigato |
 | R-05 | Setup locale errato: script non applicati | Media | Medio | Seguire gli script del README; Hibernate `validate` lo segnala all'avvio | Tutti | Mitigato |
 | R-06 | La targa non prova la titolarità | Alta | Alto | Limite noto della demo: solo dati sintetici | Marco Colucci | Accettato per la demo |
@@ -16,5 +16,7 @@ Scale qualitative: Alto / Medio / Basso.
 | R-09 | Requisiti approvati e verbali Scrum non dimostrati | Media | Medio | Raccogliere verbali e sign-off reali | Team | Aperto |
 | R-10 | DOCX non ispezionati visivamente in Microsoft Word | Media | Medio | Controllo manuale e aggiornamento dell'indice prima della consegna | Team | Aperto |
 | R-11 | Messaggio duplicato se il bot si ferma tra invio ed esito | Bassa | Basso | Riserva persistente; consegna "almeno una volta" | Marika Sancilio, Francesco Valeriano, Giuseppe Cangellosi | Accettato per la demo |
+| R-12 | Il ruolo `fornitori_app` è proprietario delle tabelle e può modificarne la struttura | Bassa | Medio | Separare proprietario e ruolo applicativo, dopo un backup (V-13) | Vincenzo Minervini | Aperto |
+| R-13 | HTTPS e reverse proxy non sono stati provati | Media | Alto | Controllo della configurazione all'avvio in `prod`; prova su un server reale prima dell'uso (V-15) | Vincenzo Minervini | Aperto |
 
-`R-01` e `R-06` vanno risolti prima di dichiarare l'idoneità a un uso reale.
+`R-01`, `R-06`, `R-12` e `R-13` vanno risolti prima di dichiarare l'idoneità a un uso reale.

@@ -71,15 +71,21 @@ layout è responsive.
 Le API operatore usano sessione HTTP, BCrypt e CSRF. Ruoli e associazione missione-autista sono verificati dal server. Il cookie è
 HttpOnly e SameSite Lax, con `Secure` nel profilo `prod`. `/api/v1/chat/**` è stateless e richiede `FORNITORI_CHAT_TOKEN`.
 
+Le risposte portano CSP, Referrer-Policy e Permissions-Policy; il corpo delle richieste è limitato a 64 KiB. Il login ammette 20
+tentativi al minuto per IP e 10 falliti per account; il canale chat limita le ricerche di targa per sessione e ogni riconoscimento vale per
+una sola richiesta. Nel profilo `prod` l'avvio si ferma se la configurazione non è sicura; altrove registra un avviso. Il dettaglio
+è in [`SECURITY_DESIGN.md`](./SECURITY_DESIGN.md) e in [`docs/security`](../security/BACKEND_SECURITY_AUDIT.md).
+
 `MissionService` gestisce le mutazioni transazionali; repository e vincoli parziali proteggono concorrenza e assegnazioni. Un
 clock iniettato gestisce gli istanti. `MissionExpiryScheduler` opera sulle righe live; le fixture restano immutabili. Stati e
 transizioni sono in [`mission_states.mmd`](../diagrams/mission_states.mmd).
 
-Il seed prevede €50 di uscita, €1,20/km, supplemento 0,25 e fascia 20:00–08:00 sull'ora di accettazione, in `Europe/Rome`, con
-`HALF_UP`; il timestamp va confermato col docente.
+Il seed prevede €50 di uscita, €1,20/km, supplemento 0,25 e fascia 22:00–08:00 sull'ora di accettazione, in `Europe/Rome`, con
+`HALF_UP`; il timestamp e l'inizio alle 22:00, diverso dalle 20:00 del PDF, vanno confermati col docente.
 
 L'outbox scrive gli eventi nella transazione di dominio. Il dispatcher riserva le righe con `POST /chat/notifiche/claim`
-(`FOR UPDATE SKIP LOCKED`, riserva di 5 minuti) e registra l'esito. La consegna è "almeno una volta" in caso di crash. Le missioni
+(`FOR UPDATE SKIP LOCKED`, riserva di 5 minuti) e registra l'esito, legato al numero di tentativo: un dispatcher in ritardo non può
+modificare una riserva successiva. La consegna è "almeno una volta" in caso di crash. Le missioni
 della centrale generano righe `SKIPPED`.
 
 ## 7. Database
@@ -96,13 +102,15 @@ disponibilità garantita, e l'indirizzo viene trasmesso al geocoder. Vedi [`API_
 
 ## 9. Errori, configurazione e logging
 
-Gli errori hanno la forma `{status, error, message}`. Credenziali e token arrivano dall'ambiente; non si registrano password,
+Gli errori hanno la forma `{status, error, message}`; un errore inatteso dà `500` con un riferimento da cercare nel log, senza
+dettagli interni. Credenziali e token arrivano dall'ambiente; non si registrano password,
 bearer token o dati personali non necessari. Centralizzazione dei log, metriche e configurazione di produzione sono fuori ambito.
 
 ## 10. Build e pipeline
 
-`./mvnw clean package` produce il jar. `.github/workflows/backend-ci.yml` compila il progetto, applica gli script a un
-PostgreSQL 18 temporaneo e verifica l'avvio con un ruolo senza privilegi di amministratore.
+`./mvnw clean package` esegue i test e produce il jar; i test su database partono solo con `FORNITORI_TEST_DATABASE=isolated`.
+`.github/workflows/backend-ci.yml` compila il progetto, applica gli script a un PostgreSQL 18 temporaneo, esegue tutti i test su un
+database `fornitori_e2e_ci` e verifica l'avvio, sempre con un ruolo senza privilegi di amministratore.
 
 ## 11. Limiti e decisioni aperte
 
@@ -111,3 +119,4 @@ PostgreSQL 18 temporaneo e verifica l'avvio con un ruolo senza privilegi di ammi
 - Nominatim e OSRM sono pubblici: privacy e limiti vanno rivalutati prima di un uso reale.
 - WhatsApp, webhook, gestione utenti, deployment, backup e osservabilità sono fuori ambito.
 - Liste non paginate, aggregati in memoria e un `MissionService` ampio sono debito tecnico noto.
+- Punti di sicurezza ancora aperti: vedi il [registro delle vulnerabilità](../security/VULNERABILITY_REGISTER.md).

@@ -9,7 +9,7 @@ Le regole del modello persistito e le transizioni sono descritte nel
 - Stati missione: `nuova`, `proposta`, `accettata`, `eseguita`, `non_accettata`, `scaduta`;
   le fixture storiche restano isolate e immutabili, note comprese.
 - Scadenza proposta: valore seed 10 minuti; lo scheduler valuta solo le missioni live.
-- Tariffa seed: uscita €50, €1,20/km, supplemento 25%. Fascia notturna dalle 20:00 incluse
+- Tariffa seed: uscita €50, €1,20/km, supplemento 25%. Fascia notturna dalle 22:00 incluse
   alle 08:00 escluse, sull'ora di accettazione, in `Europe/Rome`; arrotondamento `HALF_UP`.
 - Un'accettazione scaduta è impedita; la riproposizione conserva ogni esito di proposta.
 - La rettifica richiede ruolo centrale e motivazione; costo calcolato e finale sono distinti.
@@ -17,5 +17,7 @@ Le regole del modello persistito e le transizioni sono descritte nel
 - Contatti del cliente visibili all'autista solo dopo l'accettazione.
 - Notifiche al cliente solo per le missioni create dal bot.
 
-Il timestamp di riferimento per la tariffa e gli estremi della fascia richiedono conferma
-contro la specifica del docente.
+Il PDF del docente indica 20:00–8:00: l'inizio alle 22:00 è una scelta del team da confermare col docente,
+come il timestamp di riferimento.
+Le missioni dello storico restano immutabili: 3 su 30 risultano notturne perché accettate tra le 20:00
+e le 22:00, con la fascia precedente.

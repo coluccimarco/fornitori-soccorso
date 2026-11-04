@@ -34,7 +34,7 @@ separato dalla pagina pubblica informativa.
   scadenza della polizza. Modello veicolo e città sono facoltativi. Premere
   **Salva cliente**; se il server accetta la richiesta la finestra si chiude e compare
   **Cliente aggiunto correttamente**. In caso di errore, il messaggio indica il problema, per esempio
-  **Targa già presente**.
+  **Targa già presente**. Il telefono accetta cifre, un `+` iniziale e i separatori comuni.
 
 ### Creare e proporre una missione
 
@@ -71,7 +71,7 @@ porta alla scheda, **Segna come letti** azzera il contatore solo in questo brows
    guadagno stimato e tempo residuo. Le nuove proposte compaiono da sole entro 15 secondi.
 3. Premere **Accetta** oppure **Rifiuta**. Se accettata, la missione attiva compare
    nella stessa pagina, con nome e telefono del cliente.
-4. Per informare la centrale, compilare **Segnala alla centrale** e premere
+4. Per informare la centrale, dopo aver accettato, compilare **Segnala alla centrale** e premere
    **Invia segnalazione**. L'esito è visibile nella lista delle note.
 5. Per chiudere l'intervento, controllare i chilometri, proposti dalla stima del percorso, e
    premere **Chiudi missione · OK**. Solo dopo l'accettazione del server la scheda
@@ -87,7 +87,7 @@ La pagina pubblica contiene informazioni e contatti; non invia direttamente una
 richiesta al backend. Per il flusso bot occorre il canale Telegram predisposto dal
 team:
 
-1. Aprire il bot corretto e premere **Avvia**.
+1. Aprire **Soccorso Stradale Bot** e premere **Avvia**.
 2. Inserire la targa e seguire le domande del dialogo: luogo, tipo di intervento e problema.
 3. Usare `AIUTO` per le indicazioni, `ANNULLA` per uscire e `STATO` per consultare
    la richiesta associata alla chat, se presente.
@@ -101,8 +101,9 @@ Il bot non è un servizio di emergenza. Consultare
 
 ## Errori e sicurezza
 
-`401` indica sessione/credenziale non valida; `403` permessi insufficienti. Per
-errori di validazione o conflitto leggere il messaggio e verificare lo stato prima
+`401` indica sessione/credenziale non valida; `403` permessi insufficienti; `429` troppi
+tentativi: attendere un minuto prima di riprovare. Un errore `500` riporta un riferimento da
+comunicare al team tecnico. Per errori di validazione o conflitto leggere il messaggio e verificare lo stato prima
 di ripetere un'azione. Non condividere password, token o dati personali tramite
 canali non autorizzati. Per emergenze stradali usare i canali ufficiali del gestore
 stradale o i servizi di emergenza.

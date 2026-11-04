@@ -74,14 +74,23 @@ jobs:
         env:
           PGPASSWORD: ci-only-password
         run: |
-          for script in database/*.sql; do
-            psql --host localhost --username postgres --dbname fornitori --set ON_ERROR_STOP=1 --file "$script"
-          done
           psql --host localhost --username postgres --dbname fornitori --set ON_ERROR_STOP=1 \
-            --command "GRANT CONNECT ON DATABASE fornitori TO fornitori_app; GRANT USAGE ON SCHEMA public TO fornitori_app; GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO fornitori_app; GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO fornitori_app;"
+            --command "CREATE DATABASE fornitori_e2e_ci"
+          for database in fornitori fornitori_e2e_ci; do
+            for script in database/*.sql; do
+              psql --host localhost --username postgres --dbname "$database" --set ON_ERROR_STOP=1 --file "$script"
+            done
+            psql --host localhost --username postgres --dbname "$database" --set ON_ERROR_STOP=1 \
+              --command "GRANT CONNECT ON DATABASE $database TO fornitori_app; GRANT USAGE ON SCHEMA public TO fornitori_app; GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO fornitori_app; GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO fornitori_app;"
+          done
+      - name: Run tests on the temporary database
+        env:
+          FORNITORI_TEST_DATABASE: isolated
+          SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/fornitori_e2e_ci
+        run: ./mvnw --batch-mode --no-transfer-progress clean verify
       - name: Build and start the application
         run: |
-          ./mvnw --batch-mode --no-transfer-progress clean package
+          ./mvnw --batch-mode --no-transfer-progress clean package -DskipTests
           SERVER_ADDRESS=127.0.0.1 SERVER_PORT=58880 java -jar target/fornitori-0.0.1-SNAPSHOT.jar > target/app.log 2>&1 &
           app_pid=$!
           trap 'kill "$app_pid" 2>/dev/null || true' EXIT

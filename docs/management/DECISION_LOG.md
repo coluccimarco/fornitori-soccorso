@@ -52,9 +52,10 @@ H-006 sul canale outbox è stato aggiornato dal successivo H-009.
 ### H-002 — Fascia tariffaria notturna (ID originale D-002)
 
 - **Decisione applicata, da confermare col docente:** usare il timestamp di
-  accettazione della missione; fascia 20:00–08:00, estremi inclusi, moltiplicatore 1,25.
+  accettazione della missione; fascia 22:00–08:00 (dal 04/11/2026, prima 20:00–08:00), moltiplicatore 1,25.
 - **Fonte dichiarata nel record storico:** il foglio Excel precisa l'ora di
-  accettazione; il PDF definisce la fascia ma non il timestamp da usare.
+  accettazione; il PDF indica 20:00–8:00 ma non il timestamp da usare. L'inizio alle 22:00 è una
+  scelta del team che si discosta dal PDF.
 - **Stato:** implementata in Sprint 2; conferma di business ancora aperta.
 
 ### H-003 — Rounding (ID originale D-003)
@@ -137,5 +138,5 @@ H-006 sul canale outbox è stato aggiornato dal successivo H-009.
 **D-HARD-01:** conservare monolite, layer e API condivise; correzioni mirate e migrazioni additive.
 **D-HARD-02:** CSRF rinnovato al login e richiesto anche sulla GET route; pratica chat vincolata al lookup per
 15 minuti e impronta per i retry. L'autorizzazione non è una prova di identità.
-**D-HARD-03:** notte dalle 20:00 incluse alle 08:00 escluse, Europe/Rome, ora di accettazione, BigDecimal/HALF_UP.
+**D-HARD-03:** notte dalle 22:00 incluse alle 08:00 escluse (prima dalle 20:00; lo storico non viene ricalcolato), Europe/Rome, ora di accettazione, BigDecimal/HALF_UP.
 Criterio operativo da convalidare col docente.
