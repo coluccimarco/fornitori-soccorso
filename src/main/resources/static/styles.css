@@ -282,3 +282,15 @@ body {
 .cost-form { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .cost-form .input-group { flex: 0 1 160px; }
 .cost-form input[name="motivo"] { flex: 1 1 220px; }
+
+.topbar-actions { display: flex; align-items: center; gap: 16px; }
+.alert-bell { position: relative; }
+.alert-bell-button { position: relative; padding: 6px 10px; border: 1px solid #e2e4ea; }
+.alert-badge { position: absolute; top: -6px; right: -6px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: #dc2626; color: #fff; font-size: 11px; font-weight: 700; line-height: 18px; text-align: center; }
+.alert-panel { position: absolute; z-index: 30; top: calc(100% + 8px); right: 0; width: min(380px, 92vw); max-height: 70vh; overflow: auto; padding: 12px; border: 1px solid #e2e4ea; border-radius: 10px; background: #fff; box-shadow: 0 12px 32px rgba(15, 23, 42, .16); }
+.alert-panel-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; font-size: 13px; }
+.alert-item { display: flex; flex-direction: column; gap: 4px; padding: 10px; border-radius: 8px; background: #f6f6fb; font-size: 13px; }
+.alert-item + .alert-item { margin-top: 8px; }
+.alert-item.unread { background: #fff4e5; border-left: 3px solid #f59e0b; }
+.alert-item time { font-size: 11px; color: #6b7280; }
+.mission-card.highlight { outline: 2px solid #6d28d9; outline-offset: 2px; }

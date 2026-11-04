@@ -14,9 +14,11 @@ import it.exprivia.fornitori.config.SecurityConfig;
 import it.exprivia.fornitori.dto.AuthDtos;
 import it.exprivia.fornitori.dto.RegistryDtos;
 import it.exprivia.fornitori.service.AuthService;
+import it.exprivia.fornitori.service.CentreAlertService;
 import it.exprivia.fornitori.service.ChatService;
 import it.exprivia.fornitori.service.DatabaseUserDetailsService;
 import it.exprivia.fornitori.service.MapService;
+import it.exprivia.fornitori.service.NearestDriverService;
 import it.exprivia.fornitori.service.MissionService;
 import it.exprivia.fornitori.service.RegistryService;
 import org.junit.jupiter.api.Test;
@@ -59,6 +61,41 @@ class ApiSecurityTests {
 
     @MockitoBean
     private MapService mapService;
+
+    @MockitoBean
+    private NearestDriverService nearestDriverService;
+
+    @MockitoBean
+    private CentreAlertService centreAlertService;
+
+    @Test
+    void automaticProposalAndAlertsRequireLogin() throws Exception {
+        mockMvc.perform(post("/api/v1/missioni/1/proposta-automatica").with(csrf()))
+                .andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/v1/centrale/avvisi")).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(roles = "AUTISTA")
+    void driverCannotUseCentreOnlyEndpoints() throws Exception {
+        mockMvc.perform(post("/api/v1/missioni/1/proposta-automatica").with(csrf()))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/v1/centrale/avvisi")).andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "RESPONSABILE")
+    void centreCanUseAutomaticProposalAndAlerts() throws Exception {
+        mockMvc.perform(post("/api/v1/missioni/1/proposta-automatica").with(csrf()))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/v1/centrale/avvisi")).andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(roles = "RESPONSABILE")
+    void automaticProposalNeedsCsrfToken() throws Exception {
+        mockMvc.perform(post("/api/v1/missioni/1/proposta-automatica")).andExpect(status().isForbidden());
+    }
 
     @Test
     void routeRequiresLogin() throws Exception {

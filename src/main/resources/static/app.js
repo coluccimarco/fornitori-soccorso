@@ -14,8 +14,13 @@
     driverMission: null,
     driverDetails: {},
     maps: new Map(),
+    alerts: [],
+    alertTimer: null,
     deadlineTimer: null
   };
+
+  const ALERT_POLL_MS = 15000;
+  const alertStorageKey = (user) => `fornitori.avvisiLetti.${user?.id ?? "x"}`;
 
   const viewConfig = {
     clienti: {
@@ -142,13 +147,16 @@
     if (manager) {
       state.currentView = "dashboard";
       void loadRegistries();
+      startAlertPolling();
     } else {
+      stopAlertPolling();
       state.currentView = "autista";
     }
     goToView(state.currentView);
   }
 
   function showPublic() {
+    stopAlertPolling();
     state.user = null;
     loginView.classList.add("d-none");
     appView.classList.add("d-none");
@@ -419,6 +427,81 @@
     }
   }
 
+  function lastSeenAlertId() {
+    try {
+      return Number(localStorage.getItem(alertStorageKey(state.user))) || 0;
+    } catch (error) {
+      return 0;
+    }
+  }
+
+  function markAlertsRead() {
+    const newest = state.alerts.reduce((max, alert) => Math.max(max, alert.id), lastSeenAlertId());
+    try {
+      localStorage.setItem(alertStorageKey(state.user), String(newest));
+    } catch (error) {
+      console.error("Avvisi letti non salvati:", error);
+    }
+    renderAlerts();
+  }
+
+  function renderAlerts() {
+    const seen = lastSeenAlertId();
+    const unread = state.alerts.filter((alert) => alert.id > seen).length;
+    const badge = $("#alertBadge");
+    badge.textContent = unread > 99 ? "99+" : String(unread);
+    badge.classList.toggle("d-none", unread === 0);
+    $("#alertButton").setAttribute("aria-label", unread ? `Avvisi, ${unread} non letti` : "Avvisi");
+    $("#alertList").innerHTML = state.alerts.length
+      ? state.alerts.map((alert) => {
+        const driver = alert.autistaNome || "Un autista";
+        const text = alert.tipo === "rifiutata"
+          ? `${driver} ha rifiutato la missione`
+          : `${driver} non ha risposto: proposta scaduta`;
+        return `<article class="alert-item${alert.id > seen ? " unread" : ""}"><span>${safe(text)} <strong>${safe(alert.codice)}</strong></span><time>${safe(formatDateTime(alert.quando))}</time><button class="btn btn-sm btn-outline-primary align-self-start" type="button" data-alert-mission="${safe(alert.missioneId)}">Apri missione</button></article>`;
+      }).join("")
+      : '<p class="small text-secondary mb-0">Nessun avviso.</p>';
+  }
+
+  async function loadAlerts() {
+    try {
+      state.alerts = await request("/api/v1/centrale/avvisi");
+      renderAlerts();
+    } catch (error) {
+      if (error.status === 401) stopAlertPolling();
+      else console.error("Avvisi non aggiornati:", error);
+    }
+  }
+
+  function startAlertPolling() {
+    stopAlertPolling();
+    void loadAlerts();
+    state.alertTimer = window.setInterval(() => void loadAlerts(), ALERT_POLL_MS);
+  }
+
+  function stopAlertPolling() {
+    if (state.alertTimer) window.clearInterval(state.alertTimer);
+    state.alertTimer = null;
+    state.alerts = [];
+    $("#alertPanel")?.classList.add("d-none");
+    $("#alertBadge")?.classList.add("d-none");
+  }
+
+  async function openMissionFromAlert(missionId) {
+    $("#alertPanel").classList.add("d-none");
+    $("#alertButton").setAttribute("aria-expanded", "false");
+    state.currentView = "missioni";
+    $("#missionMode").value = "live";
+    $("#missionStatus").value = "";
+    goToView("missioni");
+    await loadMissions();
+    const card = document.querySelector(`[data-mission-card="${CSS.escape(String(missionId))}"]`);
+    if (!card) return;
+    card.classList.add("highlight");
+    card.scrollIntoView({ block: "center" });
+    window.setTimeout(() => card.classList.remove("highlight"), 4000);
+  }
+
   function costCorrectionMarkup(mission) {
     if (mission.stato !== "eseguita" || $("#missionMode").value !== "live") return "";
     const note = mission.rettificaMotivo
@@ -604,7 +687,7 @@
       const driverOptions = state.data.autisti.map((driver) =>
         `<option value="${safe(driver.id)}"${driver.disponibilita === "occupato" ? " disabled" : ""}>${safe(driver.nome)}${driver.disponibilita === "occupato" ? " · occupato" : ""}</option>`
       ).join("");
-      return `<article class="mission-card">
+      return `<article class="mission-card" data-mission-card="${safe(mission.id)}">
         <div class="mission-card-header">
           <div><span class="mission-code">${safe(mission.codice)}</span><span class="mission-status status-${safe(mission.stato)}">${safe(statusLabel(mission.stato))}</span></div>
           <span class="small text-secondary">${safe(formatDateTime(mission.chiusaIl || mission.scadenzaIl))}</span>
@@ -626,7 +709,7 @@
           ${missionMapMarkup(mission.id, true)}
         </section>
         ${costCorrectionMarkup(mission)}
-        ${canPropose ? `<div class="mission-propose"><label class="visually-hidden" for="driver-${safe(mission.id)}">Seleziona autista</label><select class="form-select form-select-sm" id="driver-${safe(mission.id)}"><option value="">Seleziona autista</option>${driverOptions}</select><button class="btn btn-sm btn-outline-primary" type="button" data-propose="${safe(mission.id)}">Invia proposta</button></div>` : ""}
+        ${canPropose ? `<div class="mission-propose"><label class="visually-hidden" for="driver-${safe(mission.id)}">Seleziona autista</label><select class="form-select form-select-sm" id="driver-${safe(mission.id)}"><option value="">Seleziona autista</option>${driverOptions}</select><button class="btn btn-sm btn-outline-primary" type="button" data-propose="${safe(mission.id)}">Invia proposta</button><button class="btn btn-sm btn-primary" type="button" data-propose-nearest="${safe(mission.id)}">Proponi al più vicino</button></div>` : ""}
       </article>`;
     }).join("");
     updateCountdowns();
@@ -923,6 +1006,26 @@
       }
       return;
     }
+    const nearestButton = event.target.closest("[data-propose-nearest]");
+    if (nearestButton) {
+      nearestButton.disabled = true;
+      try {
+        const proposal = await request(`/api/v1/missioni/${nearestButton.dataset.proposeNearest}/proposta-automatica`, {
+          method: "POST",
+          mutating: true
+        });
+        await loadMissions();
+        showInlineAlert("#missionAlert", `Proposta inviata a ${proposal.autistaNome} (base a ${proposal.distanzaKm} km).`, "success");
+      } catch (error) {
+        showInlineAlert("#missionAlert", ({
+          409: "Nessun autista libero che non abbia già risposto a questa missione.",
+          422: "Indirizzo non trovato: scegli l'autista a mano.",
+          503: "Servizio mappe non disponibile: scegli l'autista a mano."
+        })[error.status] || error.message);
+        nearestButton.disabled = false;
+      }
+      return;
+    }
     const button = event.target.closest("[data-propose]");
     if (!button) return;
     const missionId = button.dataset.propose;
@@ -1061,6 +1164,23 @@
         showInlineAlert("#driverAlert", error.message);
         button.disabled = false;
       }
+    }
+  });
+
+  $("#alertButton").addEventListener("click", () => {
+    const open = $("#alertPanel").classList.toggle("d-none") === false;
+    $("#alertButton").setAttribute("aria-expanded", String(open));
+    if (open) void loadAlerts();
+  });
+  $("#alertReadButton").addEventListener("click", markAlertsRead);
+  $("#alertList").addEventListener("click", (event) => {
+    const button = event.target.closest("[data-alert-mission]");
+    if (button) void openMissionFromAlert(button.dataset.alertMission);
+  });
+  document.addEventListener("click", (event) => {
+    if (!event.target.closest("#alertBell")) {
+      $("#alertPanel").classList.add("d-none");
+      $("#alertButton").setAttribute("aria-expanded", "false");
     }
   });
 

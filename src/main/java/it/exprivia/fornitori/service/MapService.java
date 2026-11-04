@@ -102,7 +102,8 @@ public class MapService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Autista non trovato"));
     }
 
-    private GeoPoint missionOrigin(MissionDtos.MissionResponse mission) {
+    /** Coordinate del luogo del sinistro: se mancano converte l'indirizzo e le salva sulla missione. */
+    public GeoPoint missionOrigin(MissionDtos.MissionResponse mission) {
         if (mission.origineLat() != null && mission.origineLng() != null) {
             return new GeoPoint(mission.origineLat(), mission.origineLng());
         }

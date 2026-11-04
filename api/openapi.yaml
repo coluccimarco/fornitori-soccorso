@@ -230,6 +230,39 @@ paths:
         '401': {$ref: '#/components/responses/Unauthorized'}
         '403': {$ref: '#/components/responses/Forbidden'}
         '404': {$ref: '#/components/responses/NotFound'}
+  /api/v1/missioni/{id}/proposta-automatica:
+    parameters:
+      - {$ref: '#/components/parameters/MissionId'}
+    post:
+      tags: [Missioni]
+      summary: Propone la missione all'autista libero con la base più vicina
+      description: Distanza in linea d'aria tra il luogo del sinistro e la base del mezzo. Esclude gli autisti con una missione attiva e quelli che hanno già risposto a questa missione. Se mancano le coordinate converte l'indirizzo con Nominatim. 409 se nessuno è libero, 422 se l'indirizzo non si trova, 503 se il servizio non risponde.
+      x-implementation-status: implemented
+      x-required-role: RESPONSABILE
+      security:
+        - sessionCookie: []
+          csrfHeader: []
+      responses:
+        '200': {description: Proposta inviata, content: {application/json: {schema: {$ref: '#/components/schemas/NearestProposal'}}}}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {$ref: '#/components/responses/Conflict'}
+        '422': {description: Indirizzo non trovato}
+        '503': {description: Servizio di geocodifica non disponibile}
+  /api/v1/centrale/avvisi:
+    get:
+      tags: [Missioni]
+      summary: Ultimi avvisi per la centrale
+      description: Fino a 50 eventi recenti di proposte rifiutate o scadute su missioni live, dal più recente. Non c'è stato di lettura sul server.
+      x-implementation-status: implemented
+      x-required-role: RESPONSABILE
+      security:
+        - sessionCookie: []
+      responses:
+        '200': {description: Avvisi, content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/CentreAlert'}}}}}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
   /api/v1/missioni/{id}/intervento:
     parameters:
       - {$ref: '#/components/parameters/MissionId'}
@@ -789,6 +822,25 @@ components:
         stato: {type: string, enum: [nuova, proposta, accettata, eseguita, non_accettata, scaduta]}
         autistaNome: {type: string, nullable: true}
         aggiornataIl: {type: string, format: date-time}
+    NearestProposal:
+      type: object
+      properties:
+        autistaId: {type: integer, format: int64}
+        autistaNome: {type: string}
+        distanzaKm: {type: number, description: Linea d'aria dalla base al luogo del sinistro}
+        stato: {type: string}
+        scadenzaIl: {type: string, format: date-time}
+        offertaId: {type: integer, format: int64}
+    CentreAlert:
+      type: object
+      properties:
+        id: {type: integer, format: int64}
+        tipo: {type: string, enum: [rifiutata, scaduta]}
+        missioneId: {type: integer, format: int64}
+        codice: {type: string}
+        autistaId: {type: integer, format: int64, nullable: true}
+        autistaNome: {type: string, nullable: true}
+        quando: {type: string, format: date-time}
     DriverMissionDetail:
       type: object
       properties:

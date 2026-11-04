@@ -73,6 +73,25 @@ public final class MissionDtos {
     public record ProposalResponse(String stato, OffsetDateTime scadenzaIl, Long offertaId) {
     }
 
+    public record NearestProposalResponse(
+            Long autistaId,
+            String autistaNome,
+            BigDecimal distanzaKm,
+            String stato,
+            OffsetDateTime scadenzaIl,
+            Long offertaId) {
+    }
+
+    public record CentreAlertResponse(
+            Long id,
+            String tipo,
+            Long missioneId,
+            String codice,
+            Long autistaId,
+            String autistaNome,
+            OffsetDateTime quando) {
+    }
+
     public record DriverCustomerDetail(String nome, String telefono, String targa, String modelloVeicolo) {
     }
 

@@ -168,9 +168,20 @@
       <header class="topbar">
         <button id="menuButton" class="menu-button" type="button" aria-label="Apri navigazione" aria-expanded="false">☰</button>
         <div class="breadcrumb-label"><span id="workspaceLabel">Centrale operativa</span> <span>/</span> <strong id="currentSection">Panoramica</strong></div>
-        <div class="user-chip">
-          <span class="user-avatar" id="userAvatar">—</span>
-          <span class="user-name" id="userName">Utente</span>
+        <div class="topbar-actions">
+          <div class="alert-bell" id="alertBell" data-manager-only>
+            <button id="alertButton" class="btn btn-light alert-bell-button" type="button" aria-label="Avvisi" aria-expanded="false" aria-controls="alertPanel">
+              <span aria-hidden="true">&#128276;</span><span id="alertBadge" class="alert-badge d-none">0</span>
+            </button>
+            <section id="alertPanel" class="alert-panel d-none" aria-label="Avvisi dagli autisti">
+              <div class="alert-panel-header"><strong>Avvisi dagli autisti</strong><button id="alertReadButton" class="btn btn-link btn-sm" type="button">Segna come letti</button></div>
+              <div id="alertList" class="alert-list"></div>
+            </section>
+          </div>
+          <div class="user-chip">
+            <span class="user-avatar" id="userAvatar">—</span>
+            <span class="user-name" id="userName">Utente</span>
+          </div>
         </div>
       </header>
 
