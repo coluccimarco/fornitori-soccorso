@@ -105,19 +105,6 @@ def build() -> Path:
                 ]
             )
 
-    tests_sheet = workbook.create_sheet("Test presenti")
-    tests_sheet.append(["Percorso", "Linguaggio", "Suite / scenario", "Esito / limite"])
-    for folder, language in ((ROOT / "src" / "test" / "java", "Java"), (ROOT / "chatbot" / "tests", "Python")):
-        for test_file in sorted(folder.rglob("*Tests.java")) + sorted(folder.rglob("test_*.py")):
-            tests_sheet.append(
-                [
-                    test_file.relative_to(ROOT).as_posix(),
-                    language,
-                    test_file.stem,
-                    "Inventario sorgente, non esito: vedere docs/quality/TEST_EVIDENCE.md e report del run.",
-                ]
-            )
-
     for sheet in workbook.worksheets:
         style_sheet(sheet)
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)

@@ -22,7 +22,6 @@ EXPECTED_DOCX = (
     "GUIDA_TEAM.docx",
     "MANUALE_UTENTE.docx",
     "MANUALE_TECNICO.docx",
-    "REGISTRO_TEST_E_COLLAUDI.docx",
 )
 
 
@@ -105,7 +104,7 @@ def validate_workbook() -> list[str]:
     path = ROOT / "docs" / "quality" / "registri.xlsx"
     workbook = load_workbook(path, read_only=True, data_only=True)
     sheets = workbook.sheetnames
-    required = {"Requisiti", "Tracciabilita", "Backlog", "API", "Test presenti", "Rischi", "RACI", "Modifiche"}
+    required = {"Requisiti", "Tracciabilita", "Backlog", "API", "Rischi", "RACI", "Modifiche"}
     missing = required.difference(sheets)
     if missing:
         raise ValueError(f"Workbook missing sheets: {sorted(missing)}")

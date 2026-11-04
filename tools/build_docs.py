@@ -31,7 +31,6 @@ DOCUMENTS = [
     ("GUIDA_TEAM.docx", "team/README.md", "FOR-TEAM-001", "Guida del team", "Baseline ruoli"),
     ("MANUALE_UTENTE.docx", "manuals/MANUALE_UTENTE.md", "FOR-USER-001", "Manuale utente", "Limitato alle funzioni disponibili"),
     ("MANUALE_TECNICO.docx", "manuals/MANUALE_TECNICO.md", "FOR-TECH-001", "Manuale tecnico", "Baseline tecnica"),
-    ("REGISTRO_TEST_E_COLLAUDI.docx", "quality/TEST_PLAN.md", "FOR-TEST-001", "Registro test e collaudi", "Esiti e limiti nel documento"),
 ]
 
 INLINE = re.compile(r"(\[[^\]]+\]\([^)]+\)|\*\*.+?\*\*|`[^`]+`|\*[^*]+\*)")

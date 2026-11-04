@@ -1,4 +1,4 @@
-"""Backend finto per sviluppo e test: dati inventati, nessuna rete."""
+"""Backend finto per sviluppo e demo da console: dati inventati, nessuna rete."""
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
 

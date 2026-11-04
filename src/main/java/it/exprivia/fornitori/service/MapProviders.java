@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-/** Contratti dei servizi esterni di mappe, sostituibili nei test. */
+/** Contratti dei servizi esterni di mappe, sostituibili con altri provider. */
 public final class MapProviders {
     private MapProviders() {
     }
