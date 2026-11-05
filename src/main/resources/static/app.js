@@ -400,7 +400,9 @@
 
   function driverProblemMarkup(mission) {
     const problem = PROBLEM_LABELS[mission.tipoProblema];
-    return `<div><span class="field-label">Tipo di problema</span>${problem ? `<strong>${safe(problem)}</strong><span>${safe(interventionText(mission))}</span>` : `<strong>${safe(interventionText(mission))}</strong>`}</div>`;
+    return problem
+      ? `<div><span class="field-label">Tipo di problema</span><strong>${safe(problem)}</strong><span>${safe(interventionText(mission))}</span></div>`
+      : `<div><span class="field-label">Intervento</span><strong>${safe(interventionText(mission))}</strong></div>`;
   }
 
   function driverDescriptionMarkup(mission) {
@@ -1380,7 +1382,7 @@
       <section class="mission-notes"><h2 class="h6">Avvisi alla centrale</h2><div class="note-list" id="missionNotes"><p class="small text-secondary">Caricamento avvisi…</p></div>
         <form id="missionNoteForm" class="note-form"><label class="visually-hidden" for="missionNoteText">Testo dell'avviso</label><textarea id="missionNoteText" class="form-control" rows="2" maxlength="2000" required placeholder="Scrivi un aggiornamento sulla missione…"></textarea><button class="btn btn-outline-primary" type="submit">Invia avviso</button></form>
       </section>
-      <section class="support-callout"><div><strong>Hai bisogno di aiuto?</strong><p class="mb-0">La richiesta arriva in cima alla coda della centrale.</p></div><button class="btn btn-danger" type="button" id="requestSupportButton">Richiedi supporto alla centrale</button></section>
+      <section class="support-callout"><div><strong>Hai bisogno di aiuto?</strong><p class="mb-0">La richiesta compare subito nella coda critica della centrale.</p></div><button class="btn btn-danger" type="button" id="requestSupportButton">Richiedi supporto alla centrale</button></section>
       <form id="completeMissionForm" class="complete-form"><label class="form-label" for="actualKm">Km totali (andata + ritorno)</label><div class="input-group"><input class="form-control" id="actualKm" type="number" min="0" max="99999999" step="0.01" required><span class="input-group-text">km</span><button class="btn btn-primary" type="submit">Chiudi missione · OK</button></div></form>
       <div class="driver-cancel">${cancelButtonMarkup(mission)}</div>
     </article>`;
