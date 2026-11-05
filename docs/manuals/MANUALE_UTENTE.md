@@ -67,10 +67,10 @@ porta alla scheda, **Segna come letti** azzera il contatore solo in questo brows
 ## Autista
 
 1. Accedere con un account autorizzato al ruolo autista.
-2. In **Le mie missioni**, consultare proposta, luogo, tipo intervento, mappa,
-   guadagno stimato e tempo residuo. Le nuove proposte compaiono da sole entro 15 secondi.
+2. In **Le mie missioni**, consultare proposta, contatti del cliente e della persona sul posto,
+   luogo, tipo intervento, mappa, guadagno stimato e tempo residuo. Le nuove proposte compaiono da sole entro 15 secondi.
 3. Premere **Accetta** oppure **Rifiuta**. Se accettata, la missione attiva compare
-   nella stessa pagina, con nome e telefono del cliente.
+   nella stessa pagina, con i contatti e la targa del veicolo.
 4. Per informare la centrale, dopo aver accettato, compilare **Segnala alla centrale** e premere
    **Invia segnalazione**. L'esito è visibile nella lista delle note.
 5. Per chiudere l'intervento, controllare i chilometri, proposti dalla stima del percorso, e
@@ -78,8 +78,9 @@ porta alla scheda, **Segna come letti** azzera il contatore solo in questo brows
    si aggiorna con conferma di chiusura.
 6. Aprire **Storico e guadagni** per consultare le missioni completate e il totale.
 
-Nome e telefono del cliente compaiono solo dopo l'accettazione. Se il servizio mappe non risponde, i
-chilometri si possono inserire comunque.
+Nome, cognome e telefono del cliente e telefono della persona sul posto sono visibili già dalla
+proposta; la targa compare dopo l'accettazione e nello storico i contatti non compaiono. Se il
+servizio mappe non risponde, i chilometri si possono inserire comunque.
 
 ## Cliente e chatbot
 

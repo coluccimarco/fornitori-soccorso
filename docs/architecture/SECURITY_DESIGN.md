@@ -15,7 +15,7 @@ Descrive i controlli presenti nel codice; non è un penetration test né una cer
 - Limiti: 20 login al minuto per IP; 5 targhe non trovate per sessione; 100 lookup al minuto per
   istanza. Il server non si fida di `X-Forwarded-For`.
 - Client dei provider senza redirect, con timeout 3/8 s, risposta massima 1 MiB e valori controllati.
-- Contatti del cliente visibili all'autista solo dopo l'accettazione.
+- Nome, cognome e telefono del cliente e telefono della persona sul posto visibili all'autista assegnato dalla proposta; targa solo dopo l'accettazione; nessun contatto nello storico.
 - Le missioni della centrale non conservano il telefono del cliente in outbox.
 - SQL parametrizzato ed escaping HTML dei dati dinamici nel client.
 - CSP, Referrer-Policy, Permissions-Policy, corpo massimo 64 KiB, controllo della configurazione all'avvio.

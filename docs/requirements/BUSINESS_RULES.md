@@ -14,7 +14,7 @@ Le regole del modello persistito e le transizioni sono descritte nel
 - Un'accettazione scaduta è impedita; la riproposizione conserva ogni esito di proposta.
 - La rettifica richiede ruolo centrale e motivazione; costo calcolato e finale sono distinti.
 - L'intervento e l'officina sono correggibili solo su missioni nuove, rifiutate o scadute.
-- Contatti del cliente visibili all'autista solo dopo l'accettazione.
+- Nome, cognome e telefono del cliente e telefono della persona sul posto visibili all'autista assegnato dalla proposta; targa solo dopo l'accettazione; nessun contatto nello storico.
 - Notifiche al cliente solo per le missioni create dal bot.
 
 Il PDF del docente indica 20:00–8:00: l'inizio alle 22:00 è una scelta del team da confermare col docente,

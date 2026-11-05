@@ -53,7 +53,7 @@ I permessi stanno sia nella catena di sicurezza sia nei service.
 
 | Dato | Regola | Esito |
 |---|---|---|
-| Nome, telefono, targa del cliente | Autista: solo dopo l'accettazione | OK, provato sul testo delle risposte |
+| Nome, telefono, targa del cliente | Autista assegnato: nome e telefoni dalla proposta, targa dopo l'accettazione, nessun contatto nello storico (regola cambiata con la migrazione 11) | OK, provato sul testo delle risposte |
 | Numero di polizza | Mai all'autista | OK, provato |
 | Storico autista | Solo ID cliente | OK, provato |
 | Telefono in outbox | Non conservato per le missioni della centrale | OK, provato |

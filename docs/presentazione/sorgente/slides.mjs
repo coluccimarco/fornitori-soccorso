@@ -264,7 +264,7 @@ export default [
       ${shot('autista_mobile_attiva.png', 'Dopo aver accettato', '--mh:474px')}
       ${pts(['Pensata per il telefono', 'Accetta o rifiuta', 'Mappa e chilometri'])}</div>`,
     notes: {
-      voce: "L'area autista è pensata per il telefono. Le nuove proposte compaiono da sole, con tempo residuo, mappa e guadagno stimato. Nome e telefono del cliente arrivano solo dopo l'accettazione. A fine intervento l'autista conferma i chilometri e chiude la missione, poi trova il totale nello storico.",
+      voce: "L'area autista è pensata per il telefono. Le nuove proposte compaiono da sole, con tempo residuo, mappa e guadagno stimato. Nome e telefono del cliente si vedono già dalla proposta, la targa dopo l'accettazione. A fine intervento l'autista conferma i chilometri e chiude la missione, poi trova il totale nello storico.",
       semplice: "L'autista vede solo le proprie missioni.",
       file: ['`static/app.js`', '`service/MissionService.java`'],
     },
