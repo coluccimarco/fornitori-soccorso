@@ -380,3 +380,29 @@ button.chart-column:hover { background: #f5f6fb; }
   .cost-actions { width: 100%; }
   .alert-panel { position: fixed; top: 60px; right: 4vw; left: 4vw; width: auto; }
 }
+
+/* Card missione: riga cliente compatta e pulsanti affiancati */
+.customer-row { margin-bottom: 14px; padding: 9px 12px; border-radius: 8px; background: #f7f8fb; color: #3c465a; font-size: 12px; }
+.customer-line { overflow-wrap: anywhere; }
+.customer-line a { color: #4653c4; text-decoration: none; }
+.customer-sep { color: #8d95a5; }
+.customer-details { margin-top: 5px; }
+.customer-details summary { width: fit-content; color: #4e5ac8; font-size: 11px; cursor: pointer; }
+.customer-details dl { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 8px 14px; margin: 8px 0 2px; }
+.customer-details dt { color: #5d6678; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+.customer-details dd { margin: 2px 0 0; }
+.refusal-count { color: #a81f2c; font-size: 11px; font-weight: 650; }
+.problem-tag { display: inline-block; padding: 2px 8px; border-radius: 10px; background: #eef0f6; color: #3c465a; font-size: 11px; font-weight: 600; }
+.mission-toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+
+/* Percorso: marker, legenda e chilometri */
+.route-km { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-bottom: 8px; color: #4c566a; font-size: 12px; }
+.route-km strong { color: #30394c; }
+.route-km-total { padding-left: 16px; border-left: 1px solid #cfd4de; }
+.route-marker { display: inline-grid; width: 28px; height: 28px; place-items: center; border: 2px solid #fff; background: #30394c; box-shadow: 0 1px 5px rgba(15, 23, 42, .45); color: #fff; font-size: 13px; font-weight: 800; line-height: 1; }
+.marker-base { border-radius: 5px; background: #1d4ed8; }
+.marker-sinistro { border-radius: 50%; background: #c62838; }
+.marker-officina { border-radius: 50% 50% 5px 5px; background: #0f6f5c; }
+.route-legend { display: flex; flex-wrap: wrap; gap: 8px 16px; margin-top: 8px; color: #3c465a; font-size: 12px; }
+.route-legend > span { display: inline-flex; align-items: center; gap: 6px; }
+.route-legend .route-marker { width: 22px; height: 22px; font-size: 11px; }

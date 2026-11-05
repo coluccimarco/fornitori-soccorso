@@ -59,6 +59,19 @@
     service_unavailable: "Servizio esterno non disponibile: riprova più tardi.",
     internal_error: "Errore interno del server. Riprova più tardi."
   };
+  const PROBLEM_LABELS = {
+    RUOTA_CON_SCORTA: "Ruota forata con ruota di scorta",
+    RUOTA_SENZA_SCORTA: "Ruota forata senza ruota di scorta",
+    BATTERIA_SCARICA: "Batteria scarica",
+    GUASTO_MOTORE: "Guasto motore",
+    INCIDENTE: "Incidente"
+  };
+  const ROUTE_POINTS = {
+    base: { label: "Deposito", symbol: "D", css: "marker-base" },
+    sinistro: { label: "Luogo di fermo", symbol: "F", css: "marker-sinistro" },
+    officina: { label: "Officina", symbol: "O", css: "marker-officina" }
+  };
+  const PROPOSABLE_STATES = ["nuova", "non_accettata", "scaduta", "gestione_manuale"];
   const alertStorageKey = (user) => `fornitori.avvisiLetti.${user?.id ?? "x"}`;
 
   const viewConfig = {
@@ -302,7 +315,7 @@
     for (const item of state.data.clienti) {
       const option = document.createElement("option");
       option.value = item.id;
-      option.textContent = `${item.nome} · ${item.targa}`;
+      option.textContent = `${fullName(item)} · ${item.targa}`;
       customer.append(option);
     }
     if (selectedCustomer) customer.value = selectedCustomer;
@@ -318,20 +331,29 @@
     if (selectedWorkshop) workshop.value = selectedWorkshop;
   }
 
-  function missionCustomerMarkup(mission, useRegistry = false) {
-    const customer = useRegistry
-      ? state.data.clienti.find((item) => item.id === mission.clienteId)
-      : mission.clienteNome ? { nome: mission.clienteNome, telefono: mission.clienteTelefono } : null;
-    const customerId = mission.clienteId ?? "non disponibile";
-    const name = customer?.nome || `Cliente #${customerId}`;
-    const contact = customer?.telefono
-      ? `<a href="tel:${safe(customer.telefono)}">${safe(customer.telefono)}</a>`
-      : `<span class="data-unavailable">${useRegistry && state.errors.clienti
-        ? "Anagrafica clienti non disponibile"
-        : customer
-          ? "Recapito non disponibile nell'anagrafica"
-          : "Nome e recapito non forniti dall'API missioni"}</span>`;
-    return `<div><span class="field-label">Cliente</span><strong>${safe(name)}</strong>${contact}</div>`;
+  /** Una sola riga con i recapiti utili; il resto dell'anagrafica si apre su richiesta. */
+  function missionCustomerRow(mission) {
+    const registry = state.data.clienti.find((item) => item.id === mission.clienteId);
+    const name = fullName({ nome: mission.clienteNome, cognome: mission.clienteCognome }) || fullName(registry);
+    const phone = mission.clienteTelefono || registry?.telefono;
+    const plate = mission.targaDichiarata || registry?.targa;
+    const parts = [
+      name
+        ? `<strong>${safe(name)}</strong>`
+        : `<span class="data-unavailable">${mission.clienteId ? `Cliente #${safe(mission.clienteId)}` : "Cliente da identificare"}</span>`,
+      telLink(phone),
+      plate ? `Targa <strong>${safe(plate)}</strong>` : "",
+      mission.telefonoSulPosto ? `Sul posto ${telLink(mission.telefonoSulPosto)}` : ""
+    ].filter(Boolean).join('<span class="customer-sep"> · </span>');
+    const details = registry
+      ? `<details class="customer-details"><summary>Dettagli cliente</summary><dl>
+          <div><dt>Veicolo</dt><dd>${safe(registry.modelloVeicolo)}</dd></div>
+          <div><dt>Compagnia</dt><dd>${safe(registry.compagniaNome)}</dd></div>
+          <div><dt>Polizza</dt><dd>${safe(registry.numeroPolizza)}, scade ${safe(formatDate(registry.scadenzaPolizza))}</dd></div>
+          <div><dt>Città</dt><dd>${safe(registry.cittaResidenza)}</dd></div>
+        </dl></details>`
+      : "";
+    return `<div class="customer-row"><div class="customer-line">${parts}</div>${details}</div>`;
   }
 
   function missionWorkshopMarkup(mission, useRegistry = false) {
@@ -380,7 +402,38 @@
   }
 
   function missionMapMarkup(missionId, hidden = false) {
-    return `<div class="mission-map-area${hidden ? " d-none" : ""}" data-map-area="${safe(missionId)}"><p class="small text-secondary mb-2" data-map-status>Caricamento mappa…</p><div class="mission-map d-none" data-map></div><ol class="mission-map-points small d-none" data-map-points></ol></div>`;
+    return `<div class="mission-map-area${hidden ? " d-none" : ""}" data-map-area="${safe(missionId)}"><p class="small text-secondary mb-2" data-map-status>Caricamento mappa…</p><div class="route-km d-none" data-map-km></div><div class="mission-map d-none" data-map></div><div class="route-legend d-none" data-map-legend></div><ol class="mission-map-points small d-none" data-map-points></ol></div>`;
+  }
+
+  function routeTotalKm(route) {
+    return route?.kmTotali ?? route?.km ?? route?.kmStimati ?? null;
+  }
+
+  function formatKm(value) {
+    return `${new Intl.NumberFormat("it-IT", { maximumFractionDigits: 2 }).format(Number(value))} km`;
+  }
+
+  function routeKmMarkup(route) {
+    const total = routeTotalKm(route);
+    const rows = [
+      ["Andata", route.kmAndata],
+      ["Traino", Number(route.kmTraino) > 0 ? route.kmTraino : null],
+      ["Ritorno", route.kmRitorno]
+    ].filter(([, value]) => value != null);
+    return rows.map(([label, value]) => `<span>${label} <strong>${safe(formatKm(value))}</strong></span>`).join("")
+      + (total != null ? `<span class="route-km-total">Totali <strong>${safe(formatKm(total))}</strong></span>` : "");
+  }
+
+  function routeMarkerIcon(type, shift) {
+    const point = ROUTE_POINTS[type] || { symbol: "?", css: "" };
+    return L.divIcon({
+      className: `route-marker ${point.css}`,
+      html: `<span>${point.symbol}</span>`,
+      iconSize: [28, 28],
+      // Deposito e officina possono coincidere: il secondo segnaposto si sposta di lato.
+      iconAnchor: [14 - shift, 14],
+      popupAnchor: [shift, -14]
+    });
   }
 
   function removeMaps() {
@@ -441,25 +494,41 @@
       maxZoom: 19,
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
     }).addTo(map);
-    const labels = { base: "Base operativa", sinistro: "Dove si trova il cliente", officina: "Officina" };
     pointsList.replaceChildren();
+    const taken = new Map();
+    const types = new Set();
     const coordinates = route.punti.map((point) => {
-      const label = `${labels[point.tipo] || point.tipo}: ${point.descrizione}`;
+      const name = ROUTE_POINTS[point.tipo]?.label || point.tipo;
+      const label = `${name}: ${point.descrizione}`;
       const popup = document.createElement("span");
-      popup.textContent = label;
-      const marker = L.marker([point.lat, point.lng], { title: label }).addTo(map).bindPopup(popup);
+      const title = document.createElement("strong");
+      title.textContent = name;
+      popup.append(title, document.createElement("br"), point.descrizione ?? "");
+      const place = `${point.lat},${point.lng}`;
+      const shift = (taken.get(place) || 0) * 30;
+      taken.set(place, (taken.get(place) || 0) + 1);
+      types.add(point.tipo);
+      const marker = L.marker([point.lat, point.lng], { title: label, alt: label, icon: routeMarkerIcon(point.tipo, shift) }).addTo(map).bindPopup(popup);
       if (point.tipo === "sinistro") marker.setZIndexOffset(1000);
       const item = document.createElement("li");
       item.textContent = label;
       pointsList.append(item);
       return [point.lat, point.lng];
     });
+    const legend = area.querySelector("[data-map-legend]");
+    legend.innerHTML = Object.entries(ROUTE_POINTS).filter(([type]) => types.has(type)).map(([, point]) =>
+      `<span><span class="route-marker ${point.css}"><span>${point.symbol}</span></span>${point.label}</span>`
+    ).join("");
+    legend.classList.remove("d-none");
+    const kmBox = area.querySelector("[data-map-km]");
+    kmBox.innerHTML = routeKmMarkup(route);
+    kmBox.classList.toggle("d-none", !route.geometria || !kmBox.innerHTML);
     let fit;
     if (route.geometria) {
       const line = L.geoJSON(route.geometria, { style: { color: "#6d28d9", weight: 5 } }).addTo(map);
       const bounds = line.getBounds().extend(coordinates);
       fit = () => map.fitBounds(bounds, { padding: [32, 32] });
-      status.textContent = `Percorso stimato: ${route.kmStimati} km (fonte: OSRM). I km effettivi si confermano alla chiusura.`;
+      status.textContent = "Percorso stimato con rientro al deposito (fonte: OSRM). I km effettivi si confermano alla chiusura.";
     } else {
       fit = () => map.setView(coordinates[0], 15);
       status.textContent = "Scegli un autista per calcolare percorso e chilometri.";
@@ -490,8 +559,8 @@
       return;
     }
     const input = $("#actualKm");
-    if (input && !input.value && state.driverMission?.id === mission.id && route.kmStimati != null) {
-      input.value = route.kmStimati;
+    if (input && !input.value && state.driverMission?.id === mission.id && routeTotalKm(route) != null) {
+      input.value = routeTotalKm(route);
     }
     try {
       const detail = await request(`/api/v1/autista/missioni/${mission.id}`);
@@ -708,7 +777,7 @@
   function rowFor(view, item) {
     if (view === "clienti") {
       return `<tr>
-        <td class="primary-cell">${safe(item.nome)}<div class="secondary-cell">ID ${safe(item.id)}</div></td>
+        <td class="primary-cell">${safe(fullName(item))}<div class="secondary-cell">ID ${safe(item.id)}</div></td>
         <td>${safe(item.telefono)}</td>
         <td>${safe(item.targa)}<div class="secondary-cell">${safe(item.modelloVeicolo)}</div></td>
         <td>${safe(item.compagniaNome)}</td>
@@ -717,12 +786,12 @@
       </tr>`;
     }
     if (view === "autisti") {
-      const busy = item.disponibilita === "occupato";
+      const availability = driverAvailability(item);
       return `<tr>
         <td class="primary-cell">${safe(item.nome)}<div class="secondary-cell">ID ${safe(item.id)}</div></td>
         <td>${safe(item.telefono)}</td><td>${safe(item.zona)}</td>
         <td>${safe(vehiclePlate(item.mezzoId))}</td>
-        <td><span class="availability${busy ? " busy" : ""}">${busy ? "Occupato" : "Disponibile"}</span></td>
+        <td><span class="availability${availability.free ? "" : " busy"}">${availability.label}</span></td>
       </tr>`;
     }
     if (view === "mezzi") {
@@ -732,6 +801,18 @@
       return `<tr><td class="primary-cell">${safe(item.nome)}</td><td>${safe(item.telefonoCentrale)}</td><td>${safe(item.emailSinistri)}</td></tr>`;
     }
     return `<tr><td class="primary-cell">${safe(item.nome)}</td><td>${safe(item.indirizzo)}</td><td>${safe(item.citta)}</td></tr>`;
+  }
+
+  function fullName(person) {
+    return [person?.nome, person?.cognome].filter(Boolean).join(" ");
+  }
+
+  function driverAvailability(driver) {
+    if (driver.disponibile === false || driver.disponibilita === "non_disponibile") {
+      return { free: false, label: "Non disponibile" };
+    }
+    if (driver.disponibilita === "occupato") return { free: false, label: "Occupato" };
+    return { free: true, label: "Disponibile" };
   }
 
   function vehiclePlate(vehicleId) {
@@ -827,43 +908,62 @@
       list.innerHTML = '<div class="empty-state"><span class="empty-icon">↗</span><h2 class="h6">Nessuna missione</h2><p class="small text-secondary mb-0">Crea una missione o modifica i filtri.</p></div>';
       return;
     }
-    list.innerHTML = state.missions.map((mission) => {
-      const canPropose = $("#missionMode").value === "live"
-        && ["nuova", "non_accettata", "scaduta"].includes(mission.stato);
-      const driverOptions = state.data.autisti.map((driver) =>
-        `<option value="${safe(driver.id)}"${driver.disponibilita === "occupato" ? " disabled" : ""}>${safe(driver.nome)}${driver.disponibilita === "occupato" ? " · occupato" : ""}</option>`
-      ).join("");
-      return `<article class="mission-card" data-mission-card="${safe(mission.id)}">
-        <div class="mission-card-header">
-          <div><span class="mission-code">${safe(mission.codice)}</span><span class="mission-status status-${safe(mission.stato)}">${safe(statusLabel(mission.stato))}</span></div>
-          <span class="small text-secondary">${safe(formatDateTime(mission.chiusaIl || mission.scadenzaIl))}</span>
-        </div>
-        <div class="mission-card-grid">
-          ${missionCustomerMarkup(mission, true)}
-          <div><span class="field-label">Luogo</span><strong>${safe(mission.origineIndirizzo)}</strong></div>
-          <div><span class="field-label">Autista</span><strong>${safe(state.data.autisti.find((driver) => driver.id === mission.autistaId)?.nome || (mission.autistaId ? `Autista #${mission.autistaId}` : "Non assegnato"))}</strong>${mission.stato === "proposta" ? `<span class="countdown" data-deadline="${safe(mission.scadenzaIl)}"></span>` : ""}</div>
-          ${missionWorkshopMarkup(mission, true)}
-          <div><span class="field-label">Esito / importo</span><strong>${safe(mission.kmEffettivi != null ? `${mission.kmEffettivi} km · ${mission.costoFinale != null ? formatEuro(mission.costoFinale) : "Importo non disponibile"}` : mission.tipoIntervento === "traino" ? "Traino" : "Riparazione sul posto")}</strong></div>
-        </div>
-        <p class="mission-description">${safe(mission.descrizioneProblema)}</p>
-        <section class="mission-notes">
-          <button class="btn btn-link btn-sm px-0" type="button" data-mission-notes="${safe(mission.id)}" aria-expanded="false" aria-controls="mission-notes-${safe(mission.id)}">Mostra segnalazioni</button>
-          <div class="note-list d-none" id="mission-notes-${safe(mission.id)}"><p class="small text-secondary mb-0">Apri per caricare le segnalazioni.</p></div>
-        </section>
-        <section class="mission-notes">
-          <button class="btn btn-link btn-sm px-0" type="button" data-mission-map="${safe(mission.id)}" aria-expanded="false">Mostra mappa</button>
-          ${missionMapMarkup(mission.id, true)}
-        </section>
-        <section class="mission-notes">
-          <button class="btn btn-link btn-sm px-0" type="button" data-mission-proposals="${safe(mission.id)}" aria-expanded="false" aria-controls="mission-proposals-${safe(mission.id)}">Mostra storico proposte</button>
-          <div class="note-list d-none" id="mission-proposals-${safe(mission.id)}"></div>
-        </section>
-        ${costCorrectionMarkup(mission)}
-        ${canPropose ? interventionFormMarkup(mission) : ""}
-        ${canPropose ? `<div class="mission-propose"><label class="visually-hidden" for="driver-${safe(mission.id)}">Seleziona autista</label><select class="form-select form-select-sm" id="driver-${safe(mission.id)}"><option value="">Seleziona autista</option>${driverOptions}</select><button class="btn btn-sm btn-outline-primary" type="button" data-propose="${safe(mission.id)}">Invia proposta</button><button class="btn btn-sm btn-primary" type="button" data-propose-nearest="${safe(mission.id)}">Proponi al più vicino</button></div>` : ""}
-      </article>`;
-    }).join("");
+    list.innerHTML = state.missions.map(missionCardMarkup).join("");
     updateCountdowns();
+  }
+
+  function driverName(driverId) {
+    return state.data.autisti.find((driver) => driver.id === driverId)?.nome || (driverId ? `Autista #${driverId}` : "Non assegnato");
+  }
+
+  function interventionText(mission) {
+    return mission.tipoIntervento === "traino" ? "Traino" : "Riparazione sul posto";
+  }
+
+  function missionOutcomeText(mission) {
+    if (mission.kmEffettivi != null) {
+      return `${mission.kmEffettivi} km · ${mission.costoFinale != null ? formatEuro(mission.costoFinale) : "Importo non disponibile"}`;
+    }
+    return interventionText(mission);
+  }
+
+  function missionCardMarkup(mission) {
+    const id = safe(mission.id);
+    const live = $("#missionMode").value === "live";
+    const canPropose = live && PROPOSABLE_STATES.includes(mission.stato);
+    const driverOptions = state.data.autisti.map((driver) => {
+      const availability = driverAvailability(driver);
+      return `<option value="${safe(driver.id)}"${availability.free ? "" : " disabled"}>${safe(driver.nome)}${availability.free ? "" : ` · ${availability.label.toLowerCase()}`}</option>`;
+    }).join("");
+    const refusals = Number(mission.esitiNegativi) > 0
+      ? `<span class="refusal-count">Esiti negativi: ${safe(mission.esitiNegativi)} su 3</span>`
+      : "";
+    const problem = PROBLEM_LABELS[mission.tipoProblema];
+    return `<article class="mission-card" data-mission-card="${id}">
+      <div class="mission-card-header">
+        <div><span class="mission-code">${safe(mission.codice)}</span><span class="mission-status status-${safe(mission.stato)}">${safe(statusLabel(mission.stato))}</span></div>
+        <span class="small text-secondary">${safe(formatDateTime(mission.chiusaIl || mission.annullataIl || mission.scadenzaIl || mission.creataIl))}</span>
+      </div>
+      ${missionCustomerRow(mission)}
+      <div class="mission-card-grid">
+        <div><span class="field-label">Luogo di fermo</span><strong>${safe(mission.origineIndirizzo)}</strong></div>
+        <div><span class="field-label">Autista</span><strong>${safe(driverName(mission.autistaId))}</strong>${mission.stato === "proposta" ? `<span class="countdown" data-deadline="${safe(mission.scadenzaIl)}"></span>` : ""}${refusals}</div>
+        ${missionWorkshopMarkup(mission, true)}
+        <div><span class="field-label">Esito / importo</span><strong>${safe(missionOutcomeText(mission))}</strong></div>
+      </div>
+      <p class="mission-description">${problem && problem === mission.descrizioneProblema ? "" : safe(mission.descrizioneProblema)}${problem ? `<span class="problem-tag">${safe(problem)}</span>` : ""}</p>
+      <div class="mission-toolbar">
+        <button class="btn btn-sm btn-outline-secondary" type="button" data-mission-notes="${id}" aria-expanded="false" aria-controls="mission-notes-${id}">Mostra avvisi</button>
+        <button class="btn btn-sm btn-outline-secondary" type="button" data-mission-map="${id}" aria-expanded="false">Mostra mappa</button>
+        <button class="btn btn-sm btn-outline-secondary" type="button" data-mission-proposals="${id}" aria-expanded="false" aria-controls="mission-proposals-${id}">Mostra storico proposte</button>
+      </div>
+      <div class="note-list d-none" id="mission-notes-${id}"></div>
+      ${missionMapMarkup(mission.id, true)}
+      <div class="note-list d-none" id="mission-proposals-${id}"></div>
+      ${costCorrectionMarkup(mission)}
+      ${canPropose ? interventionFormMarkup(mission) : ""}
+      ${canPropose ? `<div class="mission-propose"><label class="visually-hidden" for="driver-${id}">Seleziona autista</label><select class="form-select form-select-sm" id="driver-${id}"><option value="">Seleziona autista</option>${driverOptions}</select><button class="btn btn-sm btn-outline-primary" type="button" data-propose="${id}">Invia proposta</button><button class="btn btn-sm btn-primary" type="button" data-propose-nearest="${id}">Proponi al più vicino</button></div>` : ""}
+    </article>`;
   }
 
   function statusLabel(status) {
@@ -1147,7 +1247,7 @@
       <div class="mission-card-header"><div><span class="mission-code">${safe(mission.codice)}</span><span class="mission-status status-proposta">Proposta</span></div><strong class="countdown" data-deadline="${safe(mission.scadenzaIl)}"></strong></div>
       <div class="mission-card-grid">
         ${driverCustomerMarkup(mission)}
-        <div><span class="field-label">Luogo</span><strong>${safe(mission.origineIndirizzo)}</strong></div>
+        <div><span class="field-label">Luogo di fermo</span><strong>${safe(mission.origineIndirizzo)}</strong></div>
         <div><span class="field-label">Intervento</span><strong>${safe(mission.tipoIntervento === "traino" ? "Traino" : "Riparazione sul posto")}</strong></div>
         ${driverWorkshopMarkup(mission)}
         ${driverEstimateMarkup(mission)}
@@ -1163,7 +1263,7 @@
       <div class="mission-card-header"><div><span class="mission-code">${safe(mission.codice)}</span><span class="mission-status status-accettata">In corso</span></div><span class="small text-secondary">Accettata ${safe(formatDateTime(mission.accettataIl))}</span></div>
       <div class="mission-card-grid">
         ${driverCustomerMarkup(mission)}
-        <div><span class="field-label">Luogo intervento</span><strong>${safe(mission.origineIndirizzo)}</strong></div>
+        <div><span class="field-label">Luogo di fermo</span><strong>${safe(mission.origineIndirizzo)}</strong></div>
         ${driverWorkshopMarkup(mission)}
         <div><span class="field-label">Intervento</span><strong>${safe(mission.tipoIntervento === "traino" ? "Traino" : "Riparazione sul posto")}</strong></div>
         ${driverEstimateMarkup(mission)}
@@ -1192,7 +1292,7 @@
       const result = await request("/api/v1/autista/storico");
       $("#driverTotal").textContent = formatEuro(result.totaleEur);
       $("#driverHistory").innerHTML = result.missioni.length ? result.missioni.map((mission) =>
-        `<article class="mission-card history-card"><div class="mission-card-header"><div><span class="mission-code">${safe(mission.codice)}</span><span class="mission-status status-eseguita">Eseguita</span></div><span class="small text-secondary">${safe(formatDateTime(mission.chiusaIl))}</span></div><div class="mission-card-grid"><div><span class="field-label">Cliente</span><strong>Cliente #${safe(mission.clienteId)}</strong></div><div><span class="field-label">Luogo</span><strong>${safe(mission.origineIndirizzo)}</strong></div><div><span class="field-label">Km percorsi</span><strong>${safe(mission.kmEffettivi)} km</strong></div><div><span class="field-label">Guadagno</span><strong>${safe(formatEuro(mission.costoFinale))}</strong></div></div></article>`
+        `<article class="mission-card history-card"><div class="mission-card-header"><div><span class="mission-code">${safe(mission.codice)}</span><span class="mission-status status-eseguita">Eseguita</span></div><span class="small text-secondary">${safe(formatDateTime(mission.chiusaIl))}</span></div><div class="mission-card-grid"><div><span class="field-label">Cliente</span><strong>Cliente #${safe(mission.clienteId)}</strong></div><div><span class="field-label">Luogo di fermo</span><strong>${safe(mission.origineIndirizzo)}</strong></div><div><span class="field-label">Km percorsi</span><strong>${safe(mission.kmEffettivi)} km</strong></div><div><span class="field-label">Guadagno</span><strong>${safe(formatEuro(mission.costoFinale))}</strong></div></div></article>`
       ).join("") : '<div class="empty-state"><h2 class="h6">Nessuna missione completata</h2><p class="small text-secondary mb-0">Lo storico sarà aggiornato al termine delle missioni.</p></div>';
     } catch (error) {
       showInlineAlert("#historyAlert", error.message);
@@ -1324,7 +1424,7 @@
     const payload = Object.fromEntries(form.entries());
     payload.targa = payload.targa.trim().toUpperCase();
     payload.compagniaId = Number(payload.compagniaId);
-    for (const optional of ["modelloVeicolo", "cittaResidenza"]) {
+    for (const optional of ["cognome", "modelloVeicolo", "cittaResidenza"]) {
       if (!payload[optional]) delete payload[optional];
     }
 
@@ -1395,18 +1495,16 @@
       if (!noteList.classList.contains("d-none")) {
         noteList.classList.add("d-none");
         notesButton.setAttribute("aria-expanded", "false");
-        notesButton.textContent = "Mostra segnalazioni";
+        notesButton.textContent = "Mostra avvisi";
         return;
       }
       noteList.classList.remove("d-none");
-      noteList.innerHTML = '<p class="small text-secondary mb-0">Caricamento segnalazioni…</p>';
+      noteList.innerHTML = '<p class="small text-secondary mb-0">Caricamento avvisi…</p>';
       notesButton.setAttribute("aria-expanded", "true");
-      notesButton.textContent = "Nascondi segnalazioni";
+      notesButton.textContent = "Nascondi avvisi";
       notesButton.disabled = true;
       try {
         await loadMissionNotes(missionId, noteList);
-        notesButton.setAttribute("aria-expanded", "true");
-        notesButton.textContent = "Nascondi segnalazioni";
       } catch (error) {
         noteList.textContent = error.message;
         showInlineAlert("#missionAlert", error.message);
@@ -1538,7 +1636,7 @@
       formElement.reset();
       bootstrap.Modal.getOrCreateInstance($("#missionModal")).hide();
       await loadMissions();
-      showInlineAlert("#missionAlert", "Missione creata. Ora puoi inviare una proposta a un autista.", "success");
+      showInlineAlert("#missionAlert", "Missione creata.", "success");
     } catch (error) {
       alert.textContent = error.message;
       alert.classList.remove("d-none");

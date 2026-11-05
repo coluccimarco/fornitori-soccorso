@@ -453,7 +453,7 @@
               <div class="col-md-6"><label class="form-label" for="missionType">Tipo intervento *</label><select class="form-select" id="missionType" required><option value="traino">Traino</option><option value="riparazione_sul_posto">Riparazione sul posto</option></select></div>
               <div class="col-md-6"><label class="form-label" for="missionWorkshop">Officina <span class="text-secondary">(obbligatoria per il traino)</span></label><select class="form-select" id="missionWorkshop"><option value="">Seleziona officina</option></select></div>
               <div class="col-md-6"><label class="form-label" for="missionChannel">Canale *</label><select class="form-select" id="missionChannel"><option value="centrale">Centrale</option><option value="whatsapp">WhatsApp</option><option value="telegram">Telegram</option></select></div>
-              <div class="col-12"><label class="form-label" for="missionOrigin">Luogo dell'intervento *</label><input class="form-control" id="missionOrigin" maxlength="500" required></div>
+              <div class="col-12"><label class="form-label" for="missionOrigin">Luogo di fermo *</label><input class="form-control" id="missionOrigin" maxlength="500" required></div>
               <div class="col-12"><label class="form-label" for="missionProblem">Problema / note *</label><textarea class="form-control" id="missionProblem" maxlength="2000" rows="3" required></textarea></div>
             </div>
           </div>
@@ -477,7 +477,8 @@
           <div class="modal-body">
             <div id="customerFormAlert" class="alert alert-danger d-none" role="alert"></div>
             <div class="row g-3">
-              <div class="col-md-6"><label class="form-label" for="customerName">Nome e cognome *</label><input id="customerName" name="nome" class="form-control" required maxlength="150"></div>
+              <div class="col-md-6"><label class="form-label" for="customerName">Nome *</label><input id="customerName" name="nome" class="form-control" required maxlength="150"></div>
+              <div class="col-md-6"><label class="form-label" for="customerSurname">Cognome</label><input id="customerSurname" name="cognome" class="form-control" maxlength="150"></div>
               <div class="col-md-6"><label class="form-label" for="customerPhone">Telefono *</label><input id="customerPhone" name="telefono" class="form-control" required maxlength="32"></div>
               <div class="col-md-6"><label class="form-label" for="customerPlate">Targa *</label><input id="customerPlate" name="targa" class="form-control text-uppercase" required maxlength="20"></div>
               <div class="col-md-6"><label class="form-label" for="customerVehicle">Modello veicolo</label><input id="customerVehicle" name="modelloVeicolo" class="form-control" maxlength="150"></div>
