@@ -393,7 +393,8 @@
   }
 
   function driverOnSiteMarkup(mission) {
-    const phone = mission.telefonoSulPosto ?? state.driverDetails[mission.id]?.missione?.telefonoSulPosto;
+    const detail = state.driverDetails[mission.id];
+    const phone = mission.telefonoSulPosto ?? detail?.cliente?.telefonoSulPosto ?? detail?.missione?.telefonoSulPosto;
     return phone ? `<div><span class="field-label">Persona sul posto</span>${telLink(phone)}</div>` : "";
   }
 
@@ -1390,7 +1391,8 @@
     const manager = state.user?.ruolo === "responsabile";
     let footer = "";
     if (support && note.gestitaIl) {
-      footer = `<p class="note-state">Gestita il ${safe(formatDateTime(note.gestitaIl))}${note.gestitaDa ? ` da ${safe(note.gestitaDa)}` : ""}</p>`;
+      // gestitaDa è l'id dell'utente: non è un nome da mostrare.
+      footer = `<p class="note-state">Gestita il ${safe(formatDateTime(note.gestitaIl))}</p>`;
     } else if (support && manager) {
       footer = `<button class="btn btn-sm btn-danger mt-2" type="button" data-note-done="${safe(note.id)}" data-mission-id="${safe(missionId)}">Segna come gestito</button>`;
     } else if (support) {
