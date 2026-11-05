@@ -13,6 +13,7 @@
 - [Matrice di tracciabilità](./requirements/REQUIREMENTS_TRACEABILITY.md)
 - [Manuale utente](./manuals/MANUALE_UTENTE.md) · [Manuale tecnico](./manuals/MANUALE_TECNICO.md)
 - [Guide del team](./team/) · [Word modificabili](./word/)
+- [Checklist per l'ambiente reale](./deploy/CHECKLIST_AMBIENTE_REALE.md)
 
 ## Catalogo
 
