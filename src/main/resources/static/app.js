@@ -21,11 +21,35 @@
     driverSignature: "",
     deadlineTimer: null,
     deadlineRefreshAt: 0,
-    deadlineRefreshPending: false
+    deadlineRefreshPending: false,
+    dashboardTimer: null,
+    dashboardFailed: false,
+    missionFilter: null
   };
 
   const ALERT_POLL_MS = 15000;
   const DRIVER_POLL_MS = 15000;
+  const DASHBOARD_POLL_MS = 30000;
+  // Ordine di lettura del grafico: dagli stati che richiedono un intervento a quelli finali.
+  const STATUS_ORDER = ["verifica_polizza", "gestione_manuale", "nuova", "proposta", "accettata", "non_accettata", "scaduta", "eseguita", "annullata"];
+  const CRITICAL_STATES = ["verifica_polizza", "gestione_manuale"];
+  const CATEGORIES = {
+    critiche: { label: "Critiche", stati: CRITICAL_STATES, supporto: true },
+    verificaPolizza: { label: "Verifica polizza", stati: ["verifica_polizza"] },
+    rifiutateTreAutisti: { label: "Rifiutate da 3 autisti", stati: ["gestione_manuale"] },
+    supportoAperto: { label: "Supporto aperto", stati: [], supporto: true },
+    daAssegnare: { label: "Da assegnare", stati: ["nuova"] },
+    pending: { label: "Pending", stati: ["proposta", "accettata"] },
+    ko: { label: "KO", stati: ["non_accettata", "scaduta"] },
+    ok: { label: "OK", stati: ["eseguita"] },
+    annullate: { label: "Annullate", stati: ["annullata"] }
+  };
+  const CATEGORY_TILES = ["critiche", "daAssegnare", "rifiutateTreAutisti", "ko", "ok", "pending", "annullate"];
+  const CRITICAL_MOTIVES = {
+    VERIFICA_POLIZZA: "Verifica polizza",
+    TRE_RIFIUTI: "Rifiutata da 3 autisti",
+    SUPPORTO_AUTISTA: "Supporto autista"
+  };
   const ERROR_TEXTS = {
     invalid_request: "Controlla i dati inseriti e riprova.",
     not_found: "Elemento non trovato: aggiorna la pagina.",
@@ -145,6 +169,7 @@
 
   function showLogin(message = "") {
     stopDriverPolling();
+    stopDashboardPolling();
     state.user = null;
     state.csrf = null;
     publicView.classList.add("d-none");
@@ -183,6 +208,7 @@
   function showPublic() {
     stopAlertPolling();
     stopDriverPolling();
+    stopDashboardPolling();
     state.user = null;
     state.csrf = null;
     loginView.classList.add("d-none");
@@ -230,7 +256,7 @@
     renderOverview();
     renderCompanies();
     if (state.currentView === "missioni") renderMissionList();
-    else if (state.currentView !== "dashboard") renderRegistry(state.currentView);
+    else if (viewConfig[state.currentView]) renderRegistry(state.currentView);
     if (errors.length) showPageAlert(`Alcune anagrafiche non sono state caricate. ${errors.join(" ")}`);
   }
 
@@ -571,6 +597,8 @@
     $("#alertPanel").classList.add("d-none");
     $("#alertButton").setAttribute("aria-expanded", "false");
     state.currentView = "missioni";
+    state.missionFilter = null;
+    stopDashboardPolling();
     $("#missionMode").value = "live";
     $("#missionStatus").value = "";
     goToView("missioni");
@@ -599,13 +627,14 @@
   function goToView(view) {
     const previousView = state.currentView;
     const permitted = state.user?.ruolo === "responsabile"
-      ? ["dashboard", "missioni", ...Object.keys(viewConfig)]
+      ? ["dashboard", "missioni", "costi", ...Object.keys(viewConfig)]
       : ["autista", "storico"];
     state.currentView = permitted.includes(view) ? view : (state.user?.ruolo === "responsabile" ? "dashboard" : "autista");
     if (state.currentView !== previousView) resetRegistrySearch();
     const pages = {
       dashboard: "#dashboardPage",
       missioni: "#missionPage",
+      costi: "#costPage",
       autista: "#driverPage",
       storico: "#historyPage"
     };
@@ -616,12 +645,15 @@
       $("#registryPage").classList.remove("d-none");
       renderRegistry(state.currentView);
     }
-    const titles = { dashboard: "Panoramica", missioni: "Missioni", autista: "Le mie missioni", storico: "Storico e guadagni" };
+    const titles = { dashboard: "Dashboard", missioni: "Missioni", costi: "Costi e analisi", autista: "Le mie missioni", storico: "Storico e guadagni" };
     $("#currentSection").textContent = titles[state.currentView] || viewConfig[state.currentView]?.title || "";
     document.querySelectorAll("[data-view-link]").forEach((button) => {
       button.classList.toggle("active", button.dataset.viewLink === state.currentView);
     });
+    if (state.currentView === "dashboard") startDashboardPolling();
+    else stopDashboardPolling();
     if (state.currentView === "missioni") void loadMissions(true);
+    if (state.currentView === "costi") void loadCosts();
     if (state.currentView === "autista") void loadDriverMissions(true);
     if (state.currentView === "storico") void loadDriverHistory();
     $("#sidebar").classList.remove("sidebar-open");
@@ -744,33 +776,48 @@
     }
     const mode = $("#missionMode").value;
     const status = $("#missionStatus").value;
+    const filter = state.missionFilter;
     const params = new URLSearchParams({ mode });
-    if (status) params.set("stato", status);
+    // Il parametro stato accetta un solo valore: i filtri della dashboard si applicano qui.
+    if (status && !filter) params.set("stato", status);
+    renderMissionFilter();
     try {
       const [missions, dashboard, drivers] = await Promise.all([
         request(`/api/v1/missioni?${params}`),
         request(`/api/v1/dashboard?mode=${encodeURIComponent(mode)}`),
         request("/api/v1/autisti")
       ]);
-      state.missions = missions;
+      state.missions = filter ? missions.filter((mission) => matchesFilter(mission, filter)) : missions;
       state.data.autisti = drivers;
       $("#missionPendingCount").textContent = dashboard.pending;
       $("#missionDoneCount").textContent = dashboard.eseguite;
       $("#missionExpiredCount").textContent = dashboard.scadute;
       $("#missionRejectedCount").textContent = dashboard.nonAccettate;
       $("#missionRevenue").textContent = formatEuro(dashboard.totaleEur);
-      $("#driverTotals").innerHTML = dashboard.totalePerAutista.length
-        ? dashboard.totalePerAutista.map((driver) =>
-          `<div class="driver-total-row"><span>${safe(driver.autistaNome)} <small>${safe(driver.missioniEseguite)} missioni</small></span><strong>${safe(formatEuro(driver.totaleEur))}</strong></div>`
-        ).join("")
-        : '<span class="small text-secondary">Nessun guadagno registrato.</span>';
-      $("#missionCount").textContent = `${missions.length} ${missions.length === 1 ? "missione" : "missioni"}`;
+      $("#missionCount").textContent = `${state.missions.length} ${state.missions.length === 1 ? "missione" : "missioni"}`;
       renderMissionList();
     } catch (error) {
       showInlineAlert("#missionAlert", error.message);
       $("#missionList").innerHTML = "";
       $("#missionCount").textContent = "Dati non disponibili";
     }
+  }
+
+  function matchesFilter(mission, filter) {
+    return filter.stati.includes(mission.stato) || (filter.supporto === true && mission.supportoAperto === true);
+  }
+
+  function renderMissionFilter() {
+    const filter = state.missionFilter;
+    $("#missionFilterChip").classList.toggle("d-none", !filter);
+    $("#missionFilterLabel").textContent = filter ? `Filtro: ${filter.label}` : "";
+  }
+
+  function showFilteredMissions(filter) {
+    state.missionFilter = filter;
+    $("#missionMode").value = "live";
+    $("#missionStatus").value = "";
+    goToView("missioni");
   }
 
   function renderMissionList() {
@@ -822,7 +869,8 @@
   function statusLabel(status) {
     return ({
       nuova: "Nuova", proposta: "Proposta", accettata: "Accettata", eseguita: "Eseguita",
-      non_accettata: "Rifiutata", scaduta: "Scaduta", chiusa: "Chiusa"
+      non_accettata: "Rifiutata", scaduta: "Scaduta", chiusa: "Chiusa",
+      verifica_polizza: "Verifica polizza", gestione_manuale: "Gestione manuale", annullata: "Annullata"
     })[status] || status;
   }
 
@@ -839,6 +887,221 @@
     return proposals.map((proposal) =>
       `<article class="note-item"><div><strong>${safe(proposal.autistaNome || `Autista #${proposal.autistaId}`)}</strong><time>${safe(formatDateTime(proposal.propostaIl))}</time></div><p>${safe(statusLabel(proposal.stato))}${proposal.rispostaIl ? ` il ${safe(formatDateTime(proposal.rispostaIl))}` : ""}</p></article>`
     ).join("");
+  }
+
+  /** Evita di riscrivere il DOM (e perdere il focus) quando l'aggiornamento periodico non cambia nulla. */
+  function setHtml(element, html) {
+    if (element.dataset.rendered === html) return;
+    element.innerHTML = html;
+    element.dataset.rendered = html;
+  }
+
+  function startDashboardPolling() {
+    stopDashboardPolling();
+    if (document.hidden) return;
+    void loadDashboard();
+    state.dashboardTimer = window.setInterval(() => void loadDashboard(), DASHBOARD_POLL_MS);
+  }
+
+  function stopDashboardPolling() {
+    if (state.dashboardTimer) window.clearInterval(state.dashboardTimer);
+    state.dashboardTimer = null;
+  }
+
+  async function loadDashboard() {
+    try {
+      const dashboard = await request("/api/v1/dashboard?mode=live");
+      if (state.dashboardFailed) $("#dashboardAlert").classList.add("d-none");
+      state.dashboardFailed = false;
+      renderDashboard(dashboard);
+    } catch (error) {
+      if (error.status === 401) {
+        stopDashboardPolling();
+        return;
+      }
+      state.dashboardFailed = true;
+      showInlineAlert("#dashboardAlert", error.message);
+    }
+  }
+
+  function renderDashboard(dashboard) {
+    const time = new Intl.DateTimeFormat("it-IT", { timeStyle: "medium" }).format(new Date());
+    $("#dashboardUpdated").textContent = `Ultimo aggiornamento: ${time}.`;
+    renderCriticalQueue(dashboard);
+    renderCategoryTiles(dashboard.categorie);
+    const distribution = dashboard.distribuzioneStati;
+    $("#statusChartPanel").classList.toggle("d-none", !distribution);
+    if (distribution) renderStatusChart(distribution);
+  }
+
+  function missionAgeText(value) {
+    const minutes = Math.floor((Date.now() - new Date(value).getTime()) / 60000);
+    if (!Number.isFinite(minutes)) return "";
+    if (minutes < 1) return "adesso";
+    if (minutes < 60) return `da ${minutes} min`;
+    if (minutes < 1440) return `da ${Math.floor(minutes / 60)} h`;
+    return `da ${Math.floor(minutes / 1440)} g`;
+  }
+
+  function telLink(number) {
+    if (!number) return "";
+    return `<a href="tel:${safe(String(number).replace(/[^+0-9]/g, ""))}">${safe(number)}</a>`;
+  }
+
+  function renderCriticalQueue(dashboard) {
+    const queue = dashboard.codaCritica;
+    const categories = dashboard.categorie;
+    const panel = $("#criticalPanel");
+    const total = categories?.critiche ?? queue?.length ?? 0;
+    panel.classList.toggle("is-clear", Array.isArray(queue) && queue.length === 0);
+    $("#criticalCount").textContent = total;
+    $("#criticalCount").classList.toggle("d-none", !total);
+    setHtml($("#criticalChips"), categories
+      ? ["verificaPolizza", "rifiutateTreAutisti", "supportoAperto"].map((key) =>
+        `<button class="critical-chip" type="button" data-filter-category="${key}">${safe(CATEGORIES[key].label)} <strong>${safe(categories[key] ?? 0)}</strong></button>`
+      ).join("")
+      : "");
+    if (!Array.isArray(queue)) {
+      setHtml($("#criticalQueue"), '<p class="small text-secondary mb-0">Coda critica non disponibile: il server non fornisce ancora questi dati.</p>');
+      return;
+    }
+    if (!queue.length) {
+      setHtml($("#criticalQueue"), '<p class="critical-clear mb-0">✓ Nessuna missione critica in questo momento.</p>');
+      return;
+    }
+    const more = total > queue.length
+      ? `<button class="btn btn-link btn-sm px-0" type="button" data-filter-category="critiche">Mostrate le prime ${queue.length} di ${safe(total)}: vedi tutte</button>`
+      : "";
+    setHtml($("#criticalQueue"), queue.map(criticalRowMarkup).join("") + more);
+  }
+
+  function criticalRowMarkup(item) {
+    const contacts = [
+      item.clienteNome ? safe(item.clienteNome) : '<span class="data-unavailable">Cliente da identificare</span>',
+      item.targa ? `Targa <strong>${safe(item.targa)}</strong>` : "",
+      item.telefonoSulPosto ? `Sul posto ${telLink(item.telefonoSulPosto)}` : ""
+    ].filter(Boolean).join(" · ");
+    return `<article class="critical-row motive-${safe(item.motivo)}">
+      <div class="critical-row-main">
+        <div class="critical-row-title"><span class="motive-badge">${safe(CRITICAL_MOTIVES[item.motivo] || item.motivo)}</span><span class="mission-code">${safe(item.codice)}</span><span class="critical-age">${safe(missionAgeText(item.creataIl))}</span></div>
+        <p class="critical-place"><span class="field-label">Luogo di fermo</span> ${safe(item.origineIndirizzo)}</p>
+        <p class="critical-contacts">${contacts}</p>
+      </div>
+      <div class="critical-row-actions">${criticalActionsMarkup(item)}</div>
+    </article>`;
+  }
+
+  function criticalActionsMarkup(item) {
+    const id = safe(item.id);
+    const open = `<button class="btn btn-sm btn-outline-secondary" type="button" data-open-mission="${id}">Apri missione</button>`;
+    const propose = item.motivo === "TRE_RIFIUTI"
+      ? `<button class="btn btn-sm btn-primary" type="button" data-propose-nearest="${id}">Proponi al più vicino</button>`
+      : "";
+    return `${propose}${open}`;
+  }
+
+  function renderCategoryTiles(categories) {
+    if (!categories) {
+      setHtml($("#categoryTiles"), '<p class="small text-secondary mb-0">Riepilogo per categoria non disponibile: il server non fornisce ancora questi dati.</p>');
+      return;
+    }
+    setHtml($("#categoryTiles"), CATEGORY_TILES.map((key) => {
+      const value = categories[key] ?? 0;
+      const alert = key === "critiche" && value > 0 ? " is-alert" : "";
+      return `<button class="category-tile tile-${key}${alert}" type="button" data-filter-category="${key}"><span class="category-label">${safe(CATEGORIES[key].label)}</span><span class="category-value">${safe(value)}</span></button>`;
+    }).join(""));
+  }
+
+  function renderStatusChart(distribution) {
+    const known = [...STATUS_ORDER, ...Object.keys(distribution).filter((key) => !STATUS_ORDER.includes(key))];
+    const rows = known.map((key) => ({
+      key, label: statusLabel(key), value: Number(distribution[key] || 0), critical: CRITICAL_STATES.includes(key)
+    }));
+    setHtml($("#statusChart"), columnChartMarkup(rows, {
+      format: String, valueLabel: "Missioni", nameLabel: "Stato", filterable: true
+    }));
+  }
+
+  /** Istogramma in HTML/CSS: una sola scala, un solo colore (rosso solo per gli stati critici, già nominati in etichetta). */
+  function columnChartMarkup(rows, { format, valueLabel, nameLabel, filterable = false }) {
+    const max = Math.max(...rows.map((row) => row.value), 0);
+    const columns = rows.map((row) => {
+      const share = max > 0 ? (row.value / max) * 100 : 0;
+      const text = safe(format(row.value));
+      const tag = filterable ? "button" : "div";
+      const attributes = filterable ? ` type="button" data-filter-status="${safe(row.key)}"` : "";
+      return `<${tag} class="chart-column${row.critical ? " is-critical" : ""}" title="${safe(row.label)}: ${text}"${attributes}><span class="chart-value">${text}</span><span class="chart-track"><span class="chart-fill" style="--share:${share.toFixed(1)}%"></span></span><span class="chart-label">${safe(row.label)}</span></${tag}>`;
+    }).join("");
+    return `<div class="column-chart" style="--columns:${rows.length}">${columns}</div>${chartTableMarkup(rows, format, nameLabel, valueLabel)}`;
+  }
+
+  function barChartMarkup(rows, { format, valueLabel, nameLabel }) {
+    const max = Math.max(...rows.map((row) => row.value), 0);
+    const bars = rows.map((row) => {
+      const share = max > 0 ? (row.value / max) * 100 : 0;
+      const text = safe(format(row.value));
+      return `<div class="chart-bar" title="${safe(row.label)}: ${text}"><span class="chart-bar-label">${safe(row.label)}${row.note ? ` <small>${safe(row.note)}</small>` : ""}</span><span class="chart-track"><span class="chart-fill" style="--share:${share.toFixed(1)}%"></span></span><span class="chart-value">${text}</span></div>`;
+    }).join("");
+    return `<div class="bar-chart">${bars}</div>${chartTableMarkup(rows, format, nameLabel, valueLabel)}`;
+  }
+
+  function chartTableMarkup(rows, format, nameLabel, valueLabel) {
+    const body = rows.map((row) => `<tr><td>${safe(row.label)}${row.note ? ` (${safe(row.note)})` : ""}</td><td class="text-end">${safe(format(row.value))}</td></tr>`).join("");
+    return `<details class="chart-table"><summary>Vedi i dati in tabella</summary><table class="table table-sm mb-0"><thead><tr><th scope="col">${safe(nameLabel)}</th><th scope="col" class="text-end">${safe(valueLabel)}</th></tr></thead><tbody>${body}</tbody></table></details>`;
+  }
+
+  function monthLabel(value) {
+    const match = /^(\d{4})-(\d{2})$/.exec(String(value));
+    if (!match) return String(value);
+    return new Intl.DateTimeFormat("it-IT", { month: "short", year: "numeric" })
+      .format(new Date(Number(match[1]), Number(match[2]) - 1, 1));
+  }
+
+  function costTileMarkup(label, value, note = "") {
+    return `<article class="cost-tile"><span class="stat-label">${safe(label)}</span><p class="stat-value">${safe(formatEuro(value))}</p>${note ? `<p class="small text-secondary mb-0">${safe(note)}</p>` : ""}</article>`;
+  }
+
+  async function loadCosts() {
+    $("#costAlert").classList.add("d-none");
+    try {
+      const dashboard = await request(`/api/v1/dashboard?mode=${encodeURIComponent($("#costMode").value)}`);
+      renderCosts(dashboard);
+    } catch (error) {
+      showInlineAlert("#costAlert", error.message);
+    }
+  }
+
+  function renderCosts(dashboard) {
+    const costs = dashboard.costi;
+    $("#costTiles").innerHTML = costs
+      ? costTileMarkup("Totale generale", costs.totaleGenerale, "Eseguite e annullate con costo attribuito")
+        + costTileMarkup("Missioni eseguite", costs.totaleEseguite)
+        + costTileMarkup("Annullate con costo attribuito", costs.totaleAnnullateAddebitate)
+      : costTileMarkup("Costo missioni eseguite", dashboard.totaleEur);
+    $("#costDriverColumn").classList.toggle("d-none", !costs);
+    $("#costMonthColumn").classList.toggle("d-none", !costs);
+    if (costs) {
+      const drivers = [...(costs.perAutista || [])].sort((a, b) => Number(b.totaleEur) - Number(a.totaleEur));
+      $("#costDriverChart").innerHTML = drivers.length
+        ? barChartMarkup(drivers.map((driver) => ({
+          label: driver.autistaNome || `Autista #${driver.autistaId}`,
+          note: `${driver.missioni} ${driver.missioni === 1 ? "missione" : "missioni"}`,
+          value: Number(driver.totaleEur || 0)
+        })), { format: formatEuro, nameLabel: "Autista", valueLabel: "Totale" })
+        : '<p class="small text-secondary mb-0">Nessun costo registrato.</p>';
+      const months = [...(costs.perMese || [])].sort((a, b) => String(a.mese).localeCompare(String(b.mese)));
+      $("#costMonthChart").innerHTML = months.length
+        ? columnChartMarkup(months.map((month) => ({
+          key: month.mese, label: monthLabel(month.mese), value: Number(month.totaleEur || 0)
+        })), { format: formatEuro, nameLabel: "Mese", valueLabel: "Totale" })
+        : '<p class="small text-secondary mb-0">Nessun costo registrato.</p>';
+    }
+    const totals = dashboard.totalePerAutista || [];
+    $("#driverTotals").innerHTML = totals.length
+      ? totals.map((driver) =>
+        `<div class="driver-total-row"><span>${safe(driver.autistaNome)} <small>${safe(driver.missioniEseguite)} missioni</small></span><strong>${safe(formatEuro(driver.totaleEur))}</strong></div>`
+      ).join("")
+      : '<span class="small text-secondary">Nessun guadagno registrato.</span>';
   }
 
   async function loadDriverMissions(showLoading = false) {
@@ -1085,8 +1348,23 @@
     }
   });
 
-  $("#missionMode").addEventListener("change", () => void loadMissions(true));
-  $("#missionStatus").addEventListener("change", () => void loadMissions(true));
+  $("#missionMode").addEventListener("change", () => {
+    state.missionFilter = null;
+    void loadMissions(true);
+  });
+  $("#missionStatus").addEventListener("change", () => {
+    state.missionFilter = null;
+    void loadMissions(true);
+  });
+  $("#missionFilterClear").addEventListener("click", () => {
+    state.missionFilter = null;
+    void loadMissions(true);
+  });
+  $("#costMode").addEventListener("change", () => void loadCosts());
+  $("#costRefreshButton").addEventListener("click", () => {
+    void loadRegistries();
+    void loadCosts();
+  });
   $("#missionList").addEventListener("click", async (event) => {
     const mapButton = event.target.closest("[data-mission-map]");
     if (mapButton) {
@@ -1158,25 +1436,6 @@
       }
       return;
     }
-    const nearestButton = event.target.closest("[data-propose-nearest]");
-    if (nearestButton) {
-      nearestButton.disabled = true;
-      try {
-        const proposal = await request(`/api/v1/missioni/${nearestButton.dataset.proposeNearest}/proposta-automatica`, {
-          method: "POST",
-          mutating: true
-        });
-        await loadMissions();
-        showInlineAlert("#missionAlert", `Proposta inviata a ${proposal.autistaNome} (base a ${proposal.distanzaKm} km).`, "success");
-      } catch (error) {
-        showInlineAlert("#missionAlert", ({
-          422: "Indirizzo non trovato: scegli l'autista a mano.",
-          503: "Servizio mappe non disponibile: scegli l'autista a mano."
-        })[error.status] || error.message);
-        nearestButton.disabled = false;
-      }
-      return;
-    }
     const button = event.target.closest("[data-propose]");
     if (!button) return;
     const missionId = button.dataset.propose;
@@ -1198,6 +1457,54 @@
       showInlineAlert("#missionAlert", error.message);
     } finally {
       button.disabled = false;
+    }
+  });
+
+  /** Ricarica la vista aperta dopo un'azione, poi mostra l'esito (il caricamento azzera il messaggio). */
+  async function refreshView(message = "", type = "success") {
+    const views = {
+      dashboard: [loadDashboard, "#dashboardAlert"],
+      missioni: [loadMissions, "#missionAlert"],
+      autista: [loadDriverMissions, "#driverAlert"]
+    };
+    const [load, alert] = views[state.currentView] || [async () => {}, "#pageAlert"];
+    await load();
+    if (message) showInlineAlert(alert, message, type);
+    if (state.user?.ruolo === "responsabile") void loadAlerts();
+  }
+
+  document.addEventListener("click", async (event) => {
+    const category = event.target.closest("[data-filter-category]");
+    if (category) {
+      showFilteredMissions(CATEGORIES[category.dataset.filterCategory]);
+      return;
+    }
+    const statusBar = event.target.closest("[data-filter-status]");
+    if (statusBar) {
+      const key = statusBar.dataset.filterStatus;
+      showFilteredMissions({ label: statusLabel(key), stati: [key] });
+      return;
+    }
+    const open = event.target.closest("[data-open-mission]");
+    if (open) {
+      void openMissionFromAlert(open.dataset.openMission);
+      return;
+    }
+    const nearest = event.target.closest("[data-propose-nearest]");
+    if (nearest) {
+      nearest.disabled = true;
+      try {
+        const proposal = await request(`/api/v1/missioni/${nearest.dataset.proposeNearest}/proposta-automatica`, {
+          method: "POST",
+          mutating: true
+        });
+        await refreshView(`Proposta inviata a ${proposal.autistaNome} (base a ${proposal.distanzaKm} km).`);
+      } catch (error) {
+        await refreshView(({
+          422: "Indirizzo non trovato: scegli l'autista a mano.",
+          503: "Servizio mappe non disponibile: scegli l'autista a mano."
+        })[error.status] || error.message, "danger");
+      }
     }
   });
 
@@ -1364,7 +1671,13 @@
   $("#driverRefreshButton").addEventListener("click", () => void loadDriverMissions(true));
   $("#refreshButton").addEventListener("click", () => {
     void loadRegistries();
-    if (state.currentView === "missioni") void loadMissions();
+    void loadDashboard();
+  });
+  // Niente richieste mentre la scheda del browser non è visibile.
+  document.addEventListener("visibilitychange", () => {
+    if (state.user?.ruolo !== "responsabile" || state.currentView !== "dashboard") return;
+    if (document.hidden) stopDashboardPolling();
+    else startDashboardPolling();
   });
 
   $("#menuButton").addEventListener("click", () => {

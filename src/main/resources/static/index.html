@@ -136,11 +136,19 @@
         <span class="brand-mark">F</span>
         <span>fornitori<span class="brand-dot">.</span></span>
       </a>
-      <p class="nav-caption">WORKSPACE</p>
       <nav class="side-nav" aria-label="Navigazione principale">
+        <p class="nav-caption" data-manager-only>OPERATIVITÀ</p>
         <button class="nav-link active" type="button" data-manager-only data-view-link="dashboard">
-          <span class="nav-icon">⌂</span><span>Panoramica</span>
+          <span class="nav-icon">⌂</span><span>Dashboard</span>
         </button>
+        <button class="nav-link" type="button" data-manager-only data-view-link="missioni">
+          <span class="nav-icon">↗</span><span>Missioni</span>
+        </button>
+        <p class="nav-caption nav-caption-spaced" data-manager-only>ANALISI</p>
+        <button class="nav-link" type="button" data-manager-only data-view-link="costi">
+          <span class="nav-icon">€</span><span>Costi e analisi</span>
+        </button>
+        <p class="nav-caption nav-caption-spaced" data-manager-only>ANAGRAFICHE</p>
         <button class="nav-link" type="button" data-manager-only data-view-link="clienti">
           <span class="nav-icon">◉</span><span>Clienti</span>
         </button>
@@ -156,10 +164,7 @@
         <button class="nav-link" type="button" data-manager-only data-view-link="officine">
           <span class="nav-icon">⌖</span><span>Officine</span>
         </button>
-        <p class="nav-caption nav-caption-spaced">OPERATIVITÀ</p>
-        <button class="nav-link" type="button" data-manager-only data-view-link="missioni">
-          <span class="nav-icon">↗</span><span>Missioni</span>
-        </button>
+        <p class="nav-caption d-none" data-driver-only>AREA AUTISTA</p>
         <button class="nav-link d-none" type="button" data-driver-only data-view-link="autista">
           <span class="nav-icon">↗</span><span>Le mie missioni</span>
         </button>
@@ -178,7 +183,7 @@
     <div class="main-column">
       <header class="topbar">
         <button id="menuButton" class="menu-button" type="button" aria-label="Apri navigazione" aria-expanded="false">☰</button>
-        <div class="breadcrumb-label"><span id="workspaceLabel">Centrale operativa</span> <span>/</span> <strong id="currentSection">Panoramica</strong></div>
+        <div class="breadcrumb-label"><span id="workspaceLabel">Centrale operativa</span> <span>/</span> <strong id="currentSection">Dashboard</strong></div>
         <div class="topbar-actions">
           <div class="alert-bell" id="alertBell" data-manager-only>
             <button id="alertButton" class="btn btn-light alert-bell-button" type="button" aria-label="Avvisi" aria-expanded="false" aria-controls="alertPanel">
@@ -201,15 +206,83 @@
         <section id="dashboardPage" class="page-section">
           <div class="page-heading">
             <div>
-              <p class="eyebrow mb-2">IL TUO WORKSPACE</p>
-              <h1>Panoramica</h1>
-              <p class="text-secondary mb-0">Dati aggiornati direttamente dalle anagrafiche.</p>
+              <p class="eyebrow mb-2">CENTRALE OPERATIVA</p>
+              <h1>Dashboard operativa</h1>
+              <p class="text-secondary mb-0">Si aggiorna da sola ogni 30 secondi. <span id="dashboardUpdated"></span></p>
             </div>
             <button id="refreshButton" class="btn btn-outline-secondary" type="button">
               <span class="refresh-icon">↻</span> Aggiorna dati
             </button>
           </div>
+          <div id="dashboardAlert" class="alert d-none" role="alert"></div>
 
+          <section id="criticalPanel" class="panel critical-panel" aria-labelledby="criticalTitle">
+            <div class="critical-heading">
+              <div class="critical-title">
+                <span class="critical-symbol" aria-hidden="true">!</span>
+                <h2 class="h5 mb-0" id="criticalTitle">Coda critica</h2>
+                <span id="criticalCount" class="critical-count d-none"></span>
+              </div>
+              <div id="criticalChips" class="critical-chips"></div>
+            </div>
+            <div id="criticalQueue" class="critical-queue">
+              <p class="small text-secondary mb-0">Caricamento…</p>
+            </div>
+          </section>
+
+          <div id="categoryTiles" class="category-grid"></div>
+
+          <section id="statusChartPanel" class="panel d-none" aria-labelledby="statusChartTitle">
+            <div class="panel-heading">
+              <div>
+                <h2 class="h5 mb-1" id="statusChartTitle">Missioni per stato</h2>
+                <p class="text-secondary small mb-0">Scegli una barra per vedere le missioni in quello stato.</p>
+              </div>
+            </div>
+            <div id="statusChart"></div>
+          </section>
+        </section>
+
+        <section id="costPage" class="page-section d-none" data-manager-only>
+          <div class="page-heading">
+            <div>
+              <p class="eyebrow mb-2">ANALISI</p>
+              <h1>Costi e analisi</h1>
+              <p class="text-secondary mb-0">Costi delle missioni eseguite e di quelle annullate con costo attribuito.</p>
+            </div>
+            <div class="cost-actions">
+              <label class="visually-hidden" for="costMode">Vista</label>
+              <select id="costMode" class="form-select form-select-sm mission-mode">
+                <option value="live">Operativa</option>
+                <option value="reference">Storico di riferimento</option>
+              </select>
+              <button id="costRefreshButton" class="btn btn-outline-secondary" type="button"><span class="refresh-icon">↻</span> Aggiorna</button>
+            </div>
+          </div>
+          <div id="costAlert" class="alert d-none" role="alert"></div>
+          <div id="costTiles" class="cost-tiles"></div>
+          <div class="row g-3 mb-3">
+            <div class="col-lg-6" id="costDriverColumn">
+              <section class="panel chart-panel" aria-labelledby="costDriverTitle">
+                <h2 class="h6 mb-1" id="costDriverTitle">Costo per autista</h2>
+                <p class="small text-secondary">Include gli importi attribuiti per le missioni annullate.</p>
+                <div id="costDriverChart"></div>
+              </section>
+            </div>
+            <div class="col-lg-6" id="costMonthColumn">
+              <section class="panel chart-panel" aria-labelledby="costMonthTitle">
+                <h2 class="h6 mb-1" id="costMonthTitle">Costo per mese</h2>
+                <p class="small text-secondary">Totale di ogni mese, in euro.</p>
+                <div id="costMonthChart"></div>
+              </section>
+            </div>
+          </div>
+          <section class="panel driver-totals-panel">
+            <div class="panel-heading mb-2"><div><h2 class="h6 mb-1">Guadagni per autista</h2><p class="small text-secondary mb-0">Totali sulle missioni eseguite nella vista selezionata.</p></div></div>
+            <div id="driverTotals" class="driver-total-list"><span class="small text-secondary">Caricamento…</span></div>
+          </section>
+
+          <h2 class="h5 section-title">Anagrafiche</h2>
           <div class="row g-3 stats-grid" aria-live="polite">
             <div class="col-6 col-xl-3">
               <article class="stat-card">
@@ -240,16 +313,6 @@
               </article>
             </div>
           </div>
-
-          <section class="panel mission-notice">
-            <div class="notice-symbol">↗</div>
-            <div>
-              <p class="eyebrow mb-1">PROSSIMO PASSO</p>
-              <h2 class="h5 mb-1">Gestione richieste di soccorso</h2>
-              <p class="text-secondary mb-0">Crea missioni, assegna gli autisti e monitora proposte, interventi e guadagni.</p>
-            </div>
-            <button class="btn btn-sm btn-outline-primary ms-auto" type="button" data-view-link="missioni">Apri missioni →</button>
-          </section>
 
           <section class="panel">
             <div class="panel-heading">
@@ -284,10 +347,6 @@
             <div class="col-6 col-xl"><article class="stat-card mission-stat"><span class="stat-label">Proposte non accettate</span><p class="stat-value" id="missionRejectedCount">—</p></article></div>
             <div class="col-6 col-xl"><article class="stat-card mission-stat"><span class="stat-label">Costo missioni eseguite</span><p class="stat-value" id="missionRevenue">—</p></article></div>
           </div>
-          <section class="panel driver-totals-panel">
-            <div class="panel-heading mb-2"><div><h2 class="h6 mb-1">Guadagni per autista</h2><p class="small text-secondary mb-0">Totali sulle missioni eseguite nella vista selezionata.</p></div></div>
-            <div id="driverTotals" class="driver-total-list"><span class="small text-secondary">Caricamento…</span></div>
-          </section>
           <div id="missionAlert" class="alert d-none" role="alert"></div>
           <section class="panel registry-panel">
             <div class="registry-toolbar">
@@ -304,7 +363,11 @@
                 <option value="eseguita">Eseguite</option>
                 <option value="non_accettata">Rifiutate</option>
                 <option value="scaduta">Scadute</option>
+                <option value="verifica_polizza">Verifica polizza</option>
+                <option value="gestione_manuale">Gestione manuale</option>
+                <option value="annullata">Annullate</option>
               </select>
+              <span id="missionFilterChip" class="filter-chip d-none"><span id="missionFilterLabel"></span><button id="missionFilterClear" class="btn-close btn-close-sm" type="button" aria-label="Togli il filtro"></button></span>
               <span id="missionCount" class="small text-secondary ms-auto"></span>
             </div>
             <div id="missionList" class="mission-list" aria-live="polite"></div>
