@@ -10,7 +10,6 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.List;
-import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.mockito.Mockito;
@@ -27,7 +26,8 @@ import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
         properties = "fornitori.missions.expiry-delay-ms=3600000")
 @EnabledIfEnvironmentVariable(named = "FORNITORI_TEST_DATABASE", matches = "isolated")
 class ErrorHandlingAndHttpTests {
-    private static final String PASSWORD = "Prova-" + UUID.randomUUID();
+    // La stessa delle altre classi: una password diversa bloccherebbe il login dei test eseguiti dopo.
+    private static final String PASSWORD = IsolatedPostgresTest.PASSWORD;
 
     @LocalServerPort int port;
     @Autowired JdbcTemplate jdbc;
