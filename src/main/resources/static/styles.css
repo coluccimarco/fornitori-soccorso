@@ -406,3 +406,16 @@ button.chart-column:hover { background: #f5f6fb; }
 .route-legend { display: flex; flex-wrap: wrap; gap: 8px 16px; margin-top: 8px; color: #3c465a; font-size: 12px; }
 .route-legend > span { display: inline-flex; align-items: center; gap: 6px; }
 .route-legend .route-marker { width: 22px; height: 22px; font-size: 11px; }
+
+/* Avvisi (informativi) e richieste di supporto (da gestire) */
+.support-banner { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; margin-bottom: 14px; padding: 9px 12px; border-left: 4px solid #8f1d6b; border-radius: 7px; background: #fbeef7; color: #6e1552; font-size: 12px; }
+.note-type { margin-right: 7px; padding: 2px 7px; border-radius: 9px; background: #e4e7f0; color: #3c465a; font-size: 10px; font-weight: 700; }
+.note-support { border-left: 4px solid #b9bfcc; }
+.note-support .note-type { background: #8f1d6b; color: #fff; }
+.note-support.is-open { border-left-color: #8f1d6b; background: #fbeef7; }
+.note-item p.note-state { margin-top: 6px; color: #4c566a; font-size: 11px; font-weight: 600; }
+.alert-type { width: fit-content; padding: 1px 7px; border-radius: 9px; background: #e4e7f0; color: #3c465a; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+.alert-type-SUPPORTO .alert-type { background: #8f1d6b; color: #fff; }
+.alert-item.alert-type-SUPPORTO.unread { border-left-color: #8f1d6b; background: #fbeef7; }
+.alert-quote { color: #3c465a; font-size: 12px; }
+.alert-actions { display: flex; flex-wrap: wrap; gap: 6px; }

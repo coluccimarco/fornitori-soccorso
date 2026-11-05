@@ -22,6 +22,7 @@
     deadlineTimer: null,
     deadlineRefreshAt: 0,
     deadlineRefreshPending: false,
+    supportMission: null,
     dashboardTimer: null,
     dashboardFailed: false,
     missionFilter: null
@@ -580,32 +581,55 @@
     }
   }
 
+  /** Il server ha usato "rifiutata"/"scaduta" prima del contratto v1: valgono entrambe le forme. */
+  function alertType(alert) {
+    return ({ rifiutata: "RIFIUTO", scaduta: "SCADENZA" })[alert.tipo] || alert.tipo;
+  }
+
+  function isOpenSupport(alert) {
+    return alertType(alert) === "SUPPORTO" && !alert.gestitaIl;
+  }
+
   function markAlertsRead() {
-    const newest = state.alerts.reduce((max, alert) => Math.max(max, alert.id), lastSeenAlertId());
+    // Le richieste di supporto restano in evidenza finché non vengono gestite.
+    const newest = state.alerts.filter((alert) => alertType(alert) !== "SUPPORTO")
+      .reduce((max, alert) => Math.max(max, alert.id), lastSeenAlertId());
     try {
       localStorage.setItem(alertStorageKey(state.user), String(newest));
     } catch (error) {
-      console.error("Avvisi letti non salvati:", error);
+      console.error("Notifiche lette non salvate:", error);
     }
     renderAlerts();
   }
 
+  function alertItemMarkup(alert, seen) {
+    const type = alertType(alert);
+    const driver = alert.autistaNome || "Un autista";
+    const text = ({
+      RIFIUTO: `${driver} ha rifiutato la missione`,
+      SCADENZA: `${driver} non ha risposto: proposta scaduta`,
+      SUPPORTO: `${driver} chiede supporto per la missione`
+    })[type] || `Notifica per la missione`;
+    const typeLabel = ({ RIFIUTO: "Rifiuto", SCADENZA: "Scadenza", SUPPORTO: "Supporto" })[type] || type;
+    const open = isOpenSupport(alert);
+    const unread = open || (type !== "SUPPORTO" && alert.id > seen);
+    const manage = open
+      ? `<button class="btn btn-sm btn-danger" type="button" data-support-open="${safe(alert.missioneId)}" data-codice="${safe(alert.codice)}">Segna come gestito</button>`
+      : "";
+    return `<article class="alert-item alert-type-${safe(type)}${unread ? " unread" : ""}"><span class="alert-type">${safe(typeLabel)}</span><span>${safe(text)} <strong>${safe(alert.codice)}</strong></span>${alert.testo ? `<q class="alert-quote">${safe(alert.testo)}</q>` : ""}<time>${safe(formatDateTime(alert.quando))}</time><div class="alert-actions">${manage}<button class="btn btn-sm btn-outline-primary" type="button" data-alert-mission="${safe(alert.missioneId)}">Apri missione</button></div></article>`;
+  }
+
   function renderAlerts() {
     const seen = lastSeenAlertId();
-    const unread = state.alerts.filter((alert) => alert.id > seen).length;
+    const unread = state.alerts.filter((alert) => isOpenSupport(alert) || (alertType(alert) !== "SUPPORTO" && alert.id > seen)).length;
     const badge = $("#alertBadge");
     badge.textContent = unread > 99 ? "99+" : String(unread);
     badge.classList.toggle("d-none", unread === 0);
-    $("#alertButton").setAttribute("aria-label", unread ? `Avvisi, ${unread} non letti` : "Avvisi");
-    $("#alertList").innerHTML = state.alerts.length
-      ? state.alerts.map((alert) => {
-        const driver = alert.autistaNome || "Un autista";
-        const text = alert.tipo === "rifiutata"
-          ? `${driver} ha rifiutato la missione`
-          : `${driver} non ha risposto: proposta scaduta`;
-        return `<article class="alert-item${alert.id > seen ? " unread" : ""}"><span>${safe(text)} <strong>${safe(alert.codice)}</strong></span><time>${safe(formatDateTime(alert.quando))}</time><button class="btn btn-sm btn-outline-primary align-self-start" type="button" data-alert-mission="${safe(alert.missioneId)}">Apri missione</button></article>`;
-      }).join("")
-      : '<p class="small text-secondary mb-0">Nessun avviso.</p>';
+    $("#alertButton").setAttribute("aria-label", unread ? `Notifiche centrale, ${unread} da leggere` : "Notifiche centrale");
+    const sorted = [...state.alerts.filter(isOpenSupport), ...state.alerts.filter((alert) => !isOpenSupport(alert))];
+    $("#alertList").innerHTML = sorted.length
+      ? sorted.map((alert) => alertItemMarkup(alert, seen)).join("")
+      : '<p class="small text-secondary mb-0">Nessuna notifica.</p>';
   }
 
   async function loadAlerts() {
@@ -614,7 +638,7 @@
       renderAlerts();
     } catch (error) {
       if (error.status === 401) stopAlertPolling();
-      else console.error("Avvisi non aggiornati:", error);
+      else console.error("Notifiche non aggiornate:", error);
     }
   }
 
@@ -945,6 +969,7 @@
         <span class="small text-secondary">${safe(formatDateTime(mission.chiusaIl || mission.annullataIl || mission.scadenzaIl || mission.creataIl))}</span>
       </div>
       ${missionCustomerRow(mission)}
+      ${mission.supportoAperto ? `<div class="support-banner"><strong>Richiesta di supporto aperta dall'autista</strong>${live ? `<button class="btn btn-sm btn-danger" type="button" data-support-open="${id}" data-codice="${safe(mission.codice)}">Leggi e gestisci</button>` : ""}</div>` : ""}
       <div class="mission-card-grid">
         <div><span class="field-label">Luogo di fermo</span><strong>${safe(mission.origineIndirizzo)}</strong></div>
         <div><span class="field-label">Autista</span><strong>${safe(driverName(mission.autistaId))}</strong>${mission.stato === "proposta" ? `<span class="countdown" data-deadline="${safe(mission.scadenzaIl)}"></span>` : ""}${refusals}</div>
@@ -1097,7 +1122,10 @@
     const propose = item.motivo === "TRE_RIFIUTI"
       ? `<button class="btn btn-sm btn-primary" type="button" data-propose-nearest="${id}">Proponi al più vicino</button>`
       : "";
-    return `${propose}${open}`;
+    const support = item.motivo === "SUPPORTO_AUTISTA"
+      ? `<button class="btn btn-sm btn-danger" type="button" data-support-open="${id}" data-codice="${safe(item.codice)}">Segna supporto gestito</button>`
+      : "";
+    return `${support}${propose}${open}`;
   }
 
   function renderCategoryTiles(categories) {
@@ -1277,12 +1305,51 @@
     </article>`;
   }
 
+  function noteMarkup(note, missionId) {
+    const support = note.tipo === "SUPPORTO";
+    const manager = state.user?.ruolo === "responsabile";
+    let footer = "";
+    if (support && note.gestitaIl) {
+      footer = `<p class="note-state">Gestita il ${safe(formatDateTime(note.gestitaIl))}${note.gestitaDa ? ` da ${safe(note.gestitaDa)}` : ""}</p>`;
+    } else if (support && manager) {
+      footer = `<button class="btn btn-sm btn-danger mt-2" type="button" data-note-done="${safe(note.id)}" data-mission-id="${safe(missionId)}">Segna come gestito</button>`;
+    } else if (support) {
+      footer = '<p class="note-state">In attesa della centrale</p>';
+    }
+    const open = support && !note.gestitaIl ? " is-open" : "";
+    return `<article class="note-item${support ? ` note-support${open}` : ""}"><div><strong><span class="note-type">${support ? "Supporto" : "Avviso"}</span>${safe(note.autoreNome || `Utente #${note.userId}`)}</strong><time>${safe(formatDateTime(note.createdAt))}</time></div><p>${safe(note.testo)}</p>${footer}</article>`;
+  }
+
   async function loadMissionNotes(missionId, noteList = $("#missionNotes")) {
     const notes = await request(`/api/v1/missioni/${missionId}/notes`);
     if (!noteList) return;
-    noteList.innerHTML = notes.length ? notes.map((note) =>
-      `<article class="note-item"><div><strong>${safe(note.autoreNome || `Utente #${note.userId}`)}</strong><time>${safe(formatDateTime(note.createdAt))}</time></div><p>${safe(note.testo)}</p></article>`
-    ).join("") : '<p class="small text-secondary mb-0">Nessuna segnalazione inviata.</p>';
+    noteList.innerHTML = notes.length
+      ? notes.map((note) => noteMarkup(note, missionId)).join("")
+      : '<p class="small text-secondary mb-0">Nessun avviso inviato.</p>';
+  }
+
+  /** La centrale legge sempre il testo prima di chiudere una richiesta di supporto. */
+  async function openSupportModal(missionId, code) {
+    state.supportMission = missionId;
+    $("#supportModalTitle").textContent = `Richieste di supporto · ${code || ""}`;
+    $("#supportModalAlert").classList.add("d-none");
+    $("#supportModalList").innerHTML = '<p class="small text-secondary mb-0">Caricamento…</p>';
+    bootstrap.Modal.getOrCreateInstance($("#supportModal")).show();
+    await renderSupportModal();
+  }
+
+  async function renderSupportModal() {
+    const missionId = state.supportMission;
+    try {
+      const notes = await request(`/api/v1/missioni/${missionId}/notes`);
+      const open = notes.filter((note) => note.tipo === "SUPPORTO" && !note.gestitaIl);
+      $("#supportModalList").innerHTML = open.length
+        ? open.map((note) => noteMarkup(note, missionId)).join("")
+        : '<p class="small text-secondary mb-0">Nessuna richiesta di supporto aperta per questa missione.</p>';
+    } catch (error) {
+      showInlineAlert("#supportModalAlert", error.message);
+      $("#supportModalList").innerHTML = "";
+    }
   }
 
   async function loadDriverHistory() {
@@ -1586,6 +1653,28 @@
     const open = event.target.closest("[data-open-mission]");
     if (open) {
       void openMissionFromAlert(open.dataset.openMission);
+      return;
+    }
+    const support = event.target.closest("[data-support-open]");
+    if (support) {
+      $("#alertPanel").classList.add("d-none");
+      void openSupportModal(support.dataset.supportOpen, support.dataset.codice);
+      return;
+    }
+    const noteDone = event.target.closest("[data-note-done]");
+    if (noteDone) {
+      noteDone.disabled = true;
+      const missionId = noteDone.dataset.missionId;
+      const inModal = Boolean(noteDone.closest("#supportModal"));
+      try {
+        await request(`/api/v1/missioni/${missionId}/notes/${noteDone.dataset.noteDone}/gestita`, { method: "POST", mutating: true });
+        if (inModal) await renderSupportModal();
+        await refreshView("Richiesta di supporto segnata come gestita.");
+      } catch (error) {
+        if (inModal) showInlineAlert("#supportModalAlert", error.message);
+        else await refreshView(error.message, "danger");
+        noteDone.disabled = false;
+      }
       return;
     }
     const nearest = event.target.closest("[data-propose-nearest]");
