@@ -1,7 +1,7 @@
 %% Logical packages and external components in the integrated baseline.
 flowchart LR
     Browser["Browser static client"] --> Static["src/main/resources/static"]
-    Static -->|same-origin + session + CSRF| Controller["controller<br/>Auth / Registry / Mission / Chat / Map"]
+    Static -->|same-origin + session + CSRF| Controller["controller<br/>Auth / Registry / Mission / Assignment / Chat / Map"]
     Controller --> DTO["dto + validation"]
     Controller --> Service["service<br/>use case / transactions"]
     Service --> Repo["repository<br/>JPA / locks"]

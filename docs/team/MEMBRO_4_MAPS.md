@@ -1,6 +1,6 @@
 # Membro 4 — Mappe
 
-**Responsabile:** Marco Colucci · **Versione:** 2.0 · **Data:** 04/11/2026
+**Responsabile:** Marco Colucci · **Versione:** 2.1 · **Data:** 05/11/2026
 
 ## Stato
 
@@ -15,12 +15,14 @@ GET /api/v1/maps/route?missionId=<id>&driverId=<opzionale>
 ```
 
 - Richiede sessione, header `X-CSRF-TOKEN` e ruolo RESPONSABILE o AUTISTA assegnato alla
-  missione. L'autista usa il proprio mezzo; il responsabile può indicare un autista.
-- Itinerario: base mezzo → luogo sinistro; aggiunge l'officina se il tipo è traino.
+  missione. L'autista usa il proprio punto di partenza; il responsabile può indicare un autista.
+- Itinerario: officina di riferimento dell'autista o, in mancanza, base del mezzo → luogo di
+  fermo → officina se il tipo è traino → rientro al punto di partenza.
 - Se mancano le coordinate dell'origine, il backend geocodifica l'indirizzo con Nominatim
   e le salva sulla missione.
-- OSRM restituisce geometria e distanza. I km stimati si salvano solo per l'autista
-  assegnato e non sono i km effettivi inseriti alla chiusura.
+- OSRM restituisce geometria e distanza. La risposta riporta `kmAndata`, `kmTraino`, `kmRitorno`,
+  `kmTotali`; `km` e `kmStimati` valgono come `kmTotali`. I km stimati si salvano solo per
+  l'autista assegnato e non sono i km effettivi inseriti alla chiusura.
 
 | Esito | Quando |
 |---|---|

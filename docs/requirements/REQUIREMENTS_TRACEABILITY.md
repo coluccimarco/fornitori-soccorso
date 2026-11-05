@@ -1,6 +1,6 @@
 # Tracciabilità requisiti
 
-**Codice:** FOR-TRACE-001 · **Versione:** 2.0 · **Data:** 04/11/2026
+**Codice:** FOR-TRACE-001 · **Versione:** 2.1 · **Data:** 05/11/2026
 Gli ID `ST-###` sono chiavi introdotte in questa baseline, non ID di ticket originali.
 
 | Requisito | Storia baseline | Componente | Endpoint/artefatto | Responsabili | Stato |
@@ -18,6 +18,10 @@ Gli ID `ST-###` sono chiavi introdotte in questa baseline, non ID di ticket orig
 | BR-011 | ST-011 — mappe e percorso | MapService, Leaflet | `/maps/route` | M. Colucci | IMPLEMENTATO |
 | BR-012 | ST-012 — canale WhatsApp | — | Operazioni `designed` | M. Sancilio, F. Valeriano, G. Cangellosi | FUORI AMBITO |
 | BR-013 | ST-013 — interfaccia web | Client statico | `src/main/resources/static/` | F. Valeriano, G. Cangellosi, M. Sancilio | IMPLEMENTATO |
+| BR-014 | ST-014 — verifica polizza | MissionService, ChatService, UI centrale | `/verifica-polizza`, `/chat/lookup-targa` | V. Minervini; F. Valeriano, G. Cangellosi, M. Sancilio; M. Colucci | IMPLEMENTATO |
+| BR-015 | ST-015 — assegnazione automatica e gestione manuale | AutoAssignmentService, NearestDriverService, MissionService | `/proposta-automatica`, `mission_events` | V. Minervini | IMPLEMENTATO |
+| BR-016 | ST-016 — annullamento | MissionService, UI, notifiche | `/annulla`, `/cost`, `MISSION_CANCELLED` | V. Minervini; F. Valeriano, G. Cangellosi, M. Sancilio | IMPLEMENTATO |
+| BR-017 | ST-017 — supporto e disponibilità | MissionService, CentreAlertService, UI | `/notes`, `/notes/{noteId}/gestita`, `/centrale/avvisi`, `/autista/disponibilita` | V. Minervini; F. Valeriano, G. Cangellosi, M. Sancilio | IMPLEMENTATO |
 
 ## Lacune
 

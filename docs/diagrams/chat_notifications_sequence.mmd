@@ -6,22 +6,22 @@ sequenceDiagram
     participant API as ChatController
     participant Service as ChatService / MissionService
     participant DB as PostgreSQL
-    Cliente->>Telegram: sends plate / location / problem
+    Cliente->>Telegram: sends plate / phone / location / problem
     Telegram-->>Bot: long-poll update
     Bot->>API: POST /chat/lookup-targa (Bearer)
     API->>Service: lookup and limiter
-    Service->>DB: read customer
-    API-->>Bot: lookup result
-    Bot->>API: POST /chat/missioni (requestId)
+    Service->>DB: read customer, save grant
+    API-->>Bot: VERIFICATA or DA_VERIFICARE
+    Bot->>API: POST /chat/missioni (requestId, tipoProblema)
     API->>Service: create idempotent mission
-    Service->>DB: persist mission and chat recipient
+    Service->>DB: persist mission (nuova or verifica_polizza) and chat recipient
     API-->>Bot: mission code and state
     Bot-->>Telegram: confirmation
-    Service->>DB: transaction writes outbox on accepted/completed
+    Service->>DB: transaction writes outbox on accepted/completed/cancelled
     Bot->>API: POST /chat/notifiche/claim
     API->>DB: PENDING to SENDING (skip locked)
     API-->>Bot: notification payloads
     Bot->>Telegram: send message
     Bot->>API: POST /chat/notifiche/{id}/esito
     API->>DB: SENT, or PENDING after 30 s, or FAILED after 5 attempts
-    Telegram-->>Cliente: accepted / completed update
+    Telegram-->>Cliente: accepted / completed / cancelled update

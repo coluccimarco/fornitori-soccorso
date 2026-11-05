@@ -1,6 +1,6 @@
 # Business Requirements — FORNITORI
 
-**Codice:** FOR-BUR-001 · **Versione:** 2.0 · **Data:** 04/11/2026
+**Codice:** FOR-BUR-001 · **Versione:** 2.1 · **Data:** 05/11/2026
 **Responsabile:** team project work · **Approvazione:** DA CONFERMARE con docente
 **Stato:** baseline ricostruita dal repository; non è una trascrizione del PDF del corso
 
@@ -32,9 +32,10 @@ responsabilità e rende osservabili gli esiti delle missioni.
 ## Ambito
 
 **Incluso:** autenticazione a sessione e CSRF; ruoli RESPONSABILE e AUTISTA; anagrafiche;
-ciclo missione, proposta, timeout, accettazione, rifiuto e completamento; costi e rettifica;
-note, dashboard e storia autista; mappa e km stimati; conversazione Python e canale Telegram;
-outbox e dispatcher; PostgreSQL.
+ciclo missione, proposta automatica e manuale, timeout, accettazione, rifiuto, gestione manuale,
+annullamento e completamento; verifica della polizza; costi e rettifica; note e supporto autista,
+dashboard e storia autista; mappa e km stimati; conversazione Python e canale Telegram; outbox e
+dispatcher; PostgreSQL.
 
 **Fuori ambito:** WhatsApp; webhook in ingresso; gestione utenti da interfaccia; verifica
 indipendente del titolare del veicolo (la sola targa è un limite noto della demo);
@@ -53,10 +54,14 @@ produzione, monitoraggio e backup; funzioni AI/Gemini.
 | BR-007 | Consentire una rettifica centrale motivata e conservare l'audit | Da convalidare | IMPLEMENTATO | Comando web; motivo e costo iniziale/finale persistono |
 | BR-008 | Consultare aggregati centrale e guadagni limitati all'autista autenticato | Da convalidare | IMPLEMENTATO | Dashboard e viste autista rispettano i confini di ruolo |
 | BR-009 | Creare una richiesta guidata del cliente via chatbot senza accesso diretto al DB | Da convalidare | IMPLEMENTATO | Bot su API chat; la sola targa è un limite noto |
-| BR-010 | Inviare su Telegram la notifica di presa in carico e completamento | Da convalidare | IMPLEMENTATO | Outbox con riserva persistente; solo per missioni create dal bot |
+| BR-010 | Inviare su Telegram la notifica di presa in carico, completamento e annullamento | Da convalidare | IMPLEMENTATO | Outbox con riserva persistente; solo per missioni create dal bot |
 | BR-011 | Mostrare mappe, itinerari e chilometraggio stimato | Da confermare | IMPLEMENTATO | Mappa Leaflet in centrale e area autista, km proposti alla chiusura |
 | BR-012 | Usare WhatsApp come canale cliente | Da confermare | FUORI AMBITO | Non implementato |
 | BR-013 | Fornire una UI web per centrale e autista | Da confermare | IMPLEMENTATO | Pagina pubblica, centrale e area autista responsive |
+| BR-014 | Far verificare alla centrale le richieste con polizza non verificabile | Da convalidare | IMPLEMENTATO | La pratica si conferma con un cliente con polizza attiva o si respinge a costo 0 |
+| BR-015 | Proporre le missioni in automatico e passarle alla centrale dopo 3 esiti negativi | Da convalidare | IMPLEMENTATO | Proposta all'autista libero più vicino; al terzo esito negativo `gestione_manuale` |
+| BR-016 | Annullare una missione con motivo e regole economiche chiare | Da convalidare | IMPLEMENTATO | Motivo obbligatorio; costo attribuito solo se annulla la centrale dopo l'accettazione |
+| BR-017 | Permettere all'autista di chiedere supporto e indicare la disponibilità | Da convalidare | IMPLEMENTATO | Il supporto resta in coda critica finché non è gestito; chi non è disponibile non riceve proposte |
 
 ## Requisiti non funzionali e vincoli
 

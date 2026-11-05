@@ -3,11 +3,19 @@ sequenceDiagram
     participant Scheduler as MissionExpiryScheduler
     participant Service as MissionService
     participant DB as PostgreSQL
+    participant Auto as AutoAssignmentService
     participant Centrale as Centrale
     Scheduler->>Service: expire overdue proposals
     Service->>DB: lock eligible non-fixture rows
     DB-->>Service: due proposals
     Service->>DB: mark proposal scaduta, update mission/event
     DB-->>Service: commit
-    Centrale->>Service: re-propose (optional)
-    Service->>DB: append new proposal and keep history
+    Service-->>Centrale: avviso di scadenza
+    alt meno di 3 esiti negativi
+        Service-)Auto: proposta all'autista successivo
+        Auto->>DB: append new proposal and keep history
+    else terzo autista con esito negativo
+        Service->>DB: gestione_manuale
+        Centrale->>Service: nuova proposta dalla scheda
+        Service->>DB: append new proposal and keep history
+    end

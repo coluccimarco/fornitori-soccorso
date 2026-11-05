@@ -59,7 +59,13 @@ Per portare in un ambiente reale la versione con operatività missioni, dashboar
 
 8. [ ] **Avviare il backend nuovo.** Lo scheduler parte con lui. Per controllare prima l'applicazione senza proposte automatiche, avviarlo una prima volta con l'argomento `--fornitori.missions.auto-assign=false`, poi riavviarlo senza.
 
-9. [ ] **Avviare il bot nuovo.** Backend e bot vanno aggiornati insieme: un bot vecchio rifiuta ancora le targhe da verificare.
+9. [ ] **Avviare il bot nuovo** su un server sempre acceso, dalla cartella `chatbot/`, con `TELEGRAM_BOT_TOKEN`, `FORNITORI_CHAT_TOKEN` e `FORNITORI_API_URL` impostati. Backend e bot vanno aggiornati insieme: un bot vecchio rifiuta ancora le targhe da verificare.
+
+   ```bash
+   python3 -m fornitori_chatbot --telegram --http
+   ```
+
+   Controllare in @BotFather che il token sia del bot `Fornitori_Soccorso_Bot`, quello aperto dal sito. Senza `--http` il bot usa dati di prova.
 
 ## Controlli dopo l'avvio
 

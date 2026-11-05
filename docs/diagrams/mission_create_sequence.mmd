@@ -1,12 +1,14 @@
-%% Implemented backend mission creation; UI caller is not present.
+%% Creazione dalla centrale; dal bot vedi chat_notifications_sequence.mmd.
 sequenceDiagram
     actor Centrale as Client RESPONSABILE
     participant API as MissionController
     participant Service as MissionService
     participant DB as PostgreSQL
+    participant Auto as AutoAssignmentService
     Centrale->>API: POST /api/v1/missioni
     API->>Service: validate DTO and role
     Service->>DB: validate customer/intervention, insert mission nuova
     DB-->>Service: mission id and code
     Service-->>API: response DTO
     API-->>Centrale: 201 Created
+    Service-)Auto: dopo il commit, chiede la proposta automatica

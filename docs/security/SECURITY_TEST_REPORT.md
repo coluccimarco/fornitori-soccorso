@@ -15,7 +15,20 @@
 | Motore del bot reale con backend reale, invio simulato | — | Superato, anche con lookup scaduto |
 | Script 01–09 su DB vuoto; 09 applicato dopo l'uso e rieseguito | — | Superato |
 
-I comandi sono stati eseguiti con `./mvnw` su macOS. `.\mvnw.cmd` non è stato eseguito: **NON VERIFICATO** su Windows.
+I comandi sono stati eseguiti con `./mvnw` su macOS.
+
+## Ultima esecuzione
+
+Il 05/11/2026, su `main` dopo l'integrazione dell'operatività missioni, con Java 25 e PostgreSQL 18.6 su Windows.
+
+| Prova | Esito |
+|---|---|
+| `.\mvnw.cmd clean verify` con `FORNITORI_TEST_DATABASE=isolated` e ruolo a soli DML | **176 test: 0 falliti, 0 errori, 0 saltati** |
+| Test del chatbot, `python -m unittest discover` | 30 superati |
+| Script 01–11 su database vuoto | Superato |
+| Pipeline GitHub Actions su `main` | Superata |
+
+Sono ripetuti solo i test automatici: i flussi HTTP e i controlli nel browser della tabella precedente non sono stati rifatti.
 
 ## Difetti riprodotti prima delle correzioni
 
@@ -88,6 +101,5 @@ Senza quella variabile girano solo i test che non usano il database. I flussi HT
 | HTTPS e profilo `prod` su un server reale | NON VERIFICATO: provato solo il controllo all'avvio |
 | Timeout dei provider | NON VERIFICATO: durata configurata, non provata |
 | Script 09 sul database `fornitori` | NON ESEGUITO per regola; provato solo sul seed e su dati di prova |
-| Pipeline GitHub Actions | Superata su `5b0bf8c` senza i test su database. Il passo con il database `fornitori_e2e_ci` è stato provato solo in locale: NON ANCORA ESEGUITO su GitHub |
 | Browser diversi da Chromium, accessibilità | NON VERIFICATO |
 | Vulnerabilità delle dipendenze | NON VERIFICATO: lo strumento è stato rimosso |

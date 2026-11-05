@@ -12,7 +12,8 @@ Apri l'[indice della documentazione](./docs/00_INDICE_GENERALE.md).
 | Area | Stato |
 |---|---|
 | Backend: sessione, CSRF, ruoli, anagrafiche, missioni, tariffe, note, dashboard | Implementato |
-| UI web: pagina pubblica, centrale e area autista, mappa Leaflet | Implementato |
+| Operatività missioni: assegnazione automatica, gestione manuale dopo 3 esiti negativi, verifica polizza, annullamento, supporto autista, disponibilità | Implementato |
+| UI web: pagina pubblica, dashboard operativa, costi, centrale e area autista, mappa Leaflet | Implementato |
 | Mappe: geocodifica, percorso e km stimati con Nominatim e OSRM | Implementato |
 | Chatbot Telegram e API `chat/*` | Implementato; la sola targa identifica il cliente, limite noto della demo |
 | Notifiche al cliente con stato di invio persistente | Implementato per le missioni create dal bot |
@@ -68,12 +69,13 @@ psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/07_backend_har
 psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/08_cleanup_and_delivery.sql
 psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/09_integrity_and_indexes.sql
 psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/10_night_rate_22.sql
+psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/11_operativita_missioni.sql
 ```
 
-Hibernate è in `validate`: senza gli script fino a 08 l'applicazione non si avvia; il 09 aggiunge vincoli e indici. Su un
-database esistente applicare solo gli script mancanti, nell'ordine, dopo un backup: chi è già a 07 esegue
-solo 08 e 09. Dopo 08 non rieseguire 01 e 02: `08_cleanup_and_delivery.sql` rimuove `chat_sessions` e
-`drivers.stato_seed`.
+Hibernate è in `validate`: senza lo script 11 l'applicazione non si avvia. Su un database esistente applicare
+solo gli script mancanti, nell'ordine, dopo un backup; per un ambiente già in uso seguire la
+[checklist](./docs/deploy/CHECKLIST_AMBIENTE_REALE.md). Dopo 08 non rieseguire 01 e 02:
+`08_cleanup_and_delivery.sql` rimuove `chat_sessions` e `drivers.stato_seed`.
 
 Le righe del docente in `missions` sono marcate `is_fixture=TRUE` e costituiscono lo storico di riferimento
 al 28/10/2026: non vengono mai modificate.
@@ -99,7 +101,7 @@ I test su database cancellano i dati live: partono solo con `FORNITORI_TEST_DATA
 
 ## API
 
-Il contratto è in [api/openapi.yaml](./api/openapi.yaml): 38 operazioni, 34 implementate e 4 fuori ambito.
+Il contratto è in [api/openapi.yaml](./api/openapi.yaml): 42 operazioni, 38 implementate e 4 fuori ambito.
 Mappa delle superfici in [API_SPECIFICATION.md](./docs/architecture/API_SPECIFICATION.md).
 
 Le API centrali richiedono `RESPONSABILE`; le mutazioni richiedono il token di `GET /api/v1/auth/csrf`

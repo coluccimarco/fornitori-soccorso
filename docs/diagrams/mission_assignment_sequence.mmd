@@ -1,18 +1,26 @@
-%% Implemented backend proposal and driver response; no driver UI exists.
+%% Proposta automatica o manuale e risposta dell'autista.
 sequenceDiagram
+    participant Auto as AutoAssignmentService
     actor Centrale as RESPONSABILE
-    participant API as MissionController
-    participant Service as MissionService
+    participant API as MissionController / AssignmentController
+    participant Service as MissionService / NearestDriverService
     participant DB as PostgreSQL
     actor Autista as AUTISTA assegnato
-    Centrale->>API: POST /missioni/{id}/proposte
-    API->>Service: create proposal
+    alt proposta automatica, dopo il commit o ogni 60 s
+        Auto->>Service: propone al più vicino libero e non ancora interpellato
+    else proposta manuale
+        Centrale->>API: POST /missioni/{id}/proposte o /proposta-automatica
+        API->>Service: create proposal
+    end
     Service->>DB: lock mission/driver, check LIVE, availability
     Service->>DB: persist proposal, deadline, mission state
-    DB-->>API: persisted proposal
-    API-->>Centrale: deadline and proposal
     Autista->>API: POST /missioni/{id}/accept or /reject
     API->>Service: verify principal, current proposal, deadline
     Service->>DB: lock and persist outcome + event
-    DB-->>API: committed outcome
+    alt rifiuto, meno di 3 esiti negativi
+        Service-->>Auto: chiede la proposta successiva
+    else terzo autista con esito negativo
+        Service->>DB: gestione_manuale + MISSION_MANUAL_HANDLING
+        Service-->>Centrale: la missione compare in coda critica
+    end
     API-->>Autista: result

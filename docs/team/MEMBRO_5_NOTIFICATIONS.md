@@ -1,12 +1,13 @@
 # Membro 5 — Notifiche
 
 **Responsabili:** Marika Sancilio, Francesco Valeriano, Giuseppe Cangellosi ·
-**Versione:** 2.0 · **Data:** 04/11/2026
+**Versione:** 2.1 · **Data:** 05/11/2026
 
 ## Scopo
 
-Avvisare il cliente su Telegram quando un autista prende in carico la richiesta e quando
-l'intervento è concluso. WhatsApp e webhook in ingresso sono **fuori ambito**.
+Avvisare il cliente su Telegram quando un autista prende in carico la richiesta, quando
+l'intervento è concluso e quando la richiesta viene annullata. WhatsApp e webhook in ingresso
+sono **fuori ambito**.
 
 ## Eventi
 

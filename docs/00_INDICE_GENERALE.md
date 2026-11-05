@@ -1,6 +1,6 @@
 # FORNITORI — indice generale e registro documentale
 
-**Codice:** FOR-IDX-001 · **Versione:** 2.0 · **Data:** 04/11/2026 · **Responsabili:** team
+**Codice:** FOR-IDX-001 · **Versione:** 2.1 · **Data:** 05/11/2026 · **Responsabili:** team
 **Stato:** baseline documentale, non approvata dal docente
 **Repository:** [coluccimarco/fornitori-soccorso](https://github.com/coluccimarco/fornitori-soccorso)
 
@@ -14,6 +14,8 @@
 - [Manuale utente](./manuals/MANUALE_UTENTE.md) · [Manuale tecnico](./manuals/MANUALE_TECNICO.md)
 - [Guide del team](./team/) · [Word modificabili](./word/)
 - [Checklist per l'ambiente reale](./deploy/CHECKLIST_AMBIENTE_REALE.md)
+- [Presentazione](./presentazione/canva/LEGGIMI.md) · [Diagrammi](./diagrams/README.md)
+- Note sulle modifiche, come record storico: [backend](./changes/BACKEND.md) · [frontend](./changes/FRONTEND.md) · [chatbot](./changes/CHATBOT.md)
 
 ## Catalogo
 
@@ -24,7 +26,7 @@
 | FOR-FUD-001 | Functional Design | Requisiti | `docs/requirements/FUD_FORNITORI.md` | `docs/word/FUD_FORNITORI.docx` | Team |
 | FOR-TAD-001 | Technical Architecture | Architettura | `docs/architecture/TAD_FORNITORI.md` | `docs/word/TAD_FORNITORI.docx` | Vincenzo Minervini |
 | FOR-PMP-001 | Piano gestione progetto | Management | `docs/management/PROJECT_MANAGEMENT_PLAN.md` | `docs/word/PROJECT_MANAGEMENT_PLAN.docx` | Team |
-| FOR-TEAM-001 | Guide del team | Operativo | `docs/team/` | `docs/word/GUIDA_TEAM.docx` | Membri 1-5 |
+| FOR-TEAM-001 | Guide del team e contratti condivisi | Operativo | `docs/team/README.md` | `docs/word/GUIDA_TEAM.docx` | Membri 1-5 |
 | FOR-USER-001 | Manuale utente | Manuale | `docs/manuals/MANUALE_UTENTE.md` | `docs/word/MANUALE_UTENTE.docx` | Frontend e chatbot |
 | FOR-TECH-001 | Manuale tecnico | Manuale | `docs/manuals/MANUALE_TECNICO.md` | `docs/word/MANUALE_TECNICO.docx` | Vincenzo Minervini |
 | FOR-SEC-002 | Audit di sicurezza del backend | Sicurezza | `docs/security/` | `docs/word/AUDIT_SICUREZZA.docx` | Vincenzo Minervini |

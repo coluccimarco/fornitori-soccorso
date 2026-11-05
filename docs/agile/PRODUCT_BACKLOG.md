@@ -1,6 +1,6 @@
 # Product backlog FORNITORI
 
-**Versione:** 2.0 · **Data:** 04/11/2026 · **Responsabile:** team
+**Versione:** 2.1 · **Data:** 05/11/2026 · **Responsabile:** team
 
 | ID | Priorità | Epic / storia | Responsabili | Dipendenze | Stato |
 |---|---|---|---|---|---|
@@ -18,6 +18,9 @@
 | B-12 | P1 | Mappa e percorso nel client | Marco Colucci | B-08 | Implementato |
 | B-13 | P2 | Webhook e provider WhatsApp | Marika Sancilio, Francesco Valeriano, Giuseppe Cangellosi | — | Fuori ambito |
 | B-14 | P2 | Gestione utenti da interfaccia | Vincenzo Minervini | — | Fuori ambito |
+| B-15 | P0 | Operatività: assegnazione automatica, gestione manuale, verifica polizza, annullamento, supporto, disponibilità | Vincenzo Minervini | B-05, B-06 | Implementato |
+| B-16 | P1 | Dashboard operativa, costi e schermate per l'operatività | Francesco Valeriano, Giuseppe Cangellosi, Marika Sancilio | B-15 | Implementato |
+| B-17 | P1 | Bot: telefono sul posto, problema a pulsanti, polizza da verificare, avviso di annullamento | Marco Colucci | B-15 | Implementato; prova reale con Telegram da ripetere |
 
 ## Refinement
 

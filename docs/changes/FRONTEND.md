@@ -1,5 +1,7 @@
 # Frontend: dashboard operativa, centrale e autista
 
+> **Record storico:** branch già fuso in `main`. Descrive la situazione al momento del merge. Dopo il merge il riquadro "Rifiutate da 3 autisti" è stato tolto: i riquadri sono 6 e il dato resta nel contatore della coda critica. Lo stato attuale è nel [manuale utente](../manuals/MANUALE_UTENTE.md).
+
 Branch `feature/frontend-dashboard`. **Va fuso dopo `feature/backend-operativita`.**
 
 **Hash di partenza:** `d6ab902` (`origin/main`). L'atteso era `eb62c65`: i due commit in mezzo aggiungono e tolgono `docs/prompts/`, quindi `git diff eb62c65 d6ab902` è vuoto. Stessi contenuti, stessa base del backend.

@@ -1,12 +1,12 @@
 # Contratti d'integrazione tra membri
 
-**Versione:** 2.0 · **Data:** 04/11/2026 · **Responsabile:** Vincenzo Minervini (Membro 1)<br>
+**Versione:** 2.1 · **Data:** 05/11/2026 · **Responsabile:** Vincenzo Minervini (Membro 1)<br>
 **Indice:** fonte normativa · dipendenze · provider · fuori ambito · cambi
 
 ## Fonte normativa
 
 `api/openapi.yaml` definisce path, request, response e stati per operazione. Contiene
-38 operazioni: 34 `implemented` e 4 `designed` (gestione utenti e webhook, fuori
+42 operazioni: 38 `implemented` e 4 `designed` (gestione utenti e webhook, fuori
 ambito). La mappa delle superfici è in
 [API_SPECIFICATION.md](../architecture/API_SPECIFICATION.md).
 
@@ -19,21 +19,25 @@ Gli errori hanno la forma `{status, error, message}`: `error` è un codice stabi
 | Da → a | Contratto o dato | Stato |
 |---|---|---|
 | Frontend → Backend | Sessione cookie + CSRF; auth e anagrafiche | Implementato |
-| Frontend → Backend | Missioni, proposte, storico proposte, correzione intervento, rettifica costo, dashboard, avvisi, area autista | Implementato |
+| Frontend → Backend | Missioni, proposte, storico proposte, correzione intervento, verifica polizza, annullamento, rettifica costo, dashboard, avvisi e supporto, area autista e disponibilità | Implementato |
 | Frontend → Mappe | `GET /api/v1/maps/route` con header CSRF, mappa Leaflet e km proposti alla chiusura | Implementato |
 | Chatbot → Backend | `/api/v1/chat/lookup-targa`, `/missioni`, `/stato` con token di servizio | Implementato; la sola targa è un limite noto |
 | Chatbot ↔ Notifiche | `POST /api/v1/chat/notifiche/claim` e `/{id}/esito` | Implementato per Telegram |
-| Backend → Notifiche | Outbox con `MISSION_ACCEPTED` e `MISSION_COMPLETED` nella transazione di dominio | Implementato |
+| Backend → Notifiche | Outbox con `MISSION_ACCEPTED`, `MISSION_COMPLETED` e `MISSION_CANCELLED` nella transazione di dominio | Implementato |
 
 ## Regole operative
 
-- **Lookup chat:** un lookup positivo autorizza la creazione per 15 minuti, con stessa
-  sessione e stesso cliente, per una sola pratica. Oltre questo limite il backend risponde 403 e il bot rifà
-  il lookup una volta, quindi prosegue. Un `requestId` riusato con dati diversi dà 409.
+- **Lookup chat:** un lookup autorizza la creazione per 15 minuti, con stessa sessione e stesso cliente
+  o, se l'esito è `DA_VERIFICARE`, stessa targa, per una sola pratica. Oltre questo limite il backend
+  risponde 403 e il bot rifà il lookup una volta, quindi prosegue. Un `requestId` riusato con dati diversi dà 409.
+- **Creazione da chat:** il bot invia targa, telefono sul posto e `tipoProblema`; intervento, descrizione e,
+  per il traino, officina li decide il backend. Il nome dell'autista non viene mai restituito al bot.
 - **Notifiche:** `claim` porta le righe da `PENDING` a `SENDING` in modo atomico. Una
   riserva senza esito scade dopo 5 minuti, un invio fallito riprova dopo 30 secondi,
   dopo 5 tentativi la riga passa a `FAILED`. L'esito deve riportare il `tentativo` ricevuto con la riserva.
 - **Mappe:** la `GET` richiede `X-CSRF-TOKEN` perché può salvare coordinate e km stimati.
+- **Dashboard:** `categorie` conserva `rifiutateTreAutisti` per il contatore della coda critica; il riquadro
+  omonimo è stato tolto solo dall'interfaccia, quindi il contratto non cambia.
 
 ## Provider esterni
 

@@ -1,12 +1,24 @@
-%% FORNITORI | v1.0 | 03/11/2026 | owner: Membro 1
+%% FORNITORI | v2.1 | 05/11/2026 | owner: Membro 1
 %% Stati per missioni LIVE nel backend; fixture storiche restano immutate.
 stateDiagram-v2
-    [*] --> nuova
-    nuova --> proposta: centrale propone
-    proposta --> accettata: autista accetta entro 10 min
-    proposta --> non_accettata: autista rifiuta
-    proposta --> scaduta: deadline raggiunta
-    non_accettata --> proposta: nuova proposta
-    scaduta --> proposta: nuova proposta
+    state "In assegnazione" as aperta {
+        [*] --> nuova
+        nuova --> proposta: proposta automatica o manuale
+        proposta --> non_accettata: autista rifiuta
+        proposta --> scaduta: deadline raggiunta
+        non_accettata --> proposta: autista successivo
+        scaduta --> proposta: autista successivo
+        non_accettata --> gestione_manuale: terzo esito negativo
+        scaduta --> gestione_manuale: terzo esito negativo
+        gestione_manuale --> proposta: centrale propone
+    }
+    [*] --> aperta: centrale, o bot con polizza verificata
+    [*] --> verifica_polizza: bot con polizza non verificabile
+    verifica_polizza --> aperta: centrale conferma
+    verifica_polizza --> annullata: centrale respinge
+    aperta --> accettata: autista accetta la proposta entro 10 min
+    aperta --> annullata: centrale annulla
     accettata --> eseguita: chiusura OK
+    accettata --> annullata: centrale o autista annulla
     eseguita --> [*]
+    annullata --> [*]

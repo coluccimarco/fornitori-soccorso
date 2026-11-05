@@ -1,31 +1,32 @@
 # Disegno del database
 
-**Codice:** FOR-DB-001 · **Versione:** 2.0 · **Data:** 04/11/2026
+**Codice:** FOR-DB-001 · **Versione:** 2.1 · **Data:** 05/11/2026
 Fonte schema: gli script in `database/`. Diagramma: [`database_er.mmd`](../diagrams/database_er.mmd).
 
 ## Modello
 
 Gli account sono in `app_users`; un `drivers` collega un account a un mezzo. `customers` fa
-riferimento a una compagnia assicurativa. Una `missions` appartiene a un cliente e può riferirsi ad
-autista e officina. `mission_proposals` conserva i tentativi; note ed eventi sono separati per
+riferimento a una compagnia assicurativa. Una `missions` appartiene a un cliente, che può mancare
+solo in `verifica_polizza` o se la centrale ha respinto la pratica, e può riferirsi ad autista e
+officina. `mission_proposals` conserva i tentativi; note ed eventi sono separati per
 l'audit; il pricing è una configurazione singola; `notifications_outbox` conserva invio ed esito.
 
 | Tabella | Scopo e relazioni principali |
 |---|---|
 | `app_users` | Utenti autenticabili, email univoca, hash BCrypt e ruolo |
-| `drivers` | Autista legato a un solo utente e a un solo mezzo |
+| `drivers` | Autista legato a un solo utente e a un solo mezzo; disponibilità e officina di riferimento, punto di partenza e rientro |
 | `vehicles` | Targa univoca, tipologia, portata e coordinate della base |
 | `insurance_companies` | Compagnie assicurative dei clienti |
-| `customers` | Cliente, targa normalizzata univoca, compagnia e scadenza polizza |
+| `customers` | Cliente (nome e cognome), targa normalizzata univoca, compagnia e scadenza polizza |
 | `workshops` | Officine e coordinate |
-| `missions` | Cliente, autista e officina, stato, località, date, chilometri, costi e flag fixture |
+| `missions` | Cliente, autista e officina, stato, località, date, chilometri, costi e flag fixture; telefono sul posto, tipo di problema, targa dichiarata e dati dell'annullamento |
 | `mission_proposals` | Tentativi di proposta e scadenza, con storico |
-| `mission_notes` | Note collegate a missione e utente |
+| `mission_notes` | Note collegate a missione e utente, di tipo `AVVISO` o `SUPPORTO`; per il supporto, chi l'ha gestito e quando |
 | `mission_events` | Audit della missione con dettagli JSON |
 | `pricing_config` | Parametri tariffari e durata della proposta |
 | `notifications_outbox` | Eventi da inviare, stato di invio e tentativi |
 | `chat_mission_requests` | Legame requestId, sessione, destinatario e missione; impronta anti-duplicati |
-| `chat_lookup_grants` | Autorizzazione sessione-cliente di 15 minuti dopo un lookup positivo |
+| `chat_lookup_grants` | Autorizzazione di 15 minuti dopo un lookup: lega la sessione al cliente o, con polizza da verificare, alla targa |
 
 ## Integrità
 
@@ -68,9 +69,11 @@ psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/07_backend_har
 psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/08_cleanup_and_delivery.sql
 psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/09_integrity_and_indexes.sql
 psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/10_night_rate_22.sql
+psql -v ON_ERROR_STOP=1 -U fornitori_app -d fornitori -f database/11_operativita_missioni.sql
 ```
 
-Hibernate usa `validate`: senza gli script fino a 08 l'applicazione non parte. Il 09 è additivo: vincoli di coerenza e indici. Su un database esistente
+Hibernate usa `validate`: senza lo script 11 l'applicazione non parte. Il 09 è additivo: vincoli di coerenza e indici. L'11 aggiunge
+gli stati `verifica_polizza`, `gestione_manuale` e `annullata`, e le colonne descritte sopra. Su un database esistente
 applicare solo gli script mancanti, dopo un backup. `08_cleanup_and_delivery.sql` rimuove
 `chat_sessions` e `drivers.stato_seed`: dopo di esso non rieseguire 01 e 02. Se fallisce la
 validazione di `missions_origin_pair` in 07, verificare i dati: non inventare coordinate. Non

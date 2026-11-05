@@ -1,5 +1,7 @@
 # Bot Telegram — contratto condiviso v1
 
+> **Record storico:** branch già fuso in `main`. Descrive la situazione al momento del merge: lo stato attuale è in [`chatbot/README.md`](../../chatbot/README.md).
+
 ## Base Git
 
 Branch: `feature/telegram-bot`.

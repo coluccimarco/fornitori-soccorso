@@ -1,6 +1,6 @@
 # Registro decisioni consolidato
 
-**Codice:** FOR-DEC-001 · **Versione:** 2.0 · **Data:** 04/11/2026
+**Codice:** FOR-DEC-001 · **Versione:** 2.1 · **Data:** 05/11/2026
 Questo registro consolida la baseline corrente e conserva in appendice il contesto
 dei record storici, con ID storici `H-*`. Non attribuisce approvazioni a persone
 non identificate; le decisioni di business restano da confermare col docente dove
@@ -24,7 +24,12 @@ indicato.
 | D-014 | Notifiche della centrale | Nessun invio: la chat del cliente non è nota; righe `SKIPPED` senza telefono | Implementato | `MissionService`, `08_cleanup_and_delivery.sql` |
 | D-015 | Stato di invio | Riserva persistente `PENDING → SENDING → SENT` con scadenza; consegna almeno una volta in caso di crash | Implementato | `ChatService`, `NotificationDispatcher` |
 | D-016 | Mappe, codici di risposta | Vale il comportamento del codice: 404 per autista inesistente, 200 col solo sinistro senza autista | Implementato | `MapService`, OpenAPI |
-
+| D-017 | Assegnazione automatica | Dopo creazione, rifiuto, scadenza e conferma polizza il sistema propone all'autista libero più vicino; si spegne con `fornitori.missions.auto-assign=false` | Implementato | `AutoAssignmentService`, `docs/changes/BACKEND.md` |
+| D-018 | Gestione manuale | Al terzo autista distinto che rifiuta o lascia scadere decide la centrale | Implementato | `MissionService`, `docs/changes/BACKEND.md` |
+| D-019 | Polizza non verificabile | La pratica non si blocca: entra in `verifica_polizza` senza cliente e decide la centrale | Implementato; una targa inventata resta a carico della centrale | `ChatService`, `MissionService` |
+| D-020 | Annullamento | Il costo resta all'autista solo se annulla la centrale dopo l'accettazione; negli altri casi è 0 | Implementato | `MissionService`, `docs/changes/BACKEND.md` |
+| D-021 | Bot e intervento | Il cliente sceglie il problema con cinque pulsanti; intervento e officina li decide il backend. Supera H-008 | Implementato | `ChatService`, `chatbot/README.md` |
+| D-022 | Dashboard | Tolto il riquadro "Rifiutate da 3 autisti", duplicato di Critiche. Resta il contatore nella coda critica; il campo `rifiutateTreAutisti` resta nell'API | Implementato | `app.js`, `api/openapi.yaml` |
 ## Decisioni da richiedere
 
 - Conferma dei requisiti obbligatori/facoltativi, dataset e acceptance dal docente.
@@ -37,7 +42,8 @@ indicato.
 I record seguenti provengono dal vecchio `docs/DECISION_LOG.md`; gli ID `H-001`–
 `H-010` preservano l'ordine originale D-001–D-010. Sono stati mantenuti per
 tracciabilità e non prevalgono sulla baseline corrente sopra. In particolare,
-H-006 sul canale outbox è stato aggiornato dal successivo H-009.
+H-006 sul canale outbox è stato aggiornato dal successivo H-009, H-008 è superato da D-021 e
+la lettura delle notifiche di H-009 è sostituita dalla riserva di D-015.
 
 ### H-001 — Storico docente e missioni live (ID originale D-001)
 
@@ -101,7 +107,7 @@ H-006 sul canale outbox è stato aggiornato dal successivo H-009.
 - **Stato:** applicata nella baseline del record; il limite privacy resta da
   riesaminare e il requisito originale non è disponibile nell'audit corrente.
 
-### H-008 — Traino sulle missioni da chatbot (ID originale D-008)
+### H-008 — Traino sulle missioni da chatbot (ID originale D-008, superato da D-021)
 
 - **Decisione aggiornata:** il cliente sceglie riparazione o traino con i tasti del bot.
   Per il traino il backend assegna l'officina più vicina in linea d'aria alla posizione,

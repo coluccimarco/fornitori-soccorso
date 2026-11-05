@@ -1,6 +1,6 @@
 # Membro 3 — Chatbot
 
-**Responsabile:** Marco Colucci · **Versione:** 2.0 · **Data:** 04/11/2026
+**Responsabile:** Marco Colucci · **Versione:** 2.1 · **Data:** 05/11/2026
 
 ## Scopo
 
@@ -32,13 +32,20 @@ una volta da solo e prosegue, senza far ripetere nulla al cliente.
 Il bot non accede al DB e usa `/api/v1/chat/*` con `FORNITORI_CHAT_TOKEN`. La ricerca
 `GET /api/v1/clienti?search=...` resta riservata alla centrale.
 
+## Esecuzione
+
+Il bot risponde solo se `python3 -m fornitori_chatbot --telegram --http` gira su un server sempre
+acceso, con `TELEGRAM_BOT_TOKEN` e `FORNITORI_CHAT_TOKEN` impostati e il backend raggiungibile. Il sito
+apre `t.me/Fornitori_Soccorso_Bot`: il token deve essere di quel bot, perché il codice lo riconosce
+solo dal token. Vercel ospita solo il frontend e non può far girare il bot in polling.
+
 ## Limiti noti della demo
 
 - **La sola targa identifica il cliente.** Chi la conosce vede nome e compagnia e può creare
   una richiesta. È una scelta della demo, allineata ai dialoghi del docente, e non è adatta
   a dati reali.
-- I dialoghi 2-4 hanno un passo in più del foglio docente (scelta dell'intervento); il
-  dialogo 7 usa frasi diverse per non mostrare gli stati interni.
+- Il dialogo chiede il telefono della persona sul posto; il dialogo 7 usa frasi diverse per
+  non mostrare gli stati interni.
 - Il dialogo 10, con Gemini, è facoltativo e non implementato.
 - I dialoghi in corso stanno in RAM: un riavvio li azzera.
 

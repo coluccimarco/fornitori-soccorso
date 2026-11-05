@@ -1,6 +1,6 @@
 # Piano di gestione del progetto
 
-**Codice:** FOR-PMP-001 · **Versione:** 2.0 · **Data:** 04/11/2026 · **Responsabile:** team
+**Codice:** FOR-PMP-001 · **Versione:** 2.1 · **Data:** 05/11/2026 · **Responsabile:** team
 
 ## Metodo
 
@@ -28,7 +28,7 @@ Cinque aree di responsabilità e quattro Sprint secondo Scrum adattato; obiettiv
 |---|---|---|
 | Specifica | PDF/Excel acquisiti e requisiti confermati | Bloccato sul docente |
 | Backend | Build, avvio e script DB | Soddisfatto |
-| Contratto | Stati e ruoli OpenAPI coerenti con i controller | 38 operazioni: 34 implementate, 4 fuori ambito |
+| Contratto | Stati e ruoli OpenAPI coerenti con i controller | 42 operazioni: 38 implementate, 4 fuori ambito |
 | Chatbot | Canale dichiarato e provato | Implementato; prova da telefono da ripetere |
 | UI e mappe | Prodotto presente e provato | Soddisfatto |
 | Rilascio didattico | Acceptance del docente e demo ripetibile | Da confermare |

@@ -1,6 +1,6 @@
 # Sicurezza e protezione dei dati
 
-**Codice:** FOR-SEC-001 · **Versione:** 2.0 · **Data:** 04/11/2026
+**Codice:** FOR-SEC-001 · **Versione:** 2.1 · **Data:** 05/11/2026
 Descrive i controlli presenti nel codice; non è un penetration test né una certificazione.
 
 ## Controlli presenti
@@ -12,7 +12,7 @@ Descrive i controlli presenti nel codice; non è un penetration test né una cer
   proposta non dà accesso dopo una riassegnazione.
 - Chain `/api/v1/chat/**` separata e stateless, con token bearer confrontato a tempo costante.
 - Cookie HttpOnly, SameSite Lax, sessione di 30 minuti; `Secure` nel profilo `prod`.
-- Limiti: 20 login al minuto per IP; 5 targhe non trovate per sessione; 100 lookup al minuto per
+- Limiti: 20 login al minuto per IP; 5 targhe non riconosciute per sessione; 100 lookup al minuto per
   istanza. Il server non si fida di `X-Forwarded-For`.
 - Client dei provider senza redirect, con timeout 3/8 s, risposta massima 1 MiB e valori controllati.
 - Nome, cognome e telefono del cliente e telefono della persona sul posto visibili all'autista assegnato dalla proposta; targa solo dopo l'accettazione; nessun contatto nello storico.
@@ -26,6 +26,8 @@ Descrive i controlli presenti nel codice; non è un penetration test né una cer
 - **La sola targa identifica il cliente:** il bot mostra nome e compagnia e può creare richieste a
   chi la conosce. Il lookup autorizza la pratica per 15 minuti ma non prova la titolarità. Non usare
   con dati reali.
+- Una targa inventata apre una pratica in `verifica_polizza`: resta a carico della centrale, con il
+  limitatore attivo.
 - Stato del dialogo in RAM. Telegram trasporta dati fuori dal backend.
 - Consegna delle notifiche "almeno una volta" in caso di crash tra invio ed esito.
 - Logging, retention, DPIA, consenso, gestione incidenti, rotazione dei segreti e policy di

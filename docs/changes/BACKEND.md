@@ -1,5 +1,7 @@
 # Backend: operatività missioni
 
+> **Record storico:** branch già fuso in `main`. Descrive la situazione al momento del merge: lo stato attuale è nel [TAD](../architecture/TAD_FORNITORI.md) e nel [manuale tecnico](../manuals/MANUALE_TECNICO.md).
+
 Branch `feature/backend-operativita`, da fondere **per primo**.
 
 **Hash di partenza:** `d6ab902`. L'atteso era `eb62c65`: i due commit in mezzo aggiungono e tolgono `docs/prompts/`, quindi `git diff eb62c65 d6ab902` è vuoto. I tre branch partono dagli stessi contenuti.

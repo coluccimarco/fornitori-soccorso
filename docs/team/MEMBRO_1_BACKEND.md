@@ -1,6 +1,6 @@
 # Membro 1 — Backend
 
-**Responsabile:** Vincenzo Minervini · **Versione:** 2.0 · **Data:** 04/11/2026
+**Responsabile:** Vincenzo Minervini · **Versione:** 2.1 · **Data:** 05/11/2026
 
 ## Responsabilità
 
@@ -19,14 +19,18 @@ entity e le credenziali non vengono mai esposte.
 - Login JSON, CSRF, logout, profilo, sessione HttpOnly di 30 minuti, limite di 20 login
   al minuto per IP, ruoli `RESPONSABILE` e `AUTISTA`.
 - Anagrafiche: autisti, mezzi, compagnie, clienti (ricerca e inserimento), officine.
-- Missioni: creazione, proposta, accettazione, rifiuto, chiusura, correzione dell'intervento.
+- Missioni: creazione, proposta, accettazione, rifiuto, chiusura, annullamento, correzione dell'intervento.
+- Assegnazione automatica all'autista libero più vicino, si spegne con `fornitori.missions.auto-assign=false`;
+  `gestione_manuale` al terzo autista distinto con esito negativo.
+- Verifica polizza per le pratiche da chat senza polizza verificabile; disponibilità dell'autista.
+- Note `AVVISO` e `SUPPORTO`: il supporto resta aperto finché la centrale non lo segna gestito.
 - Storico proposte in sola lettura: `GET /api/v1/missioni/{id}/proposte`, per la centrale.
 - Scadenza da `pricing_config`, scheduler solo sulle missioni live, controllo anche al
   momento della risposta dell'autista.
 - Lock pessimista su missione e autista; indice DB contro le doppie assegnazioni.
 - Chiusura con tariffa server-side, `BigDecimal`, `HALF_UP`, fascia notturna 22:00–08:00
   sull'ora di accettazione, Europe/Rome. Rettifica motivata con audit.
-- Dashboard reference e live con totale e subtotali per autista.
+- Dashboard reference e live con totale e subtotali per autista, `categorie`, `distribuzioneStati`, `codaCritica` e `costi`.
 - Note solo su missioni live: su una fixture la risposta è 409.
 - Outbox nella transazione di dominio: le missioni della centrale non hanno un
   destinatario, quindi la riga nasce `SKIPPED` e non conserva il telefono del cliente.
@@ -34,8 +38,8 @@ entity e le credenziali non vengono mai esposte.
 ## Database
 
 Applicare gli script di `database/` in ordine su un DB vuoto. Su un DB già inizializzato
-applicare solo gli script mancanti. Hibernate resta in `validate`. Per un uso condiviso
-tenere separati l'account delle migrazioni e quello applicativo.
+applicare solo gli script mancanti: senza lo script 11 il backend non parte. Hibernate resta in
+`validate`. Per un uso condiviso tenere separati l'account delle migrazioni e quello applicativo.
 
 ## Regole e chiusura del lavoro
 

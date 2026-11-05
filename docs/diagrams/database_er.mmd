@@ -1,10 +1,11 @@
-%% FORNITORI | v1.0 | 03/11/2026 | owner: Membro 1
-%% ER derivato da database/01_schema.sql; schema presente, baseline DB da validare.
+%% FORNITORI | v2.1 | 05/11/2026 | owner: Membro 1
+%% ER derivato dagli script in database/, fino a 11_operativita_missioni.sql.
 erDiagram
     APP_USERS ||--o| DRIVERS : "user_id"
     VEHICLES ||--o| DRIVERS : "vehicle_id"
+    WORKSHOPS o|--o{ DRIVERS : "officina_riferimento_id"
     INSURANCE_COMPANIES ||--o{ CUSTOMERS : "company_id"
-    CUSTOMERS ||--o{ MISSIONS : "customer_id"
+    CUSTOMERS o|--o{ MISSIONS : "customer_id"
     DRIVERS o|--o{ MISSIONS : "driver_id"
     WORKSHOPS o|--o{ MISSIONS : "workshop_id"
     MISSIONS ||--o{ MISSION_PROPOSALS : "mission_id"
@@ -25,6 +26,8 @@ erDiagram
         bigint id PK
         bigint user_id FK,UK
         bigint vehicle_id FK,UK
+        boolean disponibile
+        bigint officina_riferimento_id FK
     }
     VEHICLES {
         bigint id PK
@@ -61,6 +64,11 @@ erDiagram
         bigint workshop_id FK
         varchar stato
         boolean is_fixture
+        varchar telefono_sul_posto
+        varchar tipo_problema
+        varchar targa_dichiarata
+        varchar annullata_da
+        timestamptz annullata_il
     }
     MISSION_PROPOSALS {
         bigint id PK
@@ -72,6 +80,8 @@ erDiagram
         bigint id PK
         bigint mission_id FK
         bigint user_id FK
+        varchar tipo
+        timestamptz gestita_il
     }
     MISSION_EVENTS {
         bigint id PK
@@ -89,6 +99,7 @@ erDiagram
     CHAT_LOOKUP_GRANTS {
         varchar session_id PK
         bigint customer_id FK
+        varchar targa_norm
         timestamptz expires_at
     }
     NOTIFICATIONS_OUTBOX {
@@ -99,4 +110,4 @@ erDiagram
         timestamptz prossimo_tentativo_il
     }
     MISSIONS ||--o| CHAT_MISSION_REQUESTS : origina
-    CUSTOMERS ||--o{ CHAT_LOOKUP_GRANTS : autorizza
+    CUSTOMERS o|--o{ CHAT_LOOKUP_GRANTS : autorizza

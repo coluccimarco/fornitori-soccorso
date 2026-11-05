@@ -1,6 +1,6 @@
 # Technical Architecture Document — FORNITORI
 
-**Codice:** FOR-TAD-001 · **Versione:** 2.0 · **Data:** 04/11/2026
+**Codice:** FOR-TAD-001 · **Versione:** 2.1 · **Data:** 05/11/2026
 **Responsabile:** Vincenzo Minervini
 
 ## 1. Sintesi
@@ -19,7 +19,7 @@ polling. La descrizione non certifica la conformità ai documenti del docente n�
 | Spring Security / JPA / Validation / WebMVC | starter e configurazione | Implementati |
 | PostgreSQL 18 | Script in `database/` | Implementato |
 | Chatbot Python >=3.10 | `chatbot/`, sola libreria standard | Implementato |
-| OpenAPI 3.0.3 | `api/openapi.yaml` | 38 operazioni: 34 implementate, 4 fuori ambito |
+| OpenAPI 3.0.3 | `api/openapi.yaml` | 42 operazioni: 38 implementate, 4 fuori ambito |
 | Client web | HTML/CSS/JavaScript, Bootstrap 5.3, Leaflet 1.9 | Implementato |
 | Mappe | `MapController`, `MapService`, client Nominatim/OSRM | Implementato |
 | WhatsApp e webhook in ingresso | operazioni `designed` | Fuori ambito |
@@ -49,22 +49,24 @@ Telegram long polling -> dialog engine -> notification dispatcher -> Telegram
 | `controller/`, `dto/` | REST, validazione e payload; 6 controller |
 | `service/`, `repository/` | Logica applicativa, query e lock pessimistici |
 | `AssignmentController`, `NearestDriverService`, `CentreAlertService` | Proposta al più vicino e avvisi alla centrale |
+| `AutoAssignmentService` | Proposta automatica dopo il commit e ripresa periodica delle missioni senza autista |
 | `NearestWorkshopResolver`, `GeoDistance` | Officina più vicina in linea d'aria per il traino da chat |
 | `entity/`, `enums/` | Persistenza, stati e ruoli |
 | `config/`, `common/` | Security filter chain ed errori API |
 | `database/` | Schema, seed, verifiche e migrazioni |
 | `chatbot/fornitori_chatbot/` | Dialogo, backend fake e HTTP, Telegram e notifiche |
 | `src/main/resources/static/` | Pagina pubblica, centrale, area autista e mappa |
-| `MapController`, `MapService` | Geocodifica, percorso base-sinistro-officina e km stimati |
+| `MapController`, `MapService` | Geocodifica, percorso con partenza, luogo di fermo, officina e rientro, km stimati |
 | `NominatimGeocodingClient`, `OsrmRoutingClient` | Provider esterni, con una richiesta al secondo verso Nominatim |
 
 ## 5. Client web
 
 `index.html` contiene vista pubblica, login e area riservata. `app.js` carica identità e token CSRF, interroga le API
-same-origin e mostra gli errori del server. Offre dashboard e registri, ricerca e creazione cliente, creazione missione,
-proposta manuale o al più vicino, correzione di intervento e officina, storico proposte, rettifica costo, avvisi, mappa
-Leaflet e, per l'autista, accettazione, rifiuto, note, chiusura e storico. Avvisi e proposte si aggiornano ogni 15 secondi. Il
-layout è responsive.
+same-origin e mostra gli errori del server. Offre dashboard operativa con coda critica, costi e analisi, registri, ricerca e
+creazione cliente, creazione missione, proposta manuale o al più vicino, verifica polizza, annullamento, correzione di
+intervento e officina, storico proposte, rettifica costo, avvisi e supporto, mappa Leaflet e, per l'autista, disponibilità,
+accettazione, rifiuto, note, richiesta di supporto, chiusura e storico. Avvisi e proposte si aggiornano ogni 15 secondi, la
+dashboard ogni 30. Il layout è responsive.
 
 ## 6. Backend, sicurezza e workflow
 
@@ -77,7 +79,9 @@ una sola richiesta. Nel profilo `prod` l'avvio si ferma se la configurazione non
 è in [`SECURITY_DESIGN.md`](./SECURITY_DESIGN.md) e in [`docs/security`](../security/BACKEND_SECURITY_AUDIT.md).
 
 `MissionService` gestisce le mutazioni transazionali; repository e vincoli parziali proteggono concorrenza e assegnazioni. Un
-clock iniettato gestisce gli istanti. `MissionExpiryScheduler` opera sulle righe live; le fixture restano immutabili. Stati e
+clock iniettato gestisce gli istanti. `MissionExpiryScheduler` opera sulle righe live; le fixture restano immutabili.
+`AutoAssignmentService` propone la missione dopo il commit, su un altro thread; al terzo autista distinto con esito negativo la
+missione passa a `gestione_manuale`. Le pratiche con polizza non verificabile nascono in `verifica_polizza`. Stati e
 transizioni sono in [`mission_states.mmd`](../diagrams/mission_states.mmd).
 
 Il seed prevede €50 di uscita, €1,20/km, supplemento 0,25 e fascia 22:00–08:00 sull'ora di accettazione, in `Europe/Rome`, con
@@ -110,7 +114,8 @@ bearer token o dati personali non necessari. Centralizzazione dei log, metriche 
 
 `./mvnw clean package` esegue i test e produce il jar; i test su database partono solo con `FORNITORI_TEST_DATABASE=isolated`.
 `.github/workflows/backend-ci.yml` compila il progetto, applica gli script a un PostgreSQL 18 temporaneo, esegue tutti i test su un
-database `fornitori_e2e_ci` e verifica l'avvio, sempre con un ruolo senza privilegi di amministratore.
+database `fornitori_e2e_ci` e verifica l'avvio, sempre con un ruolo senza privilegi di amministratore. Il bot non fa parte del
+deploy del frontend: è un processo Python a sé, da tenere acceso su un server.
 
 ## 11. Limiti e decisioni aperte
 

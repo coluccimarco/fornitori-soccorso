@@ -6,8 +6,8 @@ Dialogo guidato in Python, senza dipendenze esterne (solo libreria standard, Pyt
 o superiore), allineato ai dialoghi del docente. Non accede al database: parla
 con il backend solo tramite gli endpoint `/api/v1/chat/*` di `api/openapi.yaml`.
 
-**Stato:** dialogo e client aggiornati al contratto condiviso v1. Prima di usare il backend
-reale va integrato `feature/backend-operativita`. WhatsApp e webhook sono fuori ambito.
+**Stato:** dialogo e client aggiornati al contratto condiviso v1 e integrati con il backend su
+`main`. WhatsApp e webhook sono fuori ambito.
 
 ## Provarlo
 
@@ -53,11 +53,17 @@ read -rs TELEGRAM_BOT_TOKEN && export TELEGRAM_BOT_TOKEN
 python3 -m fornitori_chatbot --telegram
 ```
 
-3. Apri il tuo bot su Telegram e premi **Avvia**. Per il backend reale aggiungi `--http`.
+3. Apri il tuo bot su Telegram e premi **Avvia**. Per il backend reale aggiungi `--http`, con
+   `FORNITORI_API_URL` e `FORNITORI_CHAT_TOKEN` impostati: senza `--http` il bot usa dati di prova.
 
 Il bot resta attivo finché il comando è in esecuzione. Usa il long polling, quindi non
 serve ngrok né un indirizzo pubblico; risponde solo nelle chat private. Il token non va
 mai scritto in file del repo o in chat.
+
+Per i clienti reali il processo deve girare su un server sempre acceso: Vercel ospita solo il
+frontend e non può far girare il bot in polling. Il sito apre `t.me/Fornitori_Soccorso_Bot`:
+il codice non contiene lo username e riconosce il bot solo dal token, quindi il token deve essere
+di quel bot.
 
 ## Test
 

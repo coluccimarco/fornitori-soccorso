@@ -1,6 +1,6 @@
 # Manuale utente FORNITORI
 
-**Codice:** FOR-USER-001 · **Versione:** 2.0 · **Data:** 04/11/2026
+**Codice:** FOR-USER-001 · **Versione:** 2.1 · **Data:** 05/11/2026
 **Destinatari:** responsabile centrale, autista e cliente
 **Responsabili:** Francesco Valeriano, Giuseppe Cangellosi, Marika Sancilio, Marco Colucci
 
@@ -65,7 +65,6 @@ separato dalla pagina pubblica informativa.
 
 ### Notifiche centrale e supporto
 
-
 La campanella in alto mostra **Notifiche centrale**: rifiuti, scadenze e richieste di supporto, con le richieste aperte in testa. Si aggiorna ogni 15 secondi. **Apri missione** porta alla scheda; **Segna come letti** azzera il contatore solo in questo browser e non nasconde le richieste di supporto aperte. **Segna come gestito** mostra il testo della richiesta e la chiude.
 
 ## Autista
@@ -87,7 +86,7 @@ La pagina pubblica contiene informazioni e contatti; non invia direttamente una
 richiesta al backend. Per il flusso bot occorre il canale Telegram predisposto dal
 team:
 
-1. Aprire **Soccorso Stradale Bot** e premere **Avvia**.
+1. Aprire **Soccorso Stradale Bot** con il pulsante della pagina pubblica, o da `t.me/Fornitori_Soccorso_Bot`, e premere **Avvia**.
 2. Inserire la targa e seguire le domande del dialogo: telefono della persona sul posto, posizione o indirizzo, problema da scegliere con i pulsanti. Il tipo di intervento lo stabilisce il sistema.
 3. Usare `AIUTO` per le indicazioni, `ANNULLA` per uscire e `STATO` per consultare la richiesta associata alla chat, se presente.
 4. Se il bot segnala indisponibilità, non inviare richieste ripetute; seguire le indicazioni ricevute o contattare la centrale.

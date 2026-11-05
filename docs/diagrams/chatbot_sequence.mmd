@@ -1,24 +1,29 @@
-%% FORNITORI | v2.0 | 04/11/2026 | Marco Colucci
+%% FORNITORI | v2.1 | 05/11/2026 | Marco Colucci
 sequenceDiagram
     actor Cliente
     participant Bot as Chatbot guidato
     participant API as Backend
     Cliente->>Bot: scrive la targa
+    Bot->>Cliente: chiede il telefono della persona sul posto
+    Cliente->>Bot: scrive il telefono
     Bot->>API: lookup-targa
-    API-->>Bot: nome e compagnia
-    Bot->>Cliente: chiede indirizzo o posizione
+    alt polizza verificata
+        API-->>Bot: nome e compagnia
+        Bot->>Cliente: conferma la targa e chiede indirizzo o posizione
+    else polizza da verificare
+        API-->>Bot: DA_VERIFICARE, nessun cliente
+        Bot->>Cliente: avvisa della verifica e chiede indirizzo o posizione
+    end
     Cliente->>Bot: invia la posizione
-    Bot->>Cliente: chiede riparazione o traino
-    Cliente->>Bot: sceglie l'intervento
-    Bot->>Cliente: chiede il problema
-    Cliente->>Bot: descrive il problema
-    Bot->>API: crea missione (requestId)
-    API-->>Bot: codice e stato
+    Bot->>Cliente: chiede il problema con cinque pulsanti
+    Cliente->>Bot: sceglie il problema
+    Bot->>API: crea missione (requestId, tipoProblema)
+    API-->>Bot: codice e stato, nuova o verifica_polizza
     Bot-->>Cliente: richiesta presa in carico
     Cliente->>Bot: STATO
     Bot->>API: stato della chat
-    API-->>Bot: stato e autista
-    Bot-->>Cliente: stato della richiesta
+    API-->>Bot: stato, senza nome dell'autista
+    Bot-->>Cliente: frase comprensibile sullo stato
     Bot->>API: riserva le notifiche in coda
-    API-->>Bot: accettazione o chiusura
+    API-->>Bot: accettazione, chiusura o annullamento
     Bot-->>Cliente: messaggio automatico

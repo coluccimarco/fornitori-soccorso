@@ -2,7 +2,7 @@
 
 Date, story point e verbali non vengono dedotti dai commit: si registrano solo se gli eventi sono stati svolti.
 
-| Sprint | Obiettivo | Stato al 04/11/2026 |
+| Sprint | Obiettivo | Stato al 05/11/2026 |
 |---|---|---|
 | 1 — Fondamenta | Backend, SQL, autenticazione, anagrafiche, pipeline | Completato |
 | 2 — Missioni | Workflow, timeout, tariffa, note, dashboard, UI centrale e autista | Completato |
