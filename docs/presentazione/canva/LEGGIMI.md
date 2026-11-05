@@ -1,7 +1,7 @@
 # Presentazione RecuVeicol per Canva
 
 - `RecuVeicol_per_Canva.pptx`: 22 slide con testi modificabili e note del relatore.
-- `video/`: 7 mini video MP4, senza audio, da 22 a 38 secondi.
+- `video/`: 7 mini video MP4, senza audio, da 21 a 38 secondi.
 
 Screenshot e video vengono dall'app reale, su un database temporaneo con i dati dimostrativi di `database/02_seed.sql`. Cursore e didascalie dei video sono sovrapposti in fase di registrazione e non fanno parte dell'app. La grafica Telegram del video 01 è simulata: i testi sono generati dal motore del bot con il suo backend finto, senza usare Telegram.
 
