@@ -993,9 +993,9 @@
   function cancelSummaryMarkup(mission) {
     if (mission.stato !== "annullata") return "";
     const who = ({ autista: "dall'autista", centrale: "dalla centrale" })[mission.annullataDa] || "";
-    const amount = mission.autistaId
+    const amount = Number(mission.costoFinale) > 0 && mission.autistaId
       ? `${formatEuro(mission.costoFinale)} attribuiti a ${driverNameForSummary(mission)}`
-      : "Nessun importo attribuito";
+      : `${formatEuro(0)}, nessun importo attribuito`;
     return `<div class="cancel-summary"><strong>Annullata ${safe(who)}${mission.annullataIl ? ` il ${safe(formatDateTime(mission.annullataIl))}` : ""}</strong>${mission.motivoAnnullamento ? `<span>Motivo: ${safe(mission.motivoAnnullamento)}</span>` : ""}<span>Importo: ${safe(amount)}</span></div>`;
   }
 
