@@ -83,7 +83,7 @@
 .contact-eyebrow { margin-bottom: 6px; color: #7a6a22; font-size: 9px; font-weight: 700; letter-spacing: 1px; }
 .contact-section h2 { margin: 0 0 7px; font-size: 19px; font-weight: 500; }
 .contact-section p:last-child { max-width: 610px; margin: 0; color: #555; font-size: 12px; line-height: 1.5; }
-.contact-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.contact-actions { display: flex; flex: 0 0 auto; flex-wrap: wrap; gap: 10px; }
 .contact-button { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 12px; padding: 11px 15px; background: #164a9c; color: #fff !important; font-size: 11px; font-weight: 650; }
 .contact-button span { font-size: 17px; }
 .contact-button:hover { background: #103c82; text-decoration: none !important; }
@@ -142,7 +142,7 @@
   .utility-left a, .utility-right a { padding: 0 8px; }
   .utility-left a:nth-child(2) { display: none; }
   .utility-right > a:first-child { display: none; }
-  .public-brand-row { min-height: 84px; padding: 12px 15px; }
+  .public-brand-row { min-height: 84px; flex-wrap: wrap; gap: 8px; padding: 12px 15px; }
   .public-brand-symbol { width: 29px; height: 37px; }
   .public-brand-copy strong { font-size: 26px; }
   .public-brand-copy small { font-size: 6px; }

@@ -12,7 +12,6 @@
 * { box-sizing: border-box; }
 
 body {
-  min-width: 320px;
   margin: 0;
   background: var(--canvas);
   color: var(--ink);
@@ -399,6 +398,7 @@ button.chart-column:hover { background: #f5f6fb; }
 /* Percorso: marker, legenda e chilometri */
 .route-km { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-bottom: 8px; color: #4c566a; font-size: 12px; }
 .route-km strong { color: #30394c; }
+.route-km-total { color: #30394c; font-weight: 700; }
 .route-marker { display: inline-grid; width: 28px; height: 28px; place-items: center; border: 2px solid #fff; background: #30394c; box-shadow: 0 1px 5px rgba(15, 23, 42, .45); color: #fff; font-size: 13px; font-weight: 800; line-height: 1; }
 .marker-base { border-radius: 5px; background: #1d4ed8; }
 .marker-sinistro { border-radius: 50%; background: #c62838; }
