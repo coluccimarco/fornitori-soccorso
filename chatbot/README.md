@@ -6,8 +6,8 @@ Dialogo guidato in Python, senza dipendenze esterne (solo libreria standard, Pyt
 o superiore), allineato ai dialoghi del docente. Non accede al database: parla
 con il backend solo tramite gli endpoint `/api/v1/chat/*` di `api/openapi.yaml`.
 
-**Stato:** dialogo, collegamento al backend reale e notifiche al cliente funzionano su Telegram, con backend
-e PostgreSQL locali. WhatsApp e webhook sono fuori ambito.
+**Stato:** dialogo e client aggiornati al contratto condiviso v1. Prima di usare il backend
+reale va integrato `feature/backend-operativita`. WhatsApp e webhook sono fuori ambito.
 
 ## Provarlo
 
@@ -65,6 +65,7 @@ Dalla cartella `chatbot/`:
 
 ```bash
 python3 -m unittest discover
+python3 -m compileall -q fornitori_chatbot
 ```
 
 ## Struttura
@@ -82,18 +83,45 @@ python3 -m unittest discover
 
 ## Dialogo
 
-`START → WAIT_LOCATION → WAIT_INTERVENTION → WAIT_PROBLEM → START`. Il tipo di intervento
-si sceglie con i tasti Telegram, oppure scrivendo 1 o 2. `AIUTO`, `ANNULLA` e `STATO` valgono in
+`START → WAIT_PHONE → WAIT_LOCATION → WAIT_PROBLEM → START`:
+targa → telefono sul posto → lookup polizza → posizione → problema → creazione.
+`AIUTO`, `ANNULLA` e `STATO` valgono in
 ogni stato; un messaggio che non è una targa riceve il testo di aiuto.
 
+- Dopo la targa: «Inserisca il numero di telefono della persona presente sul posto.»
+  Sono ammessi cifre, spazi e un eventuale `+` iniziale, secondo la regex
+  `^\+?[0-9][0-9 ]{5,19}$`. Gli spazi vengono rimossi prima dell'invio;
+  anche il numero normalizzato deve rispettare la regex.
+- Con polizza da verificare: «Attenda... Stiamo verificando la copertura assicurativa del veicolo.
+  Intanto condivida la posizione o scriva l'indirizzo.» Il dialogo prosegue con `clienteId` nullo.
+- «Qual è il problema?» presenta cinque pulsanti, utilizzabili anche scrivendo 1–5:
+
+  | Numero | Problema | Codice inviato |
+  |---|---|---|
+  | 1 | Ruota forata con ruota di scorta | `RUOTA_CON_SCORTA` |
+  | 2 | Ruota forata senza ruota di scorta | `RUOTA_SENZA_SCORTA` |
+  | 3 | Batteria scarica | `BATTERIA_SCARICA` |
+  | 4 | Guasto motore | `GUASTO_MOTORE` |
+  | 5 | Incidente | `INCIDENTE` |
+
+  Il backend decide l'intervento: il bot invia il solo codice, senza descrizione libera.
+- Creazione verificata: «Non appena un autista sarà disponibile riceverai un messaggio.»
+  Segue un messaggio con codice e indicazione STATO.
+- Creazione in verifica: «Attenda... La centrale sta verificando la polizza e la ricontatterà
+  al numero indicato. Codice richiesta {codice}.»
+- Accettazione: «La tua richiesta {codice} è stata accettata. Entro 45 minuti arriverà l'autista.»
+- Annullamento: «La richiesta {codice} è stata annullata. Per assistenza contatti la centrale operativa.»
+- Demo: `AB123CD` ed `EF456GH` sono verificate; ad esempio `ZZ999ZZ` simula una polizza da verificare.
 - **Tentativi:** 3 input non validi fanno ricominciare il dialogo; il backend risponde
-  429 dopo 5 targhe non trovate nella stessa sessione.
+  429 quando interviene il limitatore anti-abuso.
 - **Scadenze:** un dialogo inattivo scade dopo 30 minuti.
 - **Riconoscimento:** il backend autorizza una sola richiesta, per 15 minuti, dopo la targa; se scade durante il
-  dialogo, il bot rifà il controllo una volta e prosegue.
+  dialogo, il bot rifà il controllo una volta e prosegue, anche con polizza da verificare.
 - **Anti-duplicati:** `requestId` resta lo stesso nei tentativi dopo un errore di rete,
   e i `message_id` già visti vengono ignorati.
-- **Stato:** `STATO` risponde con frasi comprensibili, senza mostrare gli stati interni della missione.
+- **Stato:** `STATO` comprende verifica polizza, gestione manuale e annullamento;
+  STATO e notifiche non mostrano mai il nome dell'autista, anche se ricevuto dal backend.
+  I tipi di notifica sconosciuti sono ignorati e confermati senza ritentare l'invio.
 - **Memoria:** i dialoghi in corso stanno in RAM, quindi un riavvio li azzera. Le missioni
   e lo stato stanno nel backend e restano consultabili.
 
@@ -119,15 +147,14 @@ risposte = engine.handle(InboundMessage(
    conosce vede nome e compagnia e può creare una richiesta. È un limite noto della demo, non adatto a
    dati reali (`docs/management/DECISION_LOG.md`, D-007).
 2. **Traino:** il backend assegna l'officina più vicina in linea d'aria, non per strada. La
-   centrale può cambiarla dalla scheda missione, con **Aggiorna intervento**. La scelta con i tasti non è nei dialoghi del docente: i dialoghi 2-4
-   hanno un passo in più.
-3. **Stato:** `STATO` cerca per chat, non per numero di telefono, che Telegram non comunica.
-4. **Indirizzi:** un indirizzo scritto diventa coordinate alla prima richiesta di percorso
-   sulla mappa, non alla creazione della missione.
+   centrale può cambiarla dalla scheda missione, con **Aggiorna intervento**.
+3. **Stato:** `STATO` cerca per chat; il telefono sul posto viene chiesto esplicitamente.
+4. **Indirizzi:** geocoding e scelta officina restano al backend. Se l'indirizzo non è trovato,
+   il bot chiede una nuova posizione.
 5. **Dialogo 10 del foglio:** la frase libera con Gemini è facoltativa e non implementata.
 6. **Consenso:** i dialoghi del docente non lo prevedono, quindi il bot non lo chiede.
 7. **Notifiche al cliente:** con `--telegram` il bot controlla ogni 5 secondi se ci sono
-   messaggi di presa in carico e conclusione da inviare, e li riserva sul backend così che due bot non
+   messaggi di accettazione, conclusione e annullamento da inviare, e li riserva sul backend così che due bot non
    inviino lo stesso messaggio. Partono solo per le missioni create dal bot: per quelle create dalla
    centrale la chat del cliente non è nota. Se il bot è spento restano in coda e partono alla riaccensione.
    Se si ferma proprio tra l'invio e la registrazione dell'esito, il messaggio può ripartire una volta dopo 5 minuti.
