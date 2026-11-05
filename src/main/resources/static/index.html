@@ -136,11 +136,19 @@
         <span class="brand-mark">F</span>
         <span>fornitori<span class="brand-dot">.</span></span>
       </a>
-      <p class="nav-caption">WORKSPACE</p>
       <nav class="side-nav" aria-label="Navigazione principale">
+        <p class="nav-caption" data-manager-only>OPERATIVITÀ</p>
         <button class="nav-link active" type="button" data-manager-only data-view-link="dashboard">
-          <span class="nav-icon">⌂</span><span>Panoramica</span>
+          <span class="nav-icon">⌂</span><span>Dashboard</span>
         </button>
+        <button class="nav-link" type="button" data-manager-only data-view-link="missioni">
+          <span class="nav-icon">↗</span><span>Missioni</span>
+        </button>
+        <p class="nav-caption nav-caption-spaced" data-manager-only>ANALISI</p>
+        <button class="nav-link" type="button" data-manager-only data-view-link="costi">
+          <span class="nav-icon">€</span><span>Costi e analisi</span>
+        </button>
+        <p class="nav-caption nav-caption-spaced" data-manager-only>ANAGRAFICHE</p>
         <button class="nav-link" type="button" data-manager-only data-view-link="clienti">
           <span class="nav-icon">◉</span><span>Clienti</span>
         </button>
@@ -156,10 +164,7 @@
         <button class="nav-link" type="button" data-manager-only data-view-link="officine">
           <span class="nav-icon">⌖</span><span>Officine</span>
         </button>
-        <p class="nav-caption nav-caption-spaced">OPERATIVITÀ</p>
-        <button class="nav-link" type="button" data-manager-only data-view-link="missioni">
-          <span class="nav-icon">↗</span><span>Missioni</span>
-        </button>
+        <p class="nav-caption d-none" data-driver-only>AREA AUTISTA</p>
         <button class="nav-link d-none" type="button" data-driver-only data-view-link="autista">
           <span class="nav-icon">↗</span><span>Le mie missioni</span>
         </button>
@@ -178,14 +183,14 @@
     <div class="main-column">
       <header class="topbar">
         <button id="menuButton" class="menu-button" type="button" aria-label="Apri navigazione" aria-expanded="false">☰</button>
-        <div class="breadcrumb-label"><span id="workspaceLabel">Centrale operativa</span> <span>/</span> <strong id="currentSection">Panoramica</strong></div>
+        <div class="breadcrumb-label"><span id="workspaceLabel">Centrale operativa</span> <span>/</span> <strong id="currentSection">Dashboard</strong></div>
         <div class="topbar-actions">
           <div class="alert-bell" id="alertBell" data-manager-only>
-            <button id="alertButton" class="btn btn-light alert-bell-button" type="button" aria-label="Avvisi" aria-expanded="false" aria-controls="alertPanel">
+            <button id="alertButton" class="btn btn-light alert-bell-button" type="button" aria-label="Notifiche centrale" aria-expanded="false" aria-controls="alertPanel">
               <span aria-hidden="true">&#128276;</span><span id="alertBadge" class="alert-badge d-none">0</span>
             </button>
-            <section id="alertPanel" class="alert-panel d-none" aria-label="Avvisi dagli autisti">
-              <div class="alert-panel-header"><strong>Avvisi dagli autisti</strong><button id="alertReadButton" class="btn btn-link btn-sm" type="button">Segna come letti</button></div>
+            <section id="alertPanel" class="alert-panel d-none" aria-label="Notifiche centrale">
+              <div class="alert-panel-header"><strong>Notifiche centrale</strong><button id="alertReadButton" class="btn btn-link btn-sm" type="button">Segna come letti</button></div>
               <div id="alertList" class="alert-list"></div>
             </section>
           </div>
@@ -201,15 +206,83 @@
         <section id="dashboardPage" class="page-section">
           <div class="page-heading">
             <div>
-              <p class="eyebrow mb-2">IL TUO WORKSPACE</p>
-              <h1>Panoramica</h1>
-              <p class="text-secondary mb-0">Dati aggiornati direttamente dalle anagrafiche.</p>
+              <p class="eyebrow mb-2">CENTRALE OPERATIVA</p>
+              <h1>Dashboard operativa</h1>
+              <p class="text-secondary mb-0">Si aggiorna da sola ogni 30 secondi. <span id="dashboardUpdated"></span></p>
             </div>
             <button id="refreshButton" class="btn btn-outline-secondary" type="button">
               <span class="refresh-icon">↻</span> Aggiorna dati
             </button>
           </div>
+          <div id="dashboardAlert" class="alert d-none" role="alert"></div>
 
+          <section id="criticalPanel" class="panel critical-panel" aria-labelledby="criticalTitle">
+            <div class="critical-heading">
+              <div class="critical-title">
+                <span class="critical-symbol" aria-hidden="true">!</span>
+                <h2 class="h5 mb-0" id="criticalTitle">Coda critica</h2>
+                <span id="criticalCount" class="critical-count d-none"></span>
+              </div>
+              <div id="criticalChips" class="critical-chips"></div>
+            </div>
+            <div id="criticalQueue" class="critical-queue">
+              <p class="small text-secondary mb-0">Caricamento…</p>
+            </div>
+          </section>
+
+          <div id="categoryTiles" class="category-grid"></div>
+
+          <section id="statusChartPanel" class="panel d-none" aria-labelledby="statusChartTitle">
+            <div class="panel-heading">
+              <div>
+                <h2 class="h5 mb-1" id="statusChartTitle">Missioni per stato</h2>
+                <p class="text-secondary small mb-0">Scegli una barra per vedere le missioni in quello stato.</p>
+              </div>
+            </div>
+            <div id="statusChart"></div>
+          </section>
+        </section>
+
+        <section id="costPage" class="page-section d-none" data-manager-only>
+          <div class="page-heading">
+            <div>
+              <p class="eyebrow mb-2">ANALISI</p>
+              <h1>Costi e analisi</h1>
+              <p class="text-secondary mb-0">Costi delle missioni eseguite e di quelle annullate con costo attribuito.</p>
+            </div>
+            <div class="cost-actions">
+              <label class="visually-hidden" for="costMode">Vista</label>
+              <select id="costMode" class="form-select form-select-sm mission-mode">
+                <option value="live">Operativa</option>
+                <option value="reference">Storico di riferimento</option>
+              </select>
+              <button id="costRefreshButton" class="btn btn-outline-secondary" type="button"><span class="refresh-icon">↻</span> Aggiorna</button>
+            </div>
+          </div>
+          <div id="costAlert" class="alert d-none" role="alert"></div>
+          <div id="costTiles" class="cost-tiles"></div>
+          <div class="row g-3 mb-3">
+            <div class="col-lg-6" id="costDriverColumn">
+              <section class="panel chart-panel" aria-labelledby="costDriverTitle">
+                <h2 class="h6 mb-1" id="costDriverTitle">Costo per autista</h2>
+                <p class="small text-secondary">Include gli importi attribuiti per le missioni annullate.</p>
+                <div id="costDriverChart"></div>
+              </section>
+            </div>
+            <div class="col-lg-6" id="costMonthColumn">
+              <section class="panel chart-panel" aria-labelledby="costMonthTitle">
+                <h2 class="h6 mb-1" id="costMonthTitle">Costo per mese</h2>
+                <p class="small text-secondary">Totale di ogni mese, in euro.</p>
+                <div id="costMonthChart"></div>
+              </section>
+            </div>
+          </div>
+          <section class="panel driver-totals-panel">
+            <div class="panel-heading mb-2"><div><h2 class="h6 mb-1">Guadagni per autista</h2><p class="small text-secondary mb-0">Totali sulle missioni eseguite nella vista selezionata.</p></div></div>
+            <div id="driverTotals" class="driver-total-list"><span class="small text-secondary">Caricamento…</span></div>
+          </section>
+
+          <h2 class="h5 section-title">Anagrafiche</h2>
           <div class="row g-3 stats-grid" aria-live="polite">
             <div class="col-6 col-xl-3">
               <article class="stat-card">
@@ -240,16 +313,6 @@
               </article>
             </div>
           </div>
-
-          <section class="panel mission-notice">
-            <div class="notice-symbol">↗</div>
-            <div>
-              <p class="eyebrow mb-1">PROSSIMO PASSO</p>
-              <h2 class="h5 mb-1">Gestione richieste di soccorso</h2>
-              <p class="text-secondary mb-0">Crea missioni, assegna gli autisti e monitora proposte, interventi e guadagni.</p>
-            </div>
-            <button class="btn btn-sm btn-outline-primary ms-auto" type="button" data-view-link="missioni">Apri missioni →</button>
-          </section>
 
           <section class="panel">
             <div class="panel-heading">
@@ -284,10 +347,6 @@
             <div class="col-6 col-xl"><article class="stat-card mission-stat"><span class="stat-label">Proposte non accettate</span><p class="stat-value" id="missionRejectedCount">—</p></article></div>
             <div class="col-6 col-xl"><article class="stat-card mission-stat"><span class="stat-label">Costo missioni eseguite</span><p class="stat-value" id="missionRevenue">—</p></article></div>
           </div>
-          <section class="panel driver-totals-panel">
-            <div class="panel-heading mb-2"><div><h2 class="h6 mb-1">Guadagni per autista</h2><p class="small text-secondary mb-0">Totali sulle missioni eseguite nella vista selezionata.</p></div></div>
-            <div id="driverTotals" class="driver-total-list"><span class="small text-secondary">Caricamento…</span></div>
-          </section>
           <div id="missionAlert" class="alert d-none" role="alert"></div>
           <section class="panel registry-panel">
             <div class="registry-toolbar">
@@ -304,7 +363,11 @@
                 <option value="eseguita">Eseguite</option>
                 <option value="non_accettata">Rifiutate</option>
                 <option value="scaduta">Scadute</option>
+                <option value="verifica_polizza">Verifica polizza</option>
+                <option value="gestione_manuale">Gestione manuale</option>
+                <option value="annullata">Annullate</option>
               </select>
+              <span id="missionFilterChip" class="filter-chip d-none"><span id="missionFilterLabel"></span><button id="missionFilterClear" class="btn-close btn-close-sm" type="button" aria-label="Togli il filtro"></button></span>
               <span id="missionCount" class="small text-secondary ms-auto"></span>
             </div>
             <div id="missionList" class="mission-list" aria-live="polite"></div>
@@ -318,7 +381,13 @@
               <h1>Le mie missioni</h1>
               <p class="text-secondary mb-0">Proposte da gestire e missione attualmente assegnata.</p>
             </div>
-            <button id="driverRefreshButton" class="btn btn-outline-secondary" type="button">↻ Aggiorna</button>
+            <div class="driver-heading-actions">
+              <div id="driverAvailability" class="form-check form-switch availability-switch d-none">
+                <input id="driverAvailable" class="form-check-input" type="checkbox" role="switch">
+                <label id="driverAvailableLabel" class="form-check-label" for="driverAvailable">Disponibile</label>
+              </div>
+              <button id="driverRefreshButton" class="btn btn-outline-secondary" type="button">↻ Aggiorna</button>
+            </div>
           </div>
           <div id="driverAlert" class="alert d-none" role="alert"></div>
           <div id="driverMissions" class="driver-mission-list"></div>
@@ -330,7 +399,7 @@
             <div>
               <p class="eyebrow mb-2">AREA AUTISTA</p>
               <h1>Storico e guadagni</h1>
-              <p class="text-secondary mb-0">Riepilogo delle missioni concluse.</p>
+              <p class="text-secondary mb-0">Riepilogo delle missioni concluse e annullate.</p>
             </div>
             <div class="history-total">Totale <strong id="driverTotal">—</strong></div>
           </div>
@@ -378,6 +447,77 @@
     </div>
   </div>
 
+  <div class="modal fade" id="supportModal" tabindex="-1" aria-labelledby="supportModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header"><h2 class="modal-title fs-5" id="supportModalTitle">Richieste di supporto</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Chiudi"></button></div>
+        <div class="modal-body">
+          <div id="supportModalAlert" class="alert alert-danger d-none" role="alert"></div>
+          <div id="supportModalList" class="note-list my-0"></div>
+        </div>
+        <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Chiudi</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="supportRequestModal" tabindex="-1" aria-labelledby="supportRequestTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <form id="supportRequestForm">
+          <div class="modal-header"><h2 class="modal-title fs-5" id="supportRequestTitle">Richiedi supporto alla centrale</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Chiudi"></button></div>
+          <div class="modal-body">
+            <div id="supportRequestAlert" class="alert alert-danger d-none" role="alert"></div>
+            <label class="form-label" for="supportRequestText">Di cosa hai bisogno? *</label>
+            <textarea id="supportRequestText" class="form-control" rows="4" maxlength="2000" required></textarea>
+          </div>
+          <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Chiudi</button><button id="supportRequestButton" type="submit" class="btn btn-danger"><span class="button-label">Invia richiesta</span><span class="spinner-border spinner-border-sm d-none" aria-hidden="true"></span></button></div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="cancelModal" tabindex="-1" aria-labelledby="cancelModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <form id="cancelForm">
+          <div class="modal-header"><h2 class="modal-title fs-5" id="cancelModalTitle">Annulla missione</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Chiudi"></button></div>
+          <div class="modal-body">
+            <div id="cancelModalAlert" class="alert alert-danger d-none" role="alert"></div>
+            <p id="cancelWarning" class="alert alert-warning small"></p>
+            <label class="form-label" for="cancelReason">Motivo dell'annullamento *</label>
+            <textarea id="cancelReason" class="form-control" rows="3" minlength="3" maxlength="500" required></textarea>
+          </div>
+          <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Non annullare</button><button id="cancelConfirmButton" type="submit" class="btn btn-danger"><span class="button-label">Annulla la missione</span><span class="spinner-border spinner-border-sm d-none" aria-hidden="true"></span></button></div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="policyModal" tabindex="-1" aria-labelledby="policyModalTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <form id="policyForm">
+          <div class="modal-header"><div><p class="eyebrow mb-1">VERIFICA POLIZZA</p><h2 class="modal-title fs-5" id="policyModalTitle">Verifica polizza</h2></div><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Chiudi"></button></div>
+          <div class="modal-body">
+            <div id="policyModalAlert" class="alert alert-danger d-none" role="alert"></div>
+            <p id="policyFacts" class="policy-facts"></p>
+            <p id="policyRejectWarning" class="alert alert-warning small d-none">La missione sarà annullata: costo 0 € e nessun autista coinvolto.</p>
+            <div id="policyCustomerSection">
+              <div class="policy-search-row">
+                <div class="flex-grow-1"><label class="form-label" for="policySearch">Cerca il cliente per nome o targa</label><input id="policySearch" type="search" class="form-control" autocomplete="off"></div>
+                <button id="policyNewCustomer" class="btn btn-outline-primary" type="button">+ Nuovo cliente</button>
+              </div>
+              <div id="policyResults" class="policy-results"></div>
+            </div>
+            <label class="form-label mt-3" for="policyNote">Note</label>
+            <textarea id="policyNote" class="form-control" rows="2" maxlength="500"></textarea>
+          </div>
+          <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Chiudi</button><button id="policySubmitButton" type="submit" class="btn btn-success"><span class="button-label">Conferma polizza</span><span class="spinner-border spinner-border-sm d-none" aria-hidden="true"></span></button></div>
+        </form>
+      </div>
+    </div>
+  </div>
+
   <div class="modal fade" id="missionModal" tabindex="-1" aria-labelledby="missionModalTitle" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
       <div class="modal-content">
@@ -390,7 +530,7 @@
               <div class="col-md-6"><label class="form-label" for="missionType">Tipo intervento *</label><select class="form-select" id="missionType" required><option value="traino">Traino</option><option value="riparazione_sul_posto">Riparazione sul posto</option></select></div>
               <div class="col-md-6"><label class="form-label" for="missionWorkshop">Officina <span class="text-secondary">(obbligatoria per il traino)</span></label><select class="form-select" id="missionWorkshop"><option value="">Seleziona officina</option></select></div>
               <div class="col-md-6"><label class="form-label" for="missionChannel">Canale *</label><select class="form-select" id="missionChannel"><option value="centrale">Centrale</option><option value="whatsapp">WhatsApp</option><option value="telegram">Telegram</option></select></div>
-              <div class="col-12"><label class="form-label" for="missionOrigin">Luogo dell'intervento *</label><input class="form-control" id="missionOrigin" maxlength="500" required></div>
+              <div class="col-12"><label class="form-label" for="missionOrigin">Luogo di fermo *</label><input class="form-control" id="missionOrigin" maxlength="500" required></div>
               <div class="col-12"><label class="form-label" for="missionProblem">Problema / note *</label><textarea class="form-control" id="missionProblem" maxlength="2000" rows="3" required></textarea></div>
             </div>
           </div>
@@ -414,7 +554,8 @@
           <div class="modal-body">
             <div id="customerFormAlert" class="alert alert-danger d-none" role="alert"></div>
             <div class="row g-3">
-              <div class="col-md-6"><label class="form-label" for="customerName">Nome e cognome *</label><input id="customerName" name="nome" class="form-control" required maxlength="150"></div>
+              <div class="col-md-6"><label class="form-label" for="customerName">Nome *</label><input id="customerName" name="nome" class="form-control" required maxlength="150"></div>
+              <div class="col-md-6"><label class="form-label" for="customerSurname">Cognome</label><input id="customerSurname" name="cognome" class="form-control" maxlength="150"></div>
               <div class="col-md-6"><label class="form-label" for="customerPhone">Telefono *</label><input id="customerPhone" name="telefono" class="form-control" required maxlength="32"></div>
               <div class="col-md-6"><label class="form-label" for="customerPlate">Targa *</label><input id="customerPlate" name="targa" class="form-control text-uppercase" required maxlength="20"></div>
               <div class="col-md-6"><label class="form-label" for="customerVehicle">Modello veicolo</label><input id="customerVehicle" name="modelloVeicolo" class="form-control" maxlength="150"></div>
