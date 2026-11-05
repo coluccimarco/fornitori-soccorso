@@ -219,6 +219,7 @@
       stopAlertPolling();
       state.currentView = "autista";
       startDriverPolling();
+      void loadDriverAvailability();
     }
     goToView(state.currentView);
   }
@@ -388,7 +389,22 @@
       return `<div><span class="field-label">Cliente</span><span class="data-unavailable">Nome e recapito visibili dopo l'accettazione</span>${model}</div>`;
     }
     const vehicle = [customer.targa, customer.modelloVeicolo].filter(Boolean).map(safe).join(" · ");
-    return `<div><span class="field-label">Cliente</span><strong>${safe(customer.nome)}</strong><a href="tel:${safe(customer.telefono)}">${safe(customer.telefono)}</a><span>${vehicle}</span></div>`;
+    return `<div><span class="field-label">Cliente</span><strong>${safe(fullName(customer))}</strong>${telLink(customer.telefono)}<span>${vehicle}</span></div>`;
+  }
+
+  function driverOnSiteMarkup(mission) {
+    const phone = mission.telefonoSulPosto ?? state.driverDetails[mission.id]?.missione?.telefonoSulPosto;
+    return phone ? `<div><span class="field-label">Persona sul posto</span>${telLink(phone)}</div>` : "";
+  }
+
+  function driverProblemMarkup(mission) {
+    const problem = PROBLEM_LABELS[mission.tipoProblema];
+    return `<div><span class="field-label">Tipo di problema</span>${problem ? `<strong>${safe(problem)}</strong><span>${safe(interventionText(mission))}</span>` : `<strong>${safe(interventionText(mission))}</strong>`}</div>`;
+  }
+
+  function driverDescriptionMarkup(mission) {
+    const same = PROBLEM_LABELS[mission.tipoProblema] === mission.descrizioneProblema;
+    return same ? "" : `<p class="mission-description">${safe(mission.descrizioneProblema)}</p>`;
   }
 
   function driverWorkshopMarkup(mission) {
@@ -660,6 +676,25 @@
     $("#alertBadge")?.classList.add("d-none");
   }
 
+  async function loadDriverAvailability() {
+    const box = $("#driverAvailability");
+    try {
+      renderDriverAvailability((await request("/api/v1/auth/me")).disponibile);
+    } catch (error) {
+      box.classList.add("d-none");
+      console.error("Disponibilità non caricata:", error);
+    }
+  }
+
+  /** Senza il dato dal server l'interruttore resta nascosto: non si indovina lo stato. */
+  function renderDriverAvailability(available) {
+    const known = typeof available === "boolean";
+    $("#driverAvailability").classList.toggle("d-none", !known);
+    if (!known) return;
+    $("#driverAvailable").checked = available;
+    $("#driverAvailableLabel").textContent = available ? "Disponibile" : "Non disponibile";
+  }
+
   function driverSignature(missions) {
     return missions.map((mission) => `${mission.id}:${mission.stato}:${mission.scadenzaIl}`).sort().join("|");
   }
@@ -669,7 +704,8 @@
     if (state.user?.ruolo !== "autista" || state.currentView !== "autista" || state.driverPollPending) return;
     state.driverPollPending = true;
     try {
-      const missions = await request("/api/v1/autista/missioni");
+      const missions = (await request("/api/v1/autista/missioni"))
+        .filter((mission) => ["proposta", "accettata"].includes(mission.stato));
       if (driverSignature(missions) !== state.driverSignature) await loadDriverMissions();
     } catch (error) {
       if (error.status === 401) stopDriverPolling();
@@ -1276,7 +1312,8 @@
     alert.classList.add("d-none");
     if (showLoading) $("#driverMissions").innerHTML = loadingMarkup("Caricamento missioni…");
     try {
-      const missions = await request("/api/v1/autista/missioni");
+      const missions = (await request("/api/v1/autista/missioni"))
+        .filter((mission) => ["proposta", "accettata"].includes(mission.stato));
       state.driverSignature = driverSignature(missions);
       const accepted = missions.find((mission) => mission.stato === "accettata");
       state.driverMission = accepted || null;
@@ -1314,12 +1351,13 @@
       <div class="mission-card-header"><div><span class="mission-code">${safe(mission.codice)}</span><span class="mission-status status-proposta">Proposta</span></div><strong class="countdown" data-deadline="${safe(mission.scadenzaIl)}"></strong></div>
       <div class="mission-card-grid">
         ${driverCustomerMarkup(mission)}
+        ${driverOnSiteMarkup(mission)}
         <div><span class="field-label">Luogo di fermo</span><strong>${safe(mission.origineIndirizzo)}</strong></div>
-        <div><span class="field-label">Intervento</span><strong>${safe(mission.tipoIntervento === "traino" ? "Traino" : "Riparazione sul posto")}</strong></div>
+        ${driverProblemMarkup(mission)}
         ${driverWorkshopMarkup(mission)}
         ${driverEstimateMarkup(mission)}
       </div>
-      <p class="mission-description">${safe(mission.descrizioneProblema)}</p>
+      ${driverDescriptionMarkup(mission)}
       ${missionMapMarkup(mission.id)}
       <div class="mission-actions"><button class="btn btn-success" type="button" data-driver-action="accept" data-mission-id="${safe(mission.id)}">Accetta</button><button class="btn btn-outline-secondary" type="button" data-driver-action="reject" data-mission-id="${safe(mission.id)}">Rifiuta</button></div>
     </article>`;
@@ -1330,17 +1368,20 @@
       <div class="mission-card-header"><div><span class="mission-code">${safe(mission.codice)}</span><span class="mission-status status-accettata">In corso</span></div><span class="small text-secondary">Accettata ${safe(formatDateTime(mission.accettataIl))}</span></div>
       <div class="mission-card-grid">
         ${driverCustomerMarkup(mission)}
+        ${driverOnSiteMarkup(mission)}
         <div><span class="field-label">Luogo di fermo</span><strong>${safe(mission.origineIndirizzo)}</strong></div>
+        ${driverProblemMarkup(mission)}
         ${driverWorkshopMarkup(mission)}
-        <div><span class="field-label">Intervento</span><strong>${safe(mission.tipoIntervento === "traino" ? "Traino" : "Riparazione sul posto")}</strong></div>
         ${driverEstimateMarkup(mission)}
       </div>
-      <p class="mission-description">${safe(mission.descrizioneProblema)}</p>
+      ${driverDescriptionMarkup(mission)}
       ${missionMapMarkup(mission.id)}
-      <section class="mission-notes"><h2 class="h6">Segnala alla centrale</h2><div class="note-list" id="missionNotes"><p class="small text-secondary">Caricamento segnalazioni…</p></div>
-        <form id="missionNoteForm" class="note-form"><label class="visually-hidden" for="missionNoteText">Nota per la centrale</label><textarea id="missionNoteText" class="form-control" rows="2" maxlength="2000" required placeholder="Scrivi un aggiornamento sulla missione…"></textarea><button class="btn btn-outline-primary" type="submit">Invia segnalazione</button></form>
+      <section class="mission-notes"><h2 class="h6">Avvisi alla centrale</h2><div class="note-list" id="missionNotes"><p class="small text-secondary">Caricamento avvisi…</p></div>
+        <form id="missionNoteForm" class="note-form"><label class="visually-hidden" for="missionNoteText">Testo dell'avviso</label><textarea id="missionNoteText" class="form-control" rows="2" maxlength="2000" required placeholder="Scrivi un aggiornamento sulla missione…"></textarea><button class="btn btn-outline-primary" type="submit">Invia avviso</button></form>
       </section>
-      <form id="completeMissionForm" class="complete-form"><label class="form-label" for="actualKm">Chilometri percorsi</label><div class="input-group"><input class="form-control" id="actualKm" type="number" min="0" max="99999999" step="0.01" required><span class="input-group-text">km</span><button class="btn btn-primary" type="submit">Chiudi missione · OK</button></div></form>
+      <section class="support-callout"><div><strong>Hai bisogno di aiuto?</strong><p class="mb-0">La richiesta arriva in cima alla coda della centrale.</p></div><button class="btn btn-danger" type="button" id="requestSupportButton">Richiedi supporto alla centrale</button></section>
+      <form id="completeMissionForm" class="complete-form"><label class="form-label" for="actualKm">Km totali (andata + ritorno)</label><div class="input-group"><input class="form-control" id="actualKm" type="number" min="0" max="99999999" step="0.01" required><span class="input-group-text">km</span><button class="btn btn-primary" type="submit">Chiudi missione · OK</button></div></form>
+      <div class="driver-cancel">${cancelButtonMarkup(mission)}</div>
     </article>`;
   }
 
@@ -1397,13 +1438,18 @@
     try {
       const result = await request("/api/v1/autista/storico");
       $("#driverTotal").textContent = formatEuro(result.totaleEur);
-      $("#driverHistory").innerHTML = result.missioni.length ? result.missioni.map((mission) =>
-        `<article class="mission-card history-card"><div class="mission-card-header"><div><span class="mission-code">${safe(mission.codice)}</span><span class="mission-status status-eseguita">Eseguita</span></div><span class="small text-secondary">${safe(formatDateTime(mission.chiusaIl))}</span></div><div class="mission-card-grid"><div><span class="field-label">Cliente</span><strong>Cliente #${safe(mission.clienteId)}</strong></div><div><span class="field-label">Luogo di fermo</span><strong>${safe(mission.origineIndirizzo)}</strong></div><div><span class="field-label">Km percorsi</span><strong>${safe(mission.kmEffettivi)} km</strong></div><div><span class="field-label">Guadagno</span><strong>${safe(formatEuro(mission.costoFinale))}</strong></div></div></article>`
-      ).join("") : '<div class="empty-state"><h2 class="h6">Nessuna missione completata</h2><p class="small text-secondary mb-0">Lo storico sarà aggiornato al termine delle missioni.</p></div>';
+      $("#driverHistory").innerHTML = result.missioni.length
+        ? result.missioni.map(driverHistoryCard).join("")
+        : '<div class="empty-state"><h2 class="h6">Nessuna missione nello storico</h2><p class="small text-secondary mb-0">Lo storico sarà aggiornato al termine delle missioni.</p></div>';
     } catch (error) {
       showInlineAlert("#historyAlert", error.message);
       $("#driverHistory").innerHTML = "";
     }
+  }
+
+  function driverHistoryCard(mission) {
+    const customer = fullName({ nome: mission.clienteNome, cognome: mission.clienteCognome }) || `Cliente #${mission.clienteId}`;
+    return `<article class="mission-card history-card"><div class="mission-card-header"><div><span class="mission-code">${safe(mission.codice)}</span><span class="mission-status status-${safe(mission.stato)}">${safe(statusLabel(mission.stato))}</span></div><span class="small text-secondary">${safe(formatDateTime(mission.chiusaIl || mission.annullataIl))}</span></div>${cancelSummaryMarkup(mission)}<div class="mission-card-grid"><div><span class="field-label">Cliente</span><strong>${safe(customer)}</strong></div><div><span class="field-label">Luogo di fermo</span><strong>${safe(mission.origineIndirizzo)}</strong></div><div><span class="field-label">Km percorsi</span><strong>${mission.kmEffettivi != null ? `${safe(mission.kmEffettivi)} km` : "—"}</strong></div><div><span class="field-label">Guadagno</span><strong>${safe(formatEuro(mission.costoFinale))}</strong></div></div></article>`;
   }
 
   function updateCountdowns() {
@@ -1671,6 +1717,32 @@
     }
   });
 
+  $("#supportRequestForm").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const text = $("#supportRequestText").value.trim();
+    if (!text) {
+      showInlineAlert("#supportRequestAlert", "Descrivi il problema: il testo è obbligatorio.");
+      return;
+    }
+    if (!state.driverMission) return;
+    const button = $("#supportRequestButton");
+    setBusy(button, true);
+    try {
+      await request(`/api/v1/missioni/${state.driverMission.id}/notes`, {
+        method: "POST",
+        mutating: true,
+        body: JSON.stringify({ testo: text, tipo: "SUPPORTO" })
+      });
+      bootstrap.Modal.getOrCreateInstance($("#supportRequestModal")).hide();
+      await loadMissionNotes(state.driverMission.id);
+      showInlineAlert("#driverAlert", "Richiesta di supporto inviata alla centrale.", "success");
+    } catch (error) {
+      showInlineAlert("#supportRequestAlert", error.message);
+    } finally {
+      setBusy(button, false);
+    }
+  });
+
   function cancelWarning(status) {
     if (state.user?.ruolo === "autista") {
       return "Annullando questa missione il tuo compenso sarà 0 €. La missione resta nel tuo storico.";
@@ -1856,6 +1928,12 @@
       void openMissionFromAlert(open.dataset.openMission);
       return;
     }
+    if (event.target.closest("#requestSupportButton")) {
+      $("#supportRequestForm").reset();
+      $("#supportRequestAlert").classList.add("d-none");
+      bootstrap.Modal.getOrCreateInstance($("#supportRequestModal")).show();
+      return;
+    }
     const cancel = event.target.closest("[data-cancel-mission]");
     if (cancel) {
       openCancelModal(cancel.dataset.cancelMission, cancel.dataset.codice, cancel.dataset.stato);
@@ -2026,7 +2104,7 @@
         await request(`/api/v1/missioni/${state.driverMission.id}/notes`, {
           method: "POST",
           mutating: true,
-          body: JSON.stringify({ testo: text })
+          body: JSON.stringify({ testo: text, tipo: "AVVISO" })
         });
         event.target.reset();
         await loadMissionNotes(state.driverMission.id);
@@ -2073,6 +2151,24 @@
   });
 
   $("#driverRefreshButton").addEventListener("click", () => void loadDriverMissions(true));
+  $("#driverAvailable").addEventListener("change", async (event) => {
+    const toggle = event.target;
+    const requested = toggle.checked;
+    toggle.disabled = true;
+    try {
+      const result = await request("/api/v1/autista/disponibilita", {
+        method: "PATCH",
+        mutating: true,
+        body: JSON.stringify({ disponibile: requested })
+      });
+      renderDriverAvailability(typeof result?.disponibile === "boolean" ? result.disponibile : requested);
+    } catch (error) {
+      renderDriverAvailability(!requested);
+      showInlineAlert("#driverAlert", error.message);
+    } finally {
+      toggle.disabled = false;
+    }
+  });
   $("#refreshButton").addEventListener("click", () => {
     void loadRegistries();
     void loadDashboard();

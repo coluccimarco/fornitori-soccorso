@@ -431,3 +431,12 @@ button.chart-column:hover { background: #f5f6fb; }
 .policy-result:has(input:checked) { border-color: var(--primary); background: #f5f6ff; }
 .policy-result small { display: block; margin-top: 2px; color: #5d6678; }
 .policy-result.is-expired { background: #f7f8fb; color: #5d6678; cursor: not-allowed; }
+
+/* Vista autista */
+.driver-heading-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 12px; }
+.availability-switch { display: flex; align-items: center; gap: 8px; min-height: 34px; margin: 0; padding: 4px 12px 4px 46px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); font-weight: 600; }
+.availability-switch .form-check-input { width: 2.2em; height: 1.2em; margin-top: 0; cursor: pointer; }
+.availability-switch .form-check-input:checked { border-color: #208363; background-color: #208363; }
+.support-callout { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; margin-top: 18px; padding: 12px 14px; border-left: 4px solid #8f1d6b; border-radius: 8px; background: #fbeef7; color: #6e1552; font-size: 12px; }
+.driver-cancel { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); }
+.mission-card-grid a { font-weight: 600; }

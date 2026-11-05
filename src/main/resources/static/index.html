@@ -381,7 +381,13 @@
               <h1>Le mie missioni</h1>
               <p class="text-secondary mb-0">Proposte da gestire e missione attualmente assegnata.</p>
             </div>
-            <button id="driverRefreshButton" class="btn btn-outline-secondary" type="button">↻ Aggiorna</button>
+            <div class="driver-heading-actions">
+              <div id="driverAvailability" class="form-check form-switch availability-switch d-none">
+                <input id="driverAvailable" class="form-check-input" type="checkbox" role="switch">
+                <label id="driverAvailableLabel" class="form-check-label" for="driverAvailable">Disponibile</label>
+              </div>
+              <button id="driverRefreshButton" class="btn btn-outline-secondary" type="button">↻ Aggiorna</button>
+            </div>
           </div>
           <div id="driverAlert" class="alert d-none" role="alert"></div>
           <div id="driverMissions" class="driver-mission-list"></div>
@@ -393,7 +399,7 @@
             <div>
               <p class="eyebrow mb-2">AREA AUTISTA</p>
               <h1>Storico e guadagni</h1>
-              <p class="text-secondary mb-0">Riepilogo delle missioni concluse.</p>
+              <p class="text-secondary mb-0">Riepilogo delle missioni concluse e annullate.</p>
             </div>
             <div class="history-total">Totale <strong id="driverTotal">—</strong></div>
           </div>
@@ -450,6 +456,22 @@
           <div id="supportModalList" class="note-list my-0"></div>
         </div>
         <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Chiudi</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="supportRequestModal" tabindex="-1" aria-labelledby="supportRequestTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <form id="supportRequestForm">
+          <div class="modal-header"><h2 class="modal-title fs-5" id="supportRequestTitle">Richiedi supporto alla centrale</h2><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Chiudi"></button></div>
+          <div class="modal-body">
+            <div id="supportRequestAlert" class="alert alert-danger d-none" role="alert"></div>
+            <label class="form-label" for="supportRequestText">Di cosa hai bisogno? *</label>
+            <textarea id="supportRequestText" class="form-control" rows="4" maxlength="2000" required></textarea>
+          </div>
+          <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Chiudi</button><button id="supportRequestButton" type="submit" class="btn btn-danger"><span class="button-label">Invia richiesta</span><span class="spinner-border spinner-border-sm d-none" aria-hidden="true"></span></button></div>
+        </form>
       </div>
     </div>
   </div>
