@@ -18,7 +18,7 @@ public interface DriverRepository extends JpaRepository<Driver, Long> {
                        SELECT 1 FROM missions m
                        WHERE m.driver_id = d.id AND m.is_fixture = FALSE
                          AND m.stato IN ('proposta', 'accettata')
-                   ) THEN 'occupato' ELSE 'disponibile' END AS "disponibilita"
+                   ) THEN 'occupato' WHEN NOT d.disponibile THEN 'non_disponibile' ELSE 'disponibile' END AS "disponibilita"
             FROM drivers d
             ORDER BY d.id
             """, nativeQuery = true)

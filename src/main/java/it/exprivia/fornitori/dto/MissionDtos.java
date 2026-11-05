@@ -10,6 +10,7 @@ import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Map;
 
 public final class MissionDtos {
     private MissionDtos() {
@@ -44,7 +45,22 @@ public final class MissionDtos {
             @NotBlank @Size(min = 3, max = 1000) String motivo) {
     }
 
-    public record CreateNoteRequest(@NotBlank @Size(max = 2000) String testo) {
+    public record CreateNoteRequest(@NotBlank @Size(max = 2000) String testo, @Size(max = 10) String tipo) {
+    }
+
+    public record CancelMissionRequest(@NotBlank @Size(min = 3, max = 500) String motivo) {
+    }
+
+    public record PolicyVerificationRequest(
+            @NotBlank @Size(max = 20) String esito,
+            @Positive Long clienteId,
+            @Size(max = 500) String note) {
+    }
+
+    public record DriverAvailabilityRequest(@NotNull Boolean disponibile) {
+    }
+
+    public record DriverAvailabilityResponse(boolean disponibile) {
     }
 
     public record MissionResponse(
@@ -75,20 +91,34 @@ public final class MissionDtos {
             String clienteTelefono,
             String officinaNome,
             String officinaIndirizzo,
-            String officinaCitta) {
-        public MissionResponse withoutContactsUnless(String visibleState) {
-            return visibleState.equals(stato) ? this : withoutCustomerContacts();
+            String officinaCitta,
+            String clienteCognome,
+            String telefonoSulPosto,
+            String tipoProblema,
+            String targaDichiarata,
+            String annullataDa,
+            OffsetDateTime annullataIl,
+            String motivoAnnullamento,
+            int esitiNegativi,
+            boolean supportoAperto) {
+        /** All'autista su proposta: i contatti servono per decidere, la targa solo dopo l'accettazione. */
+        public MissionResponse withoutPlate() {
+            return copy(clienteNome, clienteCognome, clienteTelefono, telefonoSulPosto, null);
         }
 
-        /** Una proposta non rivela nome e telefono del cliente: compaiono dopo l'accettazione. */
+        /** Fuori dalle fasi operative l'autista non conserva i recapiti del cliente. */
         public MissionResponse withoutCustomerContacts() {
+            return copy(null, null, null, null, null);
+        }
+
+        private MissionResponse copy(String name, String surname, String phone, String phoneOnSite, String plate) {
             return new MissionResponse(id, codice, stato, clienteId, autistaId, tipoIntervento, canaleOrigine,
                     descrizioneProblema, origineIndirizzo, origineLat, origineLng, officinaId, kmStimati,
                     kmEffettivi, creataIl, propostaIl, scadenzaIl, accettataIl, chiusaIl, notturno,
-                    costoCalcolato, costoFinale, rettificaMotivo, null, null, officinaNome, officinaIndirizzo,
-                    officinaCitta);
+                    costoCalcolato, costoFinale, rettificaMotivo, name, phone, officinaNome, officinaIndirizzo,
+                    officinaCitta, surname, phoneOnSite, tipoProblema, plate, annullataDa, annullataIl,
+                    motivoAnnullamento, esitiNegativi, supportoAperto);
         }
-
     }
 
     public record ProposalResponse(String stato, OffsetDateTime scadenzaIl, Long offertaId) {
@@ -120,10 +150,18 @@ public final class MissionDtos {
             String codice,
             Long autistaId,
             String autistaNome,
-            OffsetDateTime quando) {
+            OffsetDateTime quando,
+            Long noteId,
+            String testo) {
     }
 
-    public record DriverCustomerDetail(String nome, String telefono, String targa, String modelloVeicolo) {
+    public record DriverCustomerDetail(
+            String nome,
+            String cognome,
+            String telefono,
+            String targa,
+            String modelloVeicolo,
+            String telefonoSulPosto) {
     }
 
     public record DriverWorkshopDetail(
@@ -147,10 +185,51 @@ public final class MissionDtos {
             Long userId,
             String autoreNome,
             String testo,
-            OffsetDateTime createdAt) {
+            OffsetDateTime createdAt,
+            String tipo,
+            OffsetDateTime gestitaIl,
+            Long gestitaDa) {
     }
 
     public record DriverTotal(Long autistaId, String autistaNome, long missioniEseguite, BigDecimal totaleEur) {
+    }
+
+    public record DashboardCategories(
+            long critiche,
+            long verificaPolizza,
+            long rifiutateTreAutisti,
+            long supportoAperto,
+            long daAssegnare,
+            long pending,
+            long ko,
+            long ok,
+            long annullate) {
+    }
+
+    public record CriticalMission(
+            Long id,
+            String codice,
+            String stato,
+            String motivo,
+            OffsetDateTime creataIl,
+            String origineIndirizzo,
+            String clienteNome,
+            String targa,
+            String telefonoSulPosto) {
+    }
+
+    public record DriverCost(Long autistaId, String autistaNome, long missioni, BigDecimal totaleEur) {
+    }
+
+    public record MonthCost(String mese, BigDecimal totaleEur) {
+    }
+
+    public record DashboardCosts(
+            BigDecimal totaleEseguite,
+            BigDecimal totaleAnnullateAddebitate,
+            BigDecimal totaleGenerale,
+            List<DriverCost> perAutista,
+            List<MonthCost> perMese) {
     }
 
     public record DashboardResponse(
@@ -161,7 +240,11 @@ public final class MissionDtos {
             BigDecimal totaleEur,
             String riferimentoAl,
             String fonte,
-            List<DriverTotal> totalePerAutista) {
+            List<DriverTotal> totalePerAutista,
+            DashboardCategories categorie,
+            Map<String, Long> distribuzioneStati,
+            List<CriticalMission> codaCritica,
+            DashboardCosts costi) {
     }
 
     public record DriverHistoryResponse(List<MissionResponse> missioni, BigDecimal totaleEur) {

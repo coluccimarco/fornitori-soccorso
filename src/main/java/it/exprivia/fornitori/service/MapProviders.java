@@ -18,10 +18,16 @@ public final class MapProviders {
         }
     }
 
-    public record RouteResult(BigDecimal km, Map<String, Object> geometry) {
+    /** legsKm ha un valore per ogni tratto tra due punti consecutivi; vuota se il provider non li distingue. */
+    public record RouteResult(BigDecimal km, Map<String, Object> geometry, List<BigDecimal> legsKm) {
         public RouteResult {
-            if (km == null || km.signum() < 0 || km.compareTo(new BigDecimal("99999999.99")) > 0 || geometry == null)
+            if (km == null || km.signum() < 0 || km.compareTo(new BigDecimal("99999999.99")) > 0 || geometry == null
+                    || legsKm == null || legsKm.stream().anyMatch(leg -> leg == null || leg.signum() < 0))
                 throw new ProviderUnavailableException("Percorso provider non valido");
+        }
+
+        public RouteResult(BigDecimal km, Map<String, Object> geometry) {
+            this(km, geometry, List.of());
         }
     }
 

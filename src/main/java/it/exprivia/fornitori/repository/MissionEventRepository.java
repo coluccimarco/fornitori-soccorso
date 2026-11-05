@@ -16,4 +16,6 @@ public interface MissionEventRepository extends JpaRepository<MissionEvent, Long
             order by e.id desc
             """)
     List<MissionEvent> findLiveAlerts(@Param("types") Collection<String> types, Pageable pageable);
+
+    List<MissionEvent> findByEventTypeAndMissionIdIn(String eventType, Collection<Long> missionIds);
 }

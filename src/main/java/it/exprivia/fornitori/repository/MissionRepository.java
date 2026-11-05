@@ -6,6 +6,7 @@ import java.time.OffsetDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
@@ -23,7 +24,14 @@ public interface MissionRepository extends JpaRepository<Mission, Long> {
     List<Mission> findByDriverIdAndFixtureFalseAndStatoInOrderByCreataIlDesc(
             Long driverId, Collection<String> stati);
 
-    List<Mission> findByDriverIdAndFixtureFalseAndStatoOrderByChiusaIlDesc(Long driverId, String stato);
+    List<Mission> findByDriverIdAndFixtureFalseAndStatoInOrderByChiusaIlDesc(Long driverId, Collection<String> stati);
+
+    @Query("""
+            select m.id from Mission m
+            where m.fixture = false and m.stato in ('nuova', 'non_accettata', 'scaduta')
+            order by m.id
+            """)
+    List<Long> findAssignableLiveIds(Pageable pageable);
 
     @Query("""
             select m from Mission m, ChatMissionRequest r

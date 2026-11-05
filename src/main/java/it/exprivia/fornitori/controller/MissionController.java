@@ -1,6 +1,7 @@
 package it.exprivia.fornitori.controller;
 
 import it.exprivia.fornitori.dto.MissionDtos;
+import it.exprivia.fornitori.service.MissionCancellationService;
 import it.exprivia.fornitori.service.MissionService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -20,9 +21,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1")
 public class MissionController {
     private final MissionService missions;
+    private final MissionCancellationService cancellations;
 
-    public MissionController(MissionService missions) {
+    public MissionController(MissionService missions, MissionCancellationService cancellations) {
         this.missions = missions;
+        this.cancellations = cancellations;
     }
 
     @GetMapping("/missioni")
@@ -107,6 +110,37 @@ public class MissionController {
             @PathVariable Long id,
             @Valid @RequestBody MissionDtos.CreateNoteRequest request) {
         return missions.addNote(authentication.getName(), id, request);
+    }
+
+    @PostMapping("/missioni/{id}/notes/{noteId}/gestita")
+    public MissionDtos.MissionNoteResponse markSupportHandled(
+            Authentication authentication,
+            @PathVariable Long id,
+            @PathVariable Long noteId) {
+        return missions.markSupportHandled(authentication.getName(), id, noteId);
+    }
+
+    @PostMapping("/missioni/{id}/annulla")
+    public MissionDtos.MissionResponse cancel(
+            Authentication authentication,
+            @PathVariable Long id,
+            @Valid @RequestBody MissionDtos.CancelMissionRequest request) {
+        return cancellations.cancel(authentication.getName(), id, request);
+    }
+
+    @PostMapping("/missioni/{id}/verifica-polizza")
+    public MissionDtos.MissionResponse verifyPolicy(
+            Authentication authentication,
+            @PathVariable Long id,
+            @Valid @RequestBody MissionDtos.PolicyVerificationRequest request) {
+        return missions.verifyPolicy(authentication.getName(), id, request);
+    }
+
+    @PatchMapping("/autista/disponibilita")
+    public MissionDtos.DriverAvailabilityResponse setAvailability(
+            Authentication authentication,
+            @Valid @RequestBody MissionDtos.DriverAvailabilityRequest request) {
+        return missions.setAvailability(authentication.getName(), request.disponibile());
     }
 
     @GetMapping("/dashboard")

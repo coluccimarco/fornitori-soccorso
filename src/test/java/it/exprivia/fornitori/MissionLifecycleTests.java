@@ -82,7 +82,7 @@ class MissionLifecycleTests extends IsolatedPostgresTest {
         perform(manager, get("/api/v1/missioni/{id}/proposte", mission))
                 .andExpect(jsonPath("$[0].stato").value("non_accettata"))
                 .andExpect(jsonPath("$[1].stato").value("proposta"));
-        perform(manager, get("/api/v1/centrale/avvisi")).andExpect(jsonPath("$[0].tipo").value("rifiutata"));
+        perform(manager, get("/api/v1/centrale/avvisi")).andExpect(jsonPath("$[0].tipo").value("RIFIUTO"));
     }
 
     @Test

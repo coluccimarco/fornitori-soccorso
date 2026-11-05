@@ -77,7 +77,7 @@ public class RegistryService {
         String normalizedPlate = term.toUpperCase(Locale.ROOT).replaceAll("[^A-Z0-9]", "");
         return customers.search(escapeLike(term), normalizedPlate).stream()
                 .map(customer -> new RegistryDtos.CustomerDto(
-                        customer.getId(), customer.getNome(), customer.getTelefono(), customer.getTarga(),
+                        customer.getId(), customer.getNome(), customer.getCognome(), customer.getTelefono(), customer.getTarga(),
                         customer.getModelloVeicolo(), customer.getCompagniaId(), customer.getCompagniaNome(),
                         customer.getNumeroPolizza(), customer.getScadenzaPolizza(), customer.getCittaResidenza()))
                 .toList();
@@ -95,7 +95,7 @@ public class RegistryService {
         if (customers.existsByTargaNorm(normalizedPlate)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Targa già presente");
         }
-        Customer saved = customers.save(new Customer(
+        Customer customer = new Customer(
                 request.nome().trim(),
                 request.telefono().trim(),
                 request.targa().trim(),
@@ -104,9 +104,11 @@ public class RegistryService {
                 company.getId(),
                 request.numeroPolizza().trim(),
                 request.scadenzaPolizza(),
-                blankToNull(request.cittaResidenza())));
+                blankToNull(request.cittaResidenza()));
+        customer.setCognome(blankToNull(request.cognome()));
+        Customer saved = customers.save(customer);
         return new RegistryDtos.CustomerDto(
-                saved.getId(), saved.getNome(), saved.getTelefono(), saved.getTarga(), saved.getModelloVeicolo(),
+                saved.getId(), saved.getNome(), saved.getCognome(), saved.getTelefono(), saved.getTarga(), saved.getModelloVeicolo(),
                 company.getId(), company.getNome(), saved.getNumeroPolizza(), saved.getScadenzaPolizza(),
                 saved.getCittaResidenza());
     }

@@ -28,24 +28,46 @@ public final class ChatDtos {
             boolean verificato,
             Long clienteId,
             String clienteNome,
-            String compagniaNome) {
+            String compagniaNome,
+            String esito) {
+        public static final String VERIFIED = "VERIFICATA";
+        public static final String TO_VERIFY = "DA_VERIFICARE";
+
         public static VehicleLookupResponse notVerified() {
-            return new VehicleLookupResponse(false, null, null, null);
+            return new VehicleLookupResponse(false, null, null, null, TO_VERIFY);
         }
     }
 
+    /**
+     * Formato nuovo: targa, telefonoSulPosto e tipoProblema, con clienteId nullo se la polizza è da verificare.
+     * Finché il bot non è aggiornato vale anche il vecchio: clienteId, tipoIntervento e descrizioneProblema.
+     */
     public record CreateMissionRequest(
             @NotBlank @Size(min = 16, max = 64) @Pattern(regexp = ID_PATTERN) String sessionId,
             @NotBlank @Size(min = 16, max = 64) @Pattern(regexp = ID_PATTERN) String requestId,
-            @NotNull @Positive Long clienteId,
-            @NotBlank @Size(max = 40) String tipoIntervento,
-            @NotBlank @Size(max = 2000) String descrizioneProblema,
+            @Positive Long clienteId,
+            @Size(max = 40) String tipoIntervento,
+            @Size(max = 2000) String descrizioneProblema,
             @NotBlank @Size(max = 500) String origineIndirizzo,
             @DecimalMin("-90.0") @DecimalMax("90.0") @Digits(integer = 2, fraction = 15) BigDecimal origineLat,
             @DecimalMin("-180.0") @DecimalMax("180.0") @Digits(integer = 3, fraction = 15) BigDecimal origineLng,
             @Positive Long officinaId,
             @NotBlank @Size(max = 20) String canaleOrigine,
-            @NotBlank @Size(max = 120) String destinatario) {
+            @NotBlank @Size(max = 120) String destinatario,
+            @Size(min = 5, max = 20) String targa,
+            @Pattern(regexp = "^\\+?[0-9][0-9 ]{5,19}$") String telefonoSulPosto,
+            @Size(max = 30) String tipoProblema) {
+        public CreateMissionRequest withIntervention(String intervention, String description) {
+            return new CreateMissionRequest(sessionId, requestId, clienteId, intervention, description,
+                    origineIndirizzo, origineLat, origineLng, officinaId, canaleOrigine, destinatario,
+                    targa, telefonoSulPosto, tipoProblema);
+        }
+
+        public CreateMissionRequest withWorkshop(BigDecimal lat, BigDecimal lng, Long workshopId) {
+            return new CreateMissionRequest(sessionId, requestId, clienteId, tipoIntervento, descrizioneProblema,
+                    origineIndirizzo, lat, lng, workshopId, canaleOrigine, destinatario,
+                    targa, telefonoSulPosto, tipoProblema);
+        }
     }
 
     public record NotificationResponse(
@@ -69,7 +91,7 @@ public final class ChatDtos {
             @NotNull @PositiveOrZero Integer tentativo) {
     }
 
-    public record MissionCreatedResponse(Long id, String codice, String stato) {
+    public record MissionCreatedResponse(Long id, String codice, String stato, boolean inVerifica) {
     }
 
     public record MissionStatusRequest(

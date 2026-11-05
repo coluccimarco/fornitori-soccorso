@@ -53,7 +53,7 @@ class ChatAndNotificationTests extends IsolatedPostgresTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.verificato").value(true))
                 .andReturn().getResponse().getContentAsString();
-        assertThat(read(body).propertyNames()).containsExactlyInAnyOrder("verificato", "clienteId", "clienteNome", "compagniaNome");
+        assertThat(read(body).propertyNames()).containsExactlyInAnyOrder("verificato", "clienteId", "clienteNome", "compagniaNome", "esito");
         chat(post("/api/v1/chat/lookup-targa"), lookupBody(session(), "ZZ000ZZ"))
                 .andExpect(jsonPath("$.verificato").value(false))
                 .andExpect(jsonPath("$.clienteNome").doesNotExist());
@@ -149,7 +149,7 @@ class ChatAndNotificationTests extends IsolatedPostgresTest {
     }
 
     @Test
-    void statusIsLimitedToTheChatAndRevealsTheDriverOnlyAfterAcceptance() throws Exception {
+    void statusIsLimitedToTheChatAndNeverRevealsTheDriver() throws Exception {
         long mission = chatMission("chat-1");
         chat(post("/api/v1/chat/stato"), "{\"canale\":\"telegram\",\"destinatario\":\"chat-altra\"}").andExpect(status().isNotFound());
         String status = chat(post("/api/v1/chat/stato"), "{\"canale\":\"telegram\",\"destinatario\":\"chat-1\"}")
@@ -160,7 +160,8 @@ class ChatAndNotificationTests extends IsolatedPostgresTest {
         propose(manager, mission, 1);
         perform(login(AUTISTA_1), post("/api/v1/missioni/{id}/accept", mission)).andExpect(status().isOk());
         chat(post("/api/v1/chat/stato"), "{\"canale\":\"telegram\",\"destinatario\":\"chat-1\"}")
-                .andExpect(jsonPath("$.autistaNome").isNotEmpty());
+                .andExpect(jsonPath("$.stato").value("accettata"))
+                .andExpect(jsonPath("$.autistaNome").value(org.hamcrest.Matchers.nullValue()));
     }
 
     @Test
@@ -169,7 +170,7 @@ class ChatAndNotificationTests extends IsolatedPostgresTest {
         JsonNode claimed = claim();
         assertThat(claimed).hasSize(1);
         assertThat(claimed.get(0).get("tipo").asString()).isEqualTo("MISSION_ACCEPTED");
-        assertThat(claimed.get(0).get("autistaNome").asString()).isNotBlank();
+        assertThat(claimed.get(0).get("autistaNome").isNull()).isTrue();
         assertThat(state(id)).isEqualTo("SENDING");
         assertThat(claim()).isEmpty();
         report(id, claimed.get(0).get("tentativo").asInt(), true);

@@ -43,7 +43,10 @@ public class OsrmRoutingClient implements MapProviders.RoutingClient {
             if (route.distance().signum() < 0) {
                 throw new ProviderUnavailableException("Percorso non valido");
             }
-            return new RouteResult(route.distance().divide(METERS_PER_KM, 2, RoundingMode.HALF_UP), route.geometry());
+            List<BigDecimal> legs = route.legs() == null ? List.of() : route.legs().stream()
+                    .map(leg -> leg.distance().divide(METERS_PER_KM, 2, RoundingMode.HALF_UP))
+                    .toList();
+            return new RouteResult(route.distance().divide(METERS_PER_KM, 2, RoundingMode.HALF_UP), route.geometry(), legs);
         } catch (RestClientException | NullPointerException exception) {
             throw new ProviderUnavailableException("Calcolo percorso non disponibile");
         }
@@ -54,6 +57,10 @@ public class OsrmRoutingClient implements MapProviders.RoutingClient {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    private record Route(BigDecimal distance, Map<String, Object> geometry) {
+    private record Route(BigDecimal distance, Map<String, Object> geometry, List<Leg> legs) {
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private record Leg(BigDecimal distance) {
     }
 }

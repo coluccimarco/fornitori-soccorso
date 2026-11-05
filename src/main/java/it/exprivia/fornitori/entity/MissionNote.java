@@ -25,6 +25,15 @@ public class MissionNote {
     @Column(nullable = false, length = 2000)
     private String testo;
 
+    @Column(nullable = false, length = 10)
+    private String tipo;
+
+    @Column(name = "gestita_il")
+    private OffsetDateTime gestitaIl;
+
+    @Column(name = "gestita_da")
+    private Long gestitaDa;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private OffsetDateTime createdAt;
@@ -32,13 +41,22 @@ public class MissionNote {
     protected MissionNote() {
     }
 
-    public MissionNote(Long missionId, Long userId, String testo) {
+    public MissionNote(Long missionId, Long userId, String testo, String tipo) {
+        this.tipo = tipo;
         this.missionId = missionId;
         this.userId = userId;
         this.testo = testo;
     }
 
+    public void markHandled(OffsetDateTime when, Long userId) {
+        this.gestitaIl = when;
+        this.gestitaDa = userId;
+    }
+
     public Long getId() { return id; }
+    public String getTipo() { return tipo; }
+    public OffsetDateTime getGestitaIl() { return gestitaIl; }
+    public Long getGestitaDa() { return gestitaDa; }
     public Long getMissionId() { return missionId; }
     public Long getUserId() { return userId; }
     public String getTesto() { return testo; }
