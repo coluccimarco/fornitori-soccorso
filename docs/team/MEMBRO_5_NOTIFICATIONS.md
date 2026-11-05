@@ -10,9 +10,9 @@ l'intervento è concluso. WhatsApp e webhook in ingresso sono **fuori ambito**.
 
 ## Eventi
 
-Il backend scrive `MISSION_ACCEPTED` e `MISSION_COMPLETED` in `notifications_outbox` nella
+Il backend scrive `MISSION_ACCEPTED`, `MISSION_COMPLETED` e `MISSION_CANCELLED` in `notifications_outbox` nella
 stessa transazione delle transizioni. La chiave `event_key` è univoca e impedisce duplicati.
-Il payload contiene evento, codice missione e nome autista, non dati del cliente.
+Il payload contiene evento e codice missione; il nome dell'autista è sempre null e non ci sono dati del cliente.
 
 | Origine missione | Canale | Destinatario | Stato iniziale |
 |---|---|---|---|

@@ -9,18 +9,20 @@ Il dialogo segue il foglio `DialoghiChatbot` del docente, con le differenze indi
 
 ## Dialogo
 
-Stati: `START → WAIT_LOCATION → WAIT_INTERVENTION → WAIT_PROBLEM → START`, con `AIUTO`,
+Stati: `START → WAIT_PHONE → WAIT_LOCATION → WAIT_PROBLEM → START`, con `AIUTO`,
 `ANNULLA` e `STATO` validi in ogni stato. Un dialogo inattivo scade dopo 30 minuti; 3 input
 non validi lo fanno ricominciare.
 
-1. Il cliente scrive la targa, che viene normalizzata e cercata.
-2. Il bot mostra nome e compagnia e chiede indirizzo o posizione.
-3. Il cliente sceglie riparazione o traino con i tasti Telegram; per il traino il backend
-   assegna l'officina più vicina.
-4. Il bot chiede il problema e crea la missione in stato `nuova`.
-5. `STATO` risponde sull'ultima richiesta aperta della chat con una frase comprensibile,
-   mai con lo stato interno, e con il nome dell'autista se ha accettato.
-6. Errori gestiti: input non valido, targa ignota, servizio indisponibile, rate limit.
+1. Il cliente scrive la targa, che viene normalizzata.
+2. Il bot chiede il telefono della persona sul posto, poi cerca la targa nel backend.
+3. Con polizza verificata mostra nome e compagnia; se non è verificabile avvisa che la copertura
+   è in controllo e prosegue comunque. In entrambi i casi chiede indirizzo o posizione.
+4. Il cliente sceglie il problema con i tasti Telegram; il tipo di intervento e, per il traino,
+   l'officina più vicina li decide il backend.
+5. Il bot crea la missione: `nuova` con polizza verificata, `verifica_polizza` altrimenti.
+6. `STATO` risponde sull'ultima richiesta aperta della chat con una frase comprensibile,
+   mai con lo stato interno né con il nome dell'autista.
+7. Errori gestiti: input non valido, servizio indisponibile, rate limit.
 
 Il riconoscimento della targa vale 15 minuti. Se scade durante il dialogo, il bot lo rifà
 una volta da solo e prosegue, senza far ripetere nulla al cliente.

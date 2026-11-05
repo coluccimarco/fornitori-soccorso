@@ -577,7 +577,7 @@ paths:
     get:
       tags: [Autisti]
       summary: Dettaglio di una missione proposta o accettata all'autista autenticato
-      description: Aggiunge cliente, contatti e officina. Finché la missione è solo proposta nome, telefono e targa del cliente sono null; compaiono dopo l'accettazione. guadagnoStimato è null finché non è stato calcolato il percorso. Chiusa la missione risponde 409.
+      description: Aggiunge cliente, contatti e officina. Nome, cognome e telefono del cliente e telefono sul posto sono visibili già dalla proposta; la targa è null finché la missione non è accettata. guadagnoStimato è null finché non è stato calcolato il percorso. Chiusa la missione risponde 409.
       x-implementation-status: implemented
       x-required-role: ASSIGNED_AUTISTA
       responses:
@@ -665,7 +665,7 @@ paths:
     post:
       tags: [Chat]
       summary: Stato dell'ultima richiesta aperta della chat
-      description: Cerca per canale e chat, non per id missione. Una missione eseguita non è più aperta e risponde 404. autistaNome è valorizzato solo per missioni accettate. Usa POST per non scrivere l'id della chat nell'URL.
+      description: Cerca per canale e chat, non per id missione. Una missione eseguita non è più aperta e risponde 404. autistaNome è sempre null, il cliente non riceve il nome dell'autista. Usa POST per non scrivere l'id della chat nell'URL.
       x-implementation-status: implemented
       x-required-role: SERVICE_CHATBOT
       security:

@@ -70,7 +70,7 @@ I permessi stanno sia nella catena di sicurezza sia nei service.
 | Una autorizzazione per una sola pratica | **Non applicato** (V-02), corretto |
 | Scadenza dell'autorizzazione, 15 minuti | OK, provato |
 | Idempotenza con `requestId`, difformità 409 | OK, provato |
-| Stato solo per la propria chat, autista solo dopo l'accettazione | OK, provato |
+| Stato solo per la propria chat, nome dell'autista mai restituito (regola cambiata con la migrazione 11) | OK, provato |
 
 ### Soluzione proposta per l'identità del cliente (V-01)
 
