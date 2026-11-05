@@ -23,6 +23,9 @@ la base del codice applicativo coincide con quella attesa.
 - Conservati scadenza dialogo, contatore tentativi, idempotenza, deduplicazione messaggi
   e rinnovo singolo del lookup. Un rinnovo aggiorna il cliente nel payload se cambia l'esito polizza.
 - Fake backend con polizze da verificare; tastiera con un pulsante per riga per le etichette lunghe.
+- Ricontrollo: un HTTP 404 nel lookup resta un errore di servizio, senza essere trasformato
+  in `DA_VERIFICARE`. Anche risposte prive del booleano `verificato` o con `esito` sconosciuto
+  vengono rifiutate come errori di servizio; il fallback per backend senza `esito` resta attivo.
 
 ## Diagramma del dialogo
 
@@ -50,11 +53,13 @@ python -m unittest discover
 python -m compileall -q fornitori_chatbot
 ```
 
-26 test superati. Compilazione completata senza errori.
+30 test superati. Compilazione completata senza errori.
 Verificati flussi con polizza verificata e da verificare, telefono e tentativi,
 tutti i codici da pulsante e numero, callback Telegram, testi esatti, assenza del nome
 autista, nuovi stati, annullamento dialogo, scadenze, rinnovo del grant, errori di indirizzo,
 retry con stesso requestId, serializzazione HTTP e notifiche sconosciute.
+Il ricontrollo copre inoltre errori lookup HTTP e risposte malformate, ripresa del dialogo
+dopo un errore e verifica del JSON sulla richiesta HTTP effettivamente costruita.
 Su Windows si usa `python`, equivalente ai comandi `python3` richiesti dalla CI.
 Prova reale backend/Telegram non eseguita: nessuna integrazione con il branch backend
 e nessun token Telegram di test utilizzato. Non vengono avviati bot sul canale reale.

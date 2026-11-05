@@ -30,20 +30,22 @@ class HttpBackend:
         self._timeout = timeout
 
     def lookup_targa(self, session_id: str, targa: str) -> LookupResult:
-        try:
-            body = self._call(
-                "POST",
-                "/api/v1/chat/lookup-targa",
-                {"sessionId": session_id, "targa": targa},
-            )
-        except NotFound:
-            return LookupResult(verificato=False)
+        body = self._call(
+            "POST",
+            "/api/v1/chat/lookup-targa",
+            {"sessionId": session_id, "targa": targa},
+        )
+        if not isinstance(body.get("verificato"), bool):
+            raise BackendUnavailable("risposta lookup incompleta")
+        esito = body.get("esito")
+        if esito is not None and esito not in ("VERIFICATA", "DA_VERIFICARE"):
+            raise BackendUnavailable("esito lookup inatteso")
         return LookupResult(
-            verificato=bool(body.get("verificato")),
+            verificato=body["verificato"],
             cliente_id=body.get("clienteId"),
             cliente_nome=body.get("clienteNome"),
             compagnia_nome=body.get("compagniaNome"),
-            esito=body.get("esito"),
+            esito=esito,
         )
 
     def create_mission(self, request: MissionRequest) -> MissionCreated:
