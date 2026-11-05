@@ -24,8 +24,8 @@ separato dalla pagina pubblica informativa.
 
 ### Dashboard operativa
 
-- In alto, la **Coda critica** elenca le missioni che richiedono un intervento: polizza da verificare, rifiutate da tre autisti, richieste di supporto aperte. Ogni riga ha le azioni dirette.
-- I riquadri **Critiche**, **Da assegnare**, **Rifiutate da 3 autisti**, **KO**, **OK**, **Pending** e **Annullate** aprono l'elenco delle missioni filtrato. Lo stesso vale per le barre del grafico **Missioni per stato**.
+- In alto, la **Coda critica** elenca le missioni che richiedono un intervento: polizza da verificare, rifiutate da tre autisti, richieste di supporto aperte. Ogni riga ha le azioni dirette. Sopra l'elenco, i contatori **Verifica polizza**, **Rifiutate da 3 autisti** e **Supporto aperto** mostrano da dove nascono le critiche e aprono le missioni corrispondenti.
+- I riquadri **Critiche**, **Da assegnare**, **KO**, **OK**, **Pending** e **Annullate** aprono l'elenco delle missioni filtrato. Lo stesso vale per le barre del grafico **Missioni per stato**.
 - La pagina si aggiorna da sola ogni 30 secondi mentre è aperta; **Aggiorna dati** ricarica subito le informazioni.
 
 ### Costi e analisi

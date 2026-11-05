@@ -336,7 +336,6 @@ body {
 .tile-critiche.is-alert { border-color: #c62838; background: #c62838; color: #fff; }
 .tile-critiche.is-alert .category-label { color: #fff; }
 .tile-daAssegnare { border-top-color: #2f54a8; }
-.tile-rifiutateTreAutisti { border-top-color: #a81f2c; }
 .tile-ko { border-top-color: #d3652a; }
 .tile-ok { border-top-color: #208363; }
 .tile-pending { border-top-color: #c58a1c; }

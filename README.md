@@ -106,6 +106,18 @@ Le API centrali richiedono `RESPONSABILE`; le mutazioni richiedono il token di `
 nell'header `X-CSRF-TOKEN`. Le API `chat/*` usano `Authorization: Bearer` con `FORNITORI_CHAT_TOKEN`, da
 impostare uguale su backend e chatbot; se manca, rispondono `401`. Vedi [chatbot/README.md](./chatbot/README.md).
 
+## Chatbot in produzione
+
+Il bot risponde solo se il processo Python è avviato su un server sempre acceso, con `TELEGRAM_BOT_TOKEN`
+impostato e con il backend raggiungibile. Dalla cartella `chatbot/`:
+
+```bash
+python3 -m fornitori_chatbot --telegram --http
+```
+
+`--http` collega il bot al backend reale tramite `FORNITORI_API_URL` e `FORNITORI_CHAT_TOKEN`; senza questa
+opzione il bot usa dati di prova. Vercel ospita solo il frontend e non può far girare il bot in polling.
+
 ## Struttura
 
 ```text

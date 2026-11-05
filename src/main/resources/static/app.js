@@ -48,7 +48,7 @@
     ok: { label: "OK", stati: ["eseguita"] },
     annullate: { label: "Annullate", stati: ["annullata"] }
   };
-  const CATEGORY_TILES = ["critiche", "daAssegnare", "rifiutateTreAutisti", "ko", "ok", "pending", "annullate"];
+  const CATEGORY_TILES = ["critiche", "daAssegnare", "ko", "ok", "pending", "annullate"];
   const CRITICAL_MOTIVES = {
     VERIFICA_POLIZZA: "Verifica polizza",
     TRE_RIFIUTI: "Rifiutata da 3 autisti",
