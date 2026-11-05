@@ -45,15 +45,21 @@ class LookupResult:
     cliente_id: Optional[int] = None
     cliente_nome: Optional[str] = None
     compagnia_nome: Optional[str] = None
+    esito: Optional[str] = None
+
+    def __post_init__(self):
+        if self.esito is None:
+            object.__setattr__(self, "esito", "VERIFICATA" if self.verificato else "DA_VERIFICARE")
 
 
 @dataclass(frozen=True)
 class MissionRequest:
     session_id: str
     request_id: str
-    cliente_id: int
-    tipo_intervento: str
-    descrizione_problema: str
+    cliente_id: Optional[int]
+    targa: str
+    telefono_sul_posto: str
+    tipo_problema: str
     origine_indirizzo: str
     canale_origine: str
     destinatario: str
@@ -67,6 +73,7 @@ class MissionCreated:
     id: int
     codice: str
     stato: str
+    in_verifica: bool = False
 
 
 @dataclass(frozen=True)

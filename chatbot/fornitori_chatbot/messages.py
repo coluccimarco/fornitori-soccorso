@@ -12,26 +12,21 @@ RATE_LIMITED = "Troppi tentativi. Riprova tra qualche minuto oppure chiama la ce
 UNAVAILABLE = "Il servizio non è disponibile in questo momento. Riprova tra poco."
 
 PLATE_FOUND = "Targa riconosciuta ({nome}, {compagnia}). Condividi la posizione o scrivi l'indirizzo."
-PLATE_NOT_FOUND = "Non trovo la targa tra i nostri assicurati. Controlla e riprova oppure chiama la centrale."
+INVALID_PLATE = "Il formato della targa non è valido. Controlla e riprova."
+ASK_PHONE = "Inserisca il numero di telefono della persona presente sul posto."
+INVALID_PHONE = "Numero non valido. Inserisca da 6 a 20 caratteri: cifre e spazi, con un eventuale + iniziale."
+POLICY_PENDING = "Attenda... Stiamo verificando la copertura assicurativa del veicolo. Intanto condivida la posizione o scriva l'indirizzo."
 
 INVALID_LOCATION = "Non ho capito la posizione. Scrivi via e città oppure condividi la posizione."
 SHARED_LOCATION = "Posizione condivisa ({lat:.6f}, {lng:.6f})"
-ASK_INTERVENTION = (
-    "Che intervento ti serve? Premi un tasto, oppure scrivi 1 per la riparazione sul posto "
-    "o 2 per il traino."
-)
-BUTTON_REPAIR = "Riparazione sul posto"
-BUTTON_TOWING = "Traino"
 ADDRESS_NOT_FOUND = (
     "Non trovo l'indirizzo per scegliere l'officina più vicina. "
     "Scrivi via e città oppure condividi la posizione."
 )
-ASK_PROBLEM = "Descrivi in poche parole il problema."
-INVALID_PROBLEM = "Descrivi il problema con qualche parola in più."
-CREATED = (
-    "Richiesta {codice} presa in carico. Ti avviseremo appena un autista accetta. "
-    "Scrivi STATO per aggiornamenti."
-)
+ASK_PROBLEM_TYPE = "Qual è il problema?"
+CREATED = "Non appena un autista sarà disponibile riceverai un messaggio."
+CREATED_CODE = "Codice richiesta {codice}. Scrivi STATO per aggiornamenti."
+CREATED_PENDING = "Attenda... La centrale sta verificando la polizza e la ricontatterà al numero indicato. Codice richiesta {codice}."
 CREATE_CONFLICT = "Non posso registrare la richiesta. Contatta la centrale operativa."
 CREATE_REJECTED = "La richiesta non è stata accettata dal sistema. Contatta la centrale operativa."
 
@@ -43,9 +38,12 @@ STATUS_TEXTS = {
     "non_accettata": "La tua richiesta {codice} è in lavorazione: stiamo cercando un altro autista",
     "scaduta": "La tua richiesta {codice} è in lavorazione: stiamo cercando un altro autista",
     "eseguita": "L'intervento per la richiesta {codice} è concluso",
+    "verifica_polizza": "Per la richiesta {codice} stiamo verificando la copertura assicurativa",
+    "gestione_manuale": "Per la richiesta {codice} la centrale sta cercando un autista disponibile",
+    "annullata": "La richiesta {codice} è stata annullata",
 }
-STATUS_DRIVER = "; autista assegnato: {autista}"
 NO_OPEN_REQUESTS = "Non risultano richieste aperte per questo numero. Scrivi la targa per attivare un soccorso."
 
-NOTIFY_ACCEPTED = "La tua richiesta {codice} è stata presa in carico. Autista: {autista}."
+NOTIFY_ACCEPTED = "La tua richiesta {codice} è stata accettata. Entro 45 minuti arriverà l'autista."
+NOTIFY_CANCELLED = "La richiesta {codice} è stata annullata. Per assistenza contatti la centrale operativa."
 NOTIFY_COMPLETED = "L'intervento per la richiesta {codice} è concluso. Grazie."

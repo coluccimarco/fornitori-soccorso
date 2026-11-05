@@ -45,7 +45,7 @@ class TelegramApi:
         payload: Dict[str, Any] = {"chat_id": chat_id, "text": text}
         if buttons:
             payload["reply_markup"] = {
-                "inline_keyboard": [[{"text": label, "callback_data": data} for label, data in buttons]]
+                "inline_keyboard": [[{"text": label, "callback_data": data}] for label, data in buttons]
             }
         self._call("sendMessage", payload, 10)
 

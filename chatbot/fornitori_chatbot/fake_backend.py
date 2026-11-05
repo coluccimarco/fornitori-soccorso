@@ -23,7 +23,8 @@ DEMO_CUSTOMERS = (
     FakeCustomer(1, "Mario Prova", "Compagnia Demo", "AB123CD"),
     FakeCustomer(2, "Laura Prova", "Compagnia Demo", "EF456GH"),
 )
-OPEN_STATES = {"nuova", "proposta", "accettata", "non_accettata", "scaduta"}
+OPEN_STATES = {"nuova", "proposta", "accettata", "non_accettata", "scaduta",
+               "verifica_polizza", "gestione_manuale"}
 
 
 class FakeBackend:
@@ -44,9 +45,11 @@ class FakeBackend:
         if existing is not None:
             return existing
         mission_id = len(self._missions) + 1
-        created = MissionCreated(mission_id, f"M-DEMO-{mission_id:05d}", "nuova")
+        in_verifica = request.cliente_id is None
+        stato = "verifica_polizza" if in_verifica else "nuova"
+        created = MissionCreated(mission_id, f"M-DEMO-{mission_id:05d}", stato, in_verifica)
         self._by_request[request.request_id] = created
-        self._missions[mission_id] = MissionStatus(created.codice, "nuova")
+        self._missions[mission_id] = MissionStatus(created.codice, stato)
         self._recipients[mission_id] = (request.canale_origine, request.destinatario)
         return created
 

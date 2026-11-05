@@ -43,6 +43,7 @@ class HttpBackend:
             cliente_id=body.get("clienteId"),
             cliente_nome=body.get("clienteNome"),
             compagnia_nome=body.get("compagniaNome"),
+            esito=body.get("esito"),
         )
 
     def create_mission(self, request: MissionRequest) -> MissionCreated:
@@ -50,8 +51,9 @@ class HttpBackend:
             "sessionId": request.session_id,
             "requestId": request.request_id,
             "clienteId": request.cliente_id,
-            "tipoIntervento": request.tipo_intervento,
-            "descrizioneProblema": request.descrizione_problema,
+            "targa": request.targa,
+            "telefonoSulPosto": request.telefono_sul_posto,
+            "tipoProblema": request.tipo_problema,
             "origineIndirizzo": request.origine_indirizzo,
             "origineLat": request.origine_lat,
             "origineLng": request.origine_lng,
@@ -61,7 +63,8 @@ class HttpBackend:
         }
         body = self._call("POST", "/api/v1/chat/missioni", payload)
         try:
-            return MissionCreated(body["id"], body["codice"], body["stato"])
+            return MissionCreated(body["id"], body["codice"], body["stato"],
+                                  body.get("inVerifica", body["stato"] == "verifica_polizza"))
         except KeyError as exc:
             raise BackendUnavailable("risposta missione incompleta") from exc
 
