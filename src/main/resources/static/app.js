@@ -23,6 +23,9 @@
     deadlineRefreshAt: 0,
     deadlineRefreshPending: false,
     supportMission: null,
+    cancelTarget: null,
+    policy: null,
+    policyTimer: null,
     dashboardTimer: null,
     dashboardFailed: false,
     missionFilter: null
@@ -72,6 +75,7 @@
     sinistro: { label: "Luogo di fermo", symbol: "F", css: "marker-sinistro" },
     officina: { label: "Officina", symbol: "O", css: "marker-officina" }
   };
+  const FINAL_STATES = ["eseguita", "annullata"];
   const PROPOSABLE_STATES = ["nuova", "non_accettata", "scaduta", "gestione_manuale"];
   const alertStorageKey = (user) => `fornitori.avvisiLetti.${user?.id ?? "x"}`;
 
@@ -704,11 +708,12 @@
   }
 
   function costCorrectionMarkup(mission) {
-    if (mission.stato !== "eseguita" || $("#missionMode").value !== "live") return "";
+    const correctable = mission.stato === "eseguita" || (mission.stato === "annullata" && mission.autistaId);
+    if (!correctable || $("#missionMode").value !== "live") return "";
     const note = mission.rettificaMotivo
       ? `<p class="small text-secondary mb-2">Calcolato ${safe(formatEuro(mission.costoCalcolato))}, corretto: ${safe(mission.rettificaMotivo)}</p>`
       : "";
-    return `<section class="mission-cost">${note}<form class="cost-form" data-cost-form="${safe(mission.id)}"><label class="visually-hidden" for="cost-${safe(mission.id)}">Nuovo costo</label><div class="input-group input-group-sm"><input class="form-control" id="cost-${safe(mission.id)}" name="costoFinale" type="number" min="0" step="0.01" value="${safe(mission.costoFinale)}" required><span class="input-group-text">€</span></div><label class="visually-hidden" for="reason-${safe(mission.id)}">Motivo della correzione</label><input class="form-control form-control-sm" id="reason-${safe(mission.id)}" name="motivo" minlength="3" maxlength="1000" placeholder="Motivo della correzione" required><button class="btn btn-sm btn-outline-primary" type="submit">Correggi costo</button></form></section>`;
+    return `<section class="mission-cost">${note}<form class="cost-form" data-cost-form="${safe(mission.id)}"><label class="visually-hidden" for="cost-${safe(mission.id)}">Nuovo costo</label><div class="input-group input-group-sm"><input class="form-control" id="cost-${safe(mission.id)}" name="costoFinale" type="number" min="0" step="0.01" value="${safe(mission.costoFinale ?? 0)}" required><span class="input-group-text">€</span></div><label class="visually-hidden" for="reason-${safe(mission.id)}">Motivo della correzione</label><input class="form-control form-control-sm" id="reason-${safe(mission.id)}" name="motivo" minlength="3" maxlength="1000" placeholder="Motivo della correzione" required><button class="btn btn-sm btn-outline-primary" type="submit">Correggi costo</button></form></section>`;
   }
 
   function resetRegistrySearch() {
@@ -944,7 +949,34 @@
     return mission.tipoIntervento === "traino" ? "Traino" : "Riparazione sul posto";
   }
 
+  function cancelButtonMarkup(mission) {
+    return `<button class="btn btn-sm btn-outline-danger" type="button" data-cancel-mission="${safe(mission.id)}" data-codice="${safe(mission.codice)}" data-stato="${safe(mission.stato)}">Annulla missione</button>`;
+  }
+
+  /** Chi ha annullato, quando, perché e quale importo resta attribuito all'autista. */
+  function cancelSummaryMarkup(mission) {
+    if (mission.stato !== "annullata") return "";
+    const who = ({ autista: "dall'autista", centrale: "dalla centrale" })[mission.annullataDa] || "";
+    const amount = mission.autistaId
+      ? `${formatEuro(mission.costoFinale)} attribuiti a ${driverNameForSummary(mission)}`
+      : "Nessun importo attribuito";
+    return `<div class="cancel-summary"><strong>Annullata ${safe(who)}${mission.annullataIl ? ` il ${safe(formatDateTime(mission.annullataIl))}` : ""}</strong>${mission.motivoAnnullamento ? `<span>Motivo: ${safe(mission.motivoAnnullamento)}</span>` : ""}<span>Importo: ${safe(amount)}</span></div>`;
+  }
+
+  function driverNameForSummary(mission) {
+    return state.user?.ruolo === "autista" ? "te" : driverName(mission.autistaId);
+  }
+
+  function policyBoxMarkup(mission) {
+    const id = safe(mission.id);
+    const attributes = `data-mission-id="${id}" data-codice="${safe(mission.codice)}" data-targa="${safe(mission.targaDichiarata ?? "")}" data-telefono="${safe(mission.telefonoSulPosto ?? "")}"`;
+    return `<section class="policy-box"><div><strong>Polizza da verificare.</strong> Targa dichiarata <strong>${safe(mission.targaDichiarata)}</strong> · Telefono sul posto ${telLink(mission.telefonoSulPosto) || "—"}</div><div class="policy-actions"><button class="btn btn-sm btn-success" type="button" data-policy="conferma" ${attributes}>Conferma polizza</button><button class="btn btn-sm btn-outline-danger" type="button" data-policy="respingi" ${attributes}>Respingi</button></div></section>`;
+  }
+
   function missionOutcomeText(mission) {
+    if (mission.stato === "annullata") {
+      return mission.autistaId ? `Annullata · ${formatEuro(mission.costoFinale)}` : "Annullata · nessun costo";
+    }
     if (mission.kmEffettivi != null) {
       return `${mission.kmEffettivi} km · ${mission.costoFinale != null ? formatEuro(mission.costoFinale) : "Importo non disponibile"}`;
     }
@@ -969,6 +1001,8 @@
         <span class="small text-secondary">${safe(formatDateTime(mission.chiusaIl || mission.annullataIl || mission.scadenzaIl || mission.creataIl))}</span>
       </div>
       ${missionCustomerRow(mission)}
+      ${cancelSummaryMarkup(mission)}
+      ${live && mission.stato === "verifica_polizza" ? policyBoxMarkup(mission) : ""}
       ${mission.supportoAperto ? `<div class="support-banner"><strong>Richiesta di supporto aperta dall'autista</strong>${live ? `<button class="btn btn-sm btn-danger" type="button" data-support-open="${id}" data-codice="${safe(mission.codice)}">Leggi e gestisci</button>` : ""}</div>` : ""}
       <div class="mission-card-grid">
         <div><span class="field-label">Luogo di fermo</span><strong>${safe(mission.origineIndirizzo)}</strong></div>
@@ -981,6 +1015,7 @@
         <button class="btn btn-sm btn-outline-secondary" type="button" data-mission-notes="${id}" aria-expanded="false" aria-controls="mission-notes-${id}">Mostra avvisi</button>
         <button class="btn btn-sm btn-outline-secondary" type="button" data-mission-map="${id}" aria-expanded="false">Mostra mappa</button>
         <button class="btn btn-sm btn-outline-secondary" type="button" data-mission-proposals="${id}" aria-expanded="false" aria-controls="mission-proposals-${id}">Mostra storico proposte</button>
+        ${live && !FINAL_STATES.includes(mission.stato) ? cancelButtonMarkup(mission) : ""}
       </div>
       <div class="note-list d-none" id="mission-notes-${id}"></div>
       ${missionMapMarkup(mission.id, true)}
@@ -1122,10 +1157,14 @@
     const propose = item.motivo === "TRE_RIFIUTI"
       ? `<button class="btn btn-sm btn-primary" type="button" data-propose-nearest="${id}">Proponi al più vicino</button>`
       : "";
+    const policy = item.motivo === "VERIFICA_POLIZZA"
+      ? ["conferma", "respingi"].map((mode) =>
+        `<button class="btn btn-sm ${mode === "conferma" ? "btn-success" : "btn-outline-danger"}" type="button" data-policy="${mode}" data-mission-id="${id}" data-codice="${safe(item.codice)}" data-targa="${safe(item.targa ?? "")}" data-telefono="${safe(item.telefonoSulPosto ?? "")}">${mode === "conferma" ? "Conferma polizza" : "Respingi"}</button>`).join("")
+      : "";
     const support = item.motivo === "SUPPORTO_AUTISTA"
       ? `<button class="btn btn-sm btn-danger" type="button" data-support-open="${id}" data-codice="${safe(item.codice)}">Segna supporto gestito</button>`
       : "";
-    return `${support}${propose}${open}`;
+    return `${policy}${support}${propose}${open}${item.motivo === "VERIFICA_POLIZZA" ? "" : cancelButtonMarkup(item)}`;
   }
 
   function renderCategoryTiles(categories) {
@@ -1496,12 +1535,19 @@
     }
 
     try {
-      await request("/api/v1/clienti", {
+      const created = await request("/api/v1/clienti", {
         method: "POST",
         mutating: true,
         body: JSON.stringify(payload)
       });
       formElement.reset();
+      if (state.policy?.awaitingCustomer) {
+        state.policy.selectedId = created?.id ?? null;
+        $("#policySearch").value = payload.targa;
+        bootstrap.Modal.getOrCreateInstance($("#customerModal")).hide();
+        void loadRegistries();
+        return;
+      }
       bootstrap.Modal.getOrCreateInstance($("#customerModal")).hide();
       $("#registrySearch").value = "";
       await loadRegistries();
@@ -1625,6 +1671,161 @@
     }
   });
 
+  function cancelWarning(status) {
+    if (state.user?.ruolo === "autista") {
+      return "Annullando questa missione il tuo compenso sarà 0 €. La missione resta nel tuo storico.";
+    }
+    return status === "accettata"
+      ? "L'autista aveva già accettato: il costo calcolato sui km stimati totali gli viene attribuito. Potrai rettificarlo dalla card della missione."
+      : "Nessun autista ha accettato questa missione: il costo sarà 0 € e non verrà attribuito a nessuno.";
+  }
+
+  function openCancelModal(missionId, code, status) {
+    state.cancelTarget = missionId;
+    $("#cancelForm").reset();
+    $("#cancelModalAlert").classList.add("d-none");
+    $("#cancelModalTitle").textContent = `Annulla missione ${code || ""}`;
+    $("#cancelWarning").textContent = cancelWarning(status);
+    bootstrap.Modal.getOrCreateInstance($("#cancelModal")).show();
+  }
+
+  $("#cancelForm").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const reason = $("#cancelReason").value.trim();
+    if (reason.length < 3) {
+      showInlineAlert("#cancelModalAlert", "Scrivi il motivo (almeno 3 caratteri).");
+      return;
+    }
+    const button = $("#cancelConfirmButton");
+    setBusy(button, true);
+    try {
+      await request(`/api/v1/missioni/${state.cancelTarget}/annulla`, {
+        method: "POST",
+        mutating: true,
+        body: JSON.stringify({ motivo: reason })
+      });
+      bootstrap.Modal.getOrCreateInstance($("#cancelModal")).hide();
+      await refreshView("Missione annullata.");
+    } catch (error) {
+      showInlineAlert("#cancelModalAlert", error.message);
+    } finally {
+      setBusy(button, false);
+    }
+  });
+
+  function localToday() {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  }
+
+  function openPolicyModal(policy) {
+    state.policy = { ...policy, selectedId: null, awaitingCustomer: false };
+    $("#policyForm").reset();
+    $("#policySearch").value = policy.targa || "";
+    showPolicyModal();
+  }
+
+  function showPolicyModal() {
+    const { codice, targa, telefono, mode } = state.policy;
+    const confirming = mode === "conferma";
+    $("#policyModalAlert").classList.add("d-none");
+    $("#policyModalTitle").textContent = `${confirming ? "Conferma polizza" : "Respingi richiesta"} · ${codice || ""}`;
+    $("#policyFacts").innerHTML = `Targa dichiarata <strong>${safe(targa || "—")}</strong> · Telefono sul posto ${telLink(telefono) || "—"}`;
+    $("#policyCustomerSection").classList.toggle("d-none", !confirming);
+    $("#policyRejectWarning").classList.toggle("d-none", confirming);
+    const button = $("#policySubmitButton");
+    button.classList.toggle("btn-success", confirming);
+    button.classList.toggle("btn-danger", !confirming);
+    button.querySelector(".button-label").textContent = confirming ? "Conferma polizza" : "Respingi e annulla la missione";
+    bootstrap.Modal.getOrCreateInstance($("#policyModal")).show();
+    if (confirming) void searchPolicyCustomers();
+  }
+
+  async function searchPolicyCustomers() {
+    const query = $("#policySearch").value.trim();
+    const results = $("#policyResults");
+    try {
+      const suffix = query ? `?search=${encodeURIComponent(query)}` : "";
+      const customers = await request(`/api/v1/clienti${suffix}`);
+      renderPolicyResults(customers);
+    } catch (error) {
+      results.innerHTML = "";
+      showInlineAlert("#policyModalAlert", error.message);
+    }
+  }
+
+  function renderPolicyResults(customers) {
+    const today = localToday();
+    $("#policyResults").innerHTML = customers.length
+      ? customers.slice(0, 20).map((customer) => {
+        const expired = !customer.scadenzaPolizza || customer.scadenzaPolizza < today;
+        const checked = String(customer.id) === String(state.policy?.selectedId) && !expired;
+        return `<label class="policy-result${expired ? " is-expired" : ""}"><input class="form-check-input" type="radio" name="policyCustomer" value="${safe(customer.id)}"${expired ? " disabled" : ""}${checked ? " checked" : ""}><span><strong>${safe(fullName(customer))}</strong> · ${safe(customer.targa)}<small>${safe(customer.compagniaNome)} · polizza ${safe(customer.numeroPolizza)}, ${expired ? "scaduta il" : "valida fino al"} ${safe(formatDate(customer.scadenzaPolizza))}</small></span></label>`;
+      }).join("")
+      : '<p class="small text-secondary mb-0">Nessun cliente trovato: puoi crearne uno nuovo.</p>';
+  }
+
+  $("#policySearch").addEventListener("input", () => {
+    window.clearTimeout(state.policyTimer);
+    state.policyTimer = window.setTimeout(() => void searchPolicyCustomers(), 250);
+  });
+  $("#policySearch").addEventListener("keydown", (event) => {
+    if (event.key === "Enter") event.preventDefault();
+  });
+  $("#policyResults").addEventListener("change", (event) => {
+    if (state.policy && event.target.name === "policyCustomer") state.policy.selectedId = event.target.value;
+  });
+
+  $("#policyNewCustomer").addEventListener("click", () => {
+    state.policy.awaitingCustomer = true;
+    const policyModal = $("#policyModal");
+    policyModal.addEventListener("hidden.bs.modal", () => {
+      $("#customerForm").reset();
+      $("#customerFormAlert").classList.add("d-none");
+      $("#customerPlate").value = state.policy?.targa || "";
+      bootstrap.Modal.getOrCreateInstance($("#customerModal")).show();
+    }, { once: true });
+    bootstrap.Modal.getOrCreateInstance(policyModal).hide();
+  });
+
+  // Finita la creazione del cliente (o rinunciando) si torna alla verifica in corso.
+  $("#customerModal").addEventListener("hidden.bs.modal", () => {
+    if (!state.policy?.awaitingCustomer) return;
+    state.policy.awaitingCustomer = false;
+    showPolicyModal();
+  });
+
+  $("#policyForm").addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const { id, mode, selectedId } = state.policy;
+    const confirming = mode === "conferma";
+    if (confirming && !selectedId) {
+      showInlineAlert("#policyModalAlert", "Scegli un cliente con polizza attiva oppure creane uno nuovo.");
+      return;
+    }
+    const note = $("#policyNote").value.trim();
+    const button = $("#policySubmitButton");
+    setBusy(button, true);
+    try {
+      await request(`/api/v1/missioni/${id}/verifica-polizza`, {
+        method: "POST",
+        mutating: true,
+        body: JSON.stringify({
+          esito: confirming ? "CONFERMATA" : "RESPINTA",
+          ...(confirming ? { clienteId: Number(selectedId) } : {}),
+          ...(note ? { note } : {})
+        })
+      });
+      bootstrap.Modal.getOrCreateInstance($("#policyModal")).hide();
+      state.policy = null;
+      await refreshView(confirming ? "Polizza confermata: la missione passa all'assegnazione." : "Richiesta respinta: la missione è annullata.");
+    } catch (error) {
+      showInlineAlert("#policyModalAlert", error.message);
+    } finally {
+      setBusy(button, false);
+    }
+  });
+
   /** Ricarica la vista aperta dopo un'azione, poi mostra l'esito (il caricamento azzera il messaggio). */
   async function refreshView(message = "", type = "success") {
     const views = {
@@ -1653,6 +1854,22 @@
     const open = event.target.closest("[data-open-mission]");
     if (open) {
       void openMissionFromAlert(open.dataset.openMission);
+      return;
+    }
+    const cancel = event.target.closest("[data-cancel-mission]");
+    if (cancel) {
+      openCancelModal(cancel.dataset.cancelMission, cancel.dataset.codice, cancel.dataset.stato);
+      return;
+    }
+    const policy = event.target.closest("[data-policy]");
+    if (policy) {
+      openPolicyModal({
+        id: policy.dataset.missionId,
+        codice: policy.dataset.codice,
+        targa: policy.dataset.targa,
+        telefono: policy.dataset.telefono,
+        mode: policy.dataset.policy
+      });
       return;
     }
     const support = event.target.closest("[data-support-open]");
