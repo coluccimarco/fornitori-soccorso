@@ -30,19 +30,22 @@ class HttpBackend:
         self._timeout = timeout
 
     def lookup_targa(self, session_id: str, targa: str) -> LookupResult:
-        try:
-            body = self._call(
-                "POST",
-                "/api/v1/chat/lookup-targa",
-                {"sessionId": session_id, "targa": targa},
-            )
-        except NotFound:
-            return LookupResult(verificato=False)
+        body = self._call(
+            "POST",
+            "/api/v1/chat/lookup-targa",
+            {"sessionId": session_id, "targa": targa},
+        )
+        if not isinstance(body.get("verificato"), bool):
+            raise BackendUnavailable("risposta lookup incompleta")
+        esito = body.get("esito")
+        if esito is not None and esito not in ("VERIFICATA", "DA_VERIFICARE"):
+            raise BackendUnavailable("esito lookup inatteso")
         return LookupResult(
-            verificato=bool(body.get("verificato")),
+            verificato=body["verificato"],
             cliente_id=body.get("clienteId"),
             cliente_nome=body.get("clienteNome"),
             compagnia_nome=body.get("compagniaNome"),
+            esito=esito,
         )
 
     def create_mission(self, request: MissionRequest) -> MissionCreated:
@@ -50,8 +53,9 @@ class HttpBackend:
             "sessionId": request.session_id,
             "requestId": request.request_id,
             "clienteId": request.cliente_id,
-            "tipoIntervento": request.tipo_intervento,
-            "descrizioneProblema": request.descrizione_problema,
+            "targa": request.targa,
+            "telefonoSulPosto": request.telefono_sul_posto,
+            "tipoProblema": request.tipo_problema,
             "origineIndirizzo": request.origine_indirizzo,
             "origineLat": request.origine_lat,
             "origineLng": request.origine_lng,
@@ -61,7 +65,8 @@ class HttpBackend:
         }
         body = self._call("POST", "/api/v1/chat/missioni", payload)
         try:
-            return MissionCreated(body["id"], body["codice"], body["stato"])
+            return MissionCreated(body["id"], body["codice"], body["stato"],
+                                  body.get("inVerifica", body["stato"] == "verifica_polizza"))
         except KeyError as exc:
             raise BackendUnavailable("risposta missione incompleta") from exc
 

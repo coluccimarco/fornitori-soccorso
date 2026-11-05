@@ -15,9 +15,9 @@ MAX_ERROR_LENGTH = 200
 
 def render(notification: Notification) -> Optional[str]:
     if notification.tipo == "MISSION_ACCEPTED":
-        return msg.NOTIFY_ACCEPTED.format(
-            codice=notification.codice, autista=notification.autista_nome or "in arrivo"
-        )
+        return msg.NOTIFY_ACCEPTED.format(codice=notification.codice)
+    if notification.tipo == "MISSION_CANCELLED":
+        return msg.NOTIFY_CANCELLED.format(codice=notification.codice)
     if notification.tipo == "MISSION_COMPLETED":
         return msg.NOTIFY_COMPLETED.format(codice=notification.codice)
     return None
@@ -51,7 +51,7 @@ class NotificationDispatcher:
     def _deliver(self, notification: Notification) -> Optional[str]:
         text = render(notification)
         if text is None:
-            return f"tipo non gestito: {notification.tipo}"[:MAX_ERROR_LENGTH]
+            return None
         try:
             self._send(notification.destinatario, text)
         except Exception as exc:

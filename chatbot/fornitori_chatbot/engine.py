@@ -4,7 +4,7 @@ import threading
 import time
 import uuid
 from collections import deque
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from enum import Enum
 from typing import Callable, Deque, Dict, List, Optional, Set, Tuple
 
@@ -28,15 +28,16 @@ MAX_INVALID_INPUTS = 3
 DIALOG_TTL_SECONDS = 30 * 60
 MAX_REMEMBERED_MESSAGE_IDS = 50
 
-REPAIR = "riparazione_sul_posto"
-TOWING = "traino"
-INTERVENTION_WORDS = {
-    "1": REPAIR,
-    "riparazione": REPAIR,
-    "riparazione sul posto": REPAIR,
-    "2": TOWING,
-    TOWING: TOWING,
-}
+PROBLEM_TYPES = (
+    ("RUOTA_CON_SCORTA", "Ruota forata con ruota di scorta"),
+    ("RUOTA_SENZA_SCORTA", "Ruota forata senza ruota di scorta"),
+    ("BATTERIA_SCARICA", "Batteria scarica"),
+    ("GUASTO_MOTORE", "Guasto motore"),
+    ("INCIDENTE", "Incidente"),
+)
+PROBLEM_CHOICES = {str(index): code for index, (code, _) in enumerate(PROBLEM_TYPES, 1)}
+PROBLEM_CHOICES.update({code: code for code, _ in PROBLEM_TYPES})
+PHONE_RE = re.compile(r"\+?[0-9][0-9 ]{5,19}")
 
 CANCEL_WORDS = {"annulla", "cancel", "stop"}
 HELP_WORDS = {"aiuto", "help"}
@@ -47,12 +48,12 @@ CHANNELS = {"telegram", "whatsapp"}
 
 class State(str, Enum):
     START = "START"
+    WAIT_PHONE = "WAIT_PHONE"
     WAIT_LOCATION = "WAIT_LOCATION"
-    WAIT_INTERVENTION = "WAIT_INTERVENTION"
     WAIT_PROBLEM = "WAIT_PROBLEM"
 
 
-ACTIVE_DIALOG_STATES = {State.WAIT_LOCATION, State.WAIT_INTERVENTION, State.WAIT_PROBLEM}
+ACTIVE_DIALOG_STATES = {State.WAIT_PHONE, State.WAIT_LOCATION, State.WAIT_PROBLEM}
 
 
 class Reply(str):
@@ -66,9 +67,9 @@ class Reply(str):
         return reply
 
 
-INTERVENTION_QUESTION = Reply(
-    msg.ASK_INTERVENTION,
-    ((msg.BUTTON_REPAIR, "riparazione"), (msg.BUTTON_TOWING, TOWING)),
+PROBLEM_QUESTION = Reply(
+    msg.ASK_PROBLEM_TYPE,
+    tuple((label, code) for code, label in PROBLEM_TYPES),
 )
 
 
@@ -95,7 +96,7 @@ class Session:
     location: Optional[str] = None
     latitude: Optional[float] = None
     longitude: Optional[float] = None
-    intervention: Optional[str] = None
+    phone: Optional[str] = None
     request_id: Optional[str] = None
     seen_message_ids: Deque[str] = field(
         default_factory=lambda: deque(maxlen=MAX_REMEMBERED_MESSAGE_IDS)
@@ -109,7 +110,7 @@ class Session:
         self.location = None
         self.latitude = None
         self.longitude = None
-        self.intervention = None
+        self.phone = None
         self.request_id = None
 
 
@@ -171,10 +172,10 @@ class ChatEngine:
             return [msg.CANCELLED]
         if is_status_request(message.text):
             return self._show_status(session)
+        if session.state == State.WAIT_PHONE:
+            return self._on_phone(session, message)
         if session.state == State.WAIT_LOCATION:
             return self._on_location(session, message)
-        if session.state == State.WAIT_INTERVENTION:
-            return self._on_intervention(session, message)
         if session.state == State.WAIT_PROBLEM:
             return self._on_problem(session, message)
         return self._on_start(session, message)
@@ -183,19 +184,33 @@ class ChatEngine:
         text = message.text.strip()
         if not looks_like_plate(text):
             return [msg.WELCOME]
+        session.plate = normalize_plate(text)
+        session.state = State.WAIT_PHONE
+        return [msg.ASK_PHONE]
+
+    def _on_phone(self, session: Session, message: InboundMessage) -> List[str]:
+        phone = message.text.strip()
+        normalized = phone.replace(" ", "")
+        if not PHONE_RE.fullmatch(phone) or not PHONE_RE.fullmatch(normalized):
+            return self._invalid(session, msg.INVALID_PHONE)
         try:
-            result = self._backend.lookup_targa(session.session_id, normalize_plate(text))
+            result = self._backend.lookup_targa(session.session_id, session.plate)
         except RateLimited:
             return [msg.RATE_LIMITED]
         except InvalidRequest:
-            return [msg.PLATE_NOT_FOUND]
+            session.reset()
+            return [msg.INVALID_PLATE]
         except BackendError:
             return [msg.UNAVAILABLE]
-        if not result.verificato or result.cliente_id is None:
-            return [msg.PLATE_NOT_FOUND]
-        session.customer_id = result.cliente_id
-        session.plate = normalize_plate(text)
+        verified = result.esito == "VERIFICATA"
+        if verified and result.cliente_id is None:
+            return [msg.UNAVAILABLE]
+        session.phone = normalized
+        session.customer_id = result.cliente_id if verified else None
+        session.invalid_inputs = 0
         session.state = State.WAIT_LOCATION
+        if not verified:
+            return [msg.POLICY_PENDING]
         return [msg.PLATE_FOUND.format(nome=result.cliente_nome, compagnia=result.compagnia_nome)]
 
     def _on_location(self, session: Session, message: InboundMessage) -> List[str]:
@@ -212,22 +227,13 @@ class ChatEngine:
             session.latitude, session.longitude = None, None
             session.location = text
         session.invalid_inputs = 0
-        session.state = State.WAIT_INTERVENTION
-        return [INTERVENTION_QUESTION]
-
-    def _on_intervention(self, session: Session, message: InboundMessage) -> List[str]:
-        intervention = INTERVENTION_WORDS.get(message.text.strip().lower())
-        if intervention is None:
-            return self._invalid(session, INTERVENTION_QUESTION)
-        session.intervention = intervention
-        session.invalid_inputs = 0
         session.state = State.WAIT_PROBLEM
-        return [msg.ASK_PROBLEM]
+        return [PROBLEM_QUESTION]
 
     def _on_problem(self, session: Session, message: InboundMessage) -> List[str]:
-        problem = message.text.strip()
-        if not 3 <= len(problem) <= 1000:
-            return self._invalid(session, msg.INVALID_PROBLEM)
+        problem = PROBLEM_CHOICES.get(message.text.strip())
+        if problem is None:
+            return self._invalid(session, PROBLEM_QUESTION)
         session.invalid_inputs = 0
         # Stabile tra i tentativi: un retry dopo un errore di rete non crea una seconda missione.
         if session.request_id is None:
@@ -236,8 +242,9 @@ class ChatEngine:
             session_id=session.session_id,
             request_id=session.request_id,
             cliente_id=session.customer_id,
-            tipo_intervento=session.intervention,
-            descrizione_problema=problem,
+            targa=session.plate,
+            telefono_sul_posto=session.phone,
+            tipo_problema=problem,
             origine_indirizzo=session.location,
             canale_origine=session.channel,
             destinatario=session.chat_id,
@@ -260,7 +267,9 @@ class ChatEngine:
         except BackendError:
             return [msg.UNAVAILABLE]
         session.reset()
-        return [msg.CREATED.format(codice=created.codice)]
+        if created.in_verifica:
+            return [msg.CREATED_PENDING.format(codice=created.codice)]
+        return [msg.CREATED, msg.CREATED_CODE.format(codice=created.codice)]
 
     def _create_with_renewed_lookup(self, session: Session, request: MissionRequest) -> MissionCreated:
         """Il dialogo può durare più del riconoscimento (15 minuti): lo rinnova una volta e riprova."""
@@ -268,8 +277,10 @@ class ChatEngine:
             return self._backend.create_mission(request)
         except LookupExpired:
             result = self._backend.lookup_targa(session.session_id, session.plate)
-            if not result.verificato or result.cliente_id != session.customer_id:
-                raise
+            if result.esito == "VERIFICATA" and result.cliente_id is None:
+                raise InvalidRequest()
+            session.customer_id = result.cliente_id if result.esito == "VERIFICATA" else None
+            request = replace(request, cliente_id=session.customer_id)
             return self._backend.create_mission(request)
 
     def _show_status(self, session: Session) -> List[str]:
@@ -293,6 +304,4 @@ class ChatEngine:
 
 def _status_text(status: MissionStatus) -> str:
     text = msg.STATUS_TEXTS.get(status.stato, msg.STATUS_DEFAULT).format(codice=status.codice)
-    if status.autista_nome:
-        text += msg.STATUS_DRIVER.format(autista=status.autista_nome)
     return text + "."

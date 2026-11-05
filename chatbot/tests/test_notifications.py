@@ -34,7 +34,8 @@ class DispatcherTests(unittest.TestCase):
         sent = []
         NotificationDispatcher(queue, "telegram", lambda chat, text: sent.append((chat, text))).dispatch_once()
         self.assertEqual(sent[0][0], "chat-1")
-        self.assertIn("Autista Demo", sent[0][1])
+        self.assertNotIn("Autista Demo", sent[0][1])
+        self.assertIn("Entro 45 minuti", sent[0][1])
         self.assertEqual(queue.reports, [(7, 2, True)])
 
     def test_failed_send_is_reported_as_failed(self):
@@ -63,7 +64,7 @@ class ExpiredLookupTests(unittest.TestCase):
     def dialog(self, backend):
         engine = ChatEngine(backend)
         replies = []
-        for text in ("AB123CD", "Via Roma 1, Molfetta", "1", "Non parte"):
+        for text in ("AB123CD", "+39 333 1234567", "Via Roma 1, Molfetta", "1"):
             replies = engine.handle(InboundMessage("telegram", "chat-1", text=text))
         return replies
 
@@ -79,11 +80,11 @@ class ExpiredLookupTests(unittest.TestCase):
             return real(request)
 
         backend.create_mission = create
-        self.assertIn("M-DEMO-00001", self.dialog(backend)[0])
+        self.assertIn("M-DEMO-00001", " ".join(self.dialog(backend)))
         self.assertEqual(len(calls), 2)
         self.assertEqual(calls[0], calls[1])
 
-    def test_plate_no_longer_valid_stops_the_request(self):
+    def test_repeated_expiry_stops_the_request(self):
         backend = FakeBackend()
 
         def create(request):
@@ -93,7 +94,7 @@ class ExpiredLookupTests(unittest.TestCase):
         answers = [real_lookup, lambda session, plate: LookupResult(verificato=False)]
         backend.create_mission = create
         backend.lookup_targa = lambda session, plate: answers.pop(0)(session, plate)
-        self.assertNotIn("presa in carico", self.dialog(backend)[0])
+        self.assertEqual(self.dialog(backend), ["La richiesta non è stata accettata dal sistema. Contatta la centrale operativa."])
 
     def test_http_status_mapping(self):
         self.assertIsInstance(_map_status(403), LookupExpired)
