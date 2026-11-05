@@ -35,10 +35,10 @@ export default [
     html: pts([
       "Chi resta in panne vuole chiedere aiuto subito, dal telefono",
       "La centrale deve trovare un autista libero e vicino",
-      "Il cliente vuole sapere chi sta arrivando",
+      "Il cliente vuole sapere quando arriva l'aiuto",
     ]),
     notes: {
-      voce: "Chi resta fermo per strada vuole chiedere aiuto dal telefono e sapere chi arriva. La centrale deve capire dove si trova il cliente e scegliere un autista libero e vicino. Se l'autista non risponde, la richiesta non deve fermarsi. Il problema è coordinare queste tre persone tenendo i dati coerenti.",
+      voce: "Chi resta fermo per strada vuole chiedere aiuto dal telefono e sapere che qualcuno sta arrivando. La centrale deve capire dove si trova il cliente e scegliere un autista libero e vicino. Se l'autista non risponde, la richiesta non deve fermarsi. Il problema è coordinare queste tre persone tenendo i dati coerenti.",
       semplice: "Cliente, centrale e autista devono coordinarsi su canali diversi.",
       file: ['`docs/requirements/BUR_FORNITORI.md`'],
     },
@@ -47,11 +47,11 @@ export default [
     section: APE, owner: MEMBRI.team, title: 'La soluzione',
     html: two(pts([
       "<b>Telegram</b>: il cliente apre la richiesta",
-      "<b>Sito web</b>: la centrale assegna, l'autista interviene",
+      "<b>Sito web</b>: la centrale controlla, l'autista interviene",
       "<b>Server unico</b>: regole e costi in un solo posto",
     ]), shot('sito_pubblico.png', 'Sito pubblico RecuVeicol', '--mh:400px'), '1.05fr .95fr'),
     notes: {
-      voce: "Il cliente scrive al bot su Telegram, senza installare altro. La richiesta arriva alla centrale, che la assegna a un autista. L'autista lavora dalla stessa applicazione web, anche da telefono: accetta, vede la mappa e chiude l'intervento. Tutte le regole stanno sul server, e il cliente riceve gli aggiornamenti in chat.",
+      voce: "Il cliente scrive al bot su Telegram, senza installare altro. Il server la propone all'autista più vicino e la centrale segue i casi critici. L'autista lavora dalla stessa applicazione web, anche da telefono: accetta, vede la mappa e chiude l'intervento. Tutte le regole stanno sul server, e il cliente riceve gli aggiornamenti in chat.",
       semplice: "Il cliente usa Telegram, centrale e autista il sito; decide sempre il server.",
       file: ['`README.md`', '`docs/architecture/TAD_FORNITORI.md`'],
     },
@@ -59,8 +59,8 @@ export default [
   {
     section: APE, owner: MEMBRI.team, title: 'Attori e ruoli',
     html: `<div class="three">
-      ${card('Cliente', pts(['Usa Telegram', 'Scrive targa, luogo e problema']), C.yellow)}
-      ${card('Centrale', pts(['Gestisce le anagrafiche', 'Assegna le missioni']), C.blue)}
+      ${card('Cliente', pts(['Usa Telegram', 'Dà targa, telefono, luogo, problema']), C.yellow)}
+      ${card('Centrale', pts(['Gestisce le anagrafiche', 'Segue i casi critici']), C.blue)}
       ${card('Autista', pts(['Accetta o rifiuta', 'Chiude con i chilometri']), C.indigo)}
       </div>`,
     notes: {
@@ -147,7 +147,7 @@ export default [
       'Nessuna compilazione né Node.js',
       'Pagine servite dal backend',
       'Leaflet: mappe open source',
-    ]), shot('panoramica.png', 'Panoramica della centrale', '--mh:400px'), '.8fr 1.2fr'),
+    ]), shot('dashboard_operativa.png', 'Dashboard operativa della centrale', '--mh:400px'), '.8fr 1.2fr'),
     notes: {
       voce: "Il frontend usa HTML, CSS e JavaScript, con Bootstrap per il layout e Leaflet per la mappa. Non c'è compilazione: i file li serve direttamente Spring Boot, quindi per avviare tutto basta il backend. Bootstrap rende le pagine adatte anche al telefono, utile per l'autista.",
       semplice: "Il browser riceve file pronti: meno strumenti, avvio più semplice.",
@@ -186,7 +186,7 @@ export default [
     section: ARC, owner: MEMBRI.team, title: 'Il flusso di una missione',
     html: `<div class="center">${svg(1170, 420, [
       box(10, 30, 260, 110, '1 Cliente', ['scrive al bot'], 'yellow', { ts: 25, ss: 20 }),
-      box(455, 30, 260, 110, '2 Centrale', ['propone a un autista'], 'blue', { ts: 25, ss: 20 }),
+      box(455, 30, 260, 110, '2 Server', ['propone al più vicino'], 'blue', { ts: 25, ss: 20 }),
       box(900, 30, 260, 110, '3 Autista', ['accetta'], 'indigo', { ts: 25, ss: 20 }),
       box(900, 270, 260, 110, '4 Cliente', ['riceve l\'avviso'], 'yellow', { ts: 25, ss: 20 }),
       box(455, 270, 260, 110, '5 Autista', ['chiude con i km'], 'indigo', { ts: 25, ss: 20 }),
@@ -194,16 +194,16 @@ export default [
       arrow(274, 85, 451, 85), arrow(719, 85, 896, 85), arrow(1030, 144, 1030, 266), arrow(896, 325, 719, 325), arrow(451, 325, 274, 325),
     ].join(''))}</div>`,
     notes: {
-      voce: "Ecco una missione completa. Il cliente scrive al bot e nasce la richiesta. La centrale la propone all'autista più vicino, che ha dieci minuti per rispondere. Quando accetta, il cliente riceve un avviso con il suo nome. A fine intervento l'autista inserisce i chilometri, il server calcola il costo e parte l'ultimo avviso.",
+      voce: "Ecco una missione completa. Il cliente scrive al bot e nasce la richiesta. Il server la propone all'autista più vicino, che ha dieci minuti per rispondere. Quando accetta, il cliente riceve un avviso, senza il suo nome. A fine intervento l'autista inserisce i chilometri, il server calcola il costo e parte l'ultimo avviso.",
       semplice: "Lo stato della missione vive nel backend; bot e pagine lo mostrano.",
       file: ['`docs/diagrams/mission_states.mmd`', '`service/MissionService.java`'],
     },
   },
   {
     section: BE, owner: MEMBRI.m1, title: 'API e sicurezza',
-    html: two(pts(['34 operazioni REST in JSON', 'Anagrafiche, missioni, chat, mappe']), pts(['Login con password cifrata', 'Protezione CSRF', 'Ruoli controllati dal server']), '1fr 1fr'),
+    html: two(pts(['42 operazioni REST in JSON', 'Anagrafiche, missioni, chat, mappe']), pts(['Login con password cifrata', 'Protezione CSRF', 'Ruoli controllati dal server']), '1fr 1fr'),
     notes: {
-      voce: "Il backend offre 34 operazioni REST per anagrafiche, missioni, chat e mappe. Per la sicurezza le password sono salvate con BCrypt, un token CSRF impedisce ad altri siti di agire al posto dell'utente e il server controlla il ruolo a ogni richiesta. Il bot ha un token di servizio separato.",
+      voce: "Il backend offre 42 operazioni REST per anagrafiche, missioni, chat e mappe. Per la sicurezza le password sono salvate con BCrypt, un token CSRF impedisce ad altri siti di agire al posto dell'utente e il server controlla il ruolo a ogni richiesta. Il bot ha un token di servizio separato.",
       semplice: "Sessione: chi sei. CSRF: sei stato davvero tu. Ruolo: cosa puoi fare.",
       file: ['`config/SecurityConfig.java`', '`controller/`', '`api/openapi.yaml`'],
     },
@@ -218,10 +218,10 @@ export default [
     <div class="three" style="margin-top:22px">
       ${card('Scadenza', '10 minuti per rispondere', C.yellow)}
       ${card('Tariffa', '€50 + €1,20 al km<br>+25% dalle 22:00 alle 08:00', C.blue)}
-      ${card('Al più vicino', 'Sceglie tra gli autisti liberi', C.indigo)}
+      ${card('Al più vicino', 'Automatico; dopo 3 esiti negativi decide la centrale', C.indigo)}
     </div>`,
     notes: {
-      voce: "La missione passa da nuova a proposta, accettata ed eseguita; se l'autista rifiuta o non risponde si può riproporre. La proposta vale dieci minuti. La tariffa è cinquanta euro più un euro e venti al chilometro, con il venticinque per cento in più di notte. «Al più vicino» sceglie tra gli autisti liberi.",
+      voce: "La missione passa da nuova a proposta, accettata ed eseguita; se l'autista rifiuta o non risponde passa al successivo. Dopo tre esiti negativi decide la centrale. La proposta vale dieci minuti. La tariffa è cinquanta euro più un euro e venti al chilometro, con il venticinque per cento in più di notte.",
       semplice: "La fascia 22:00-08:00 è una scelta del team; il PDF del docente indica 20:00-8:00.",
       file: ['`service/MissionService.java`', '`service/PricingService.java`', '`service/NearestDriverService.java`'],
     },
@@ -248,11 +248,11 @@ export default [
   {
     section: FE, owner: MEMBRI.m2, title: 'Centrale operativa',
     html: `<div style="display:grid;grid-template-columns:1.1fr 1fr;gap:26px;align-items:center;width:100%">
-      ${shot('missione_nuova_card.png', 'Missione: si propone al più vicino', '--mh:440px')}
-      <div>${shot('panoramica.png', 'Panoramica', '--mh:210px')}<div style="height:10px"></div>${shot('anagrafica_clienti.png', 'Anagrafiche', '--mh:210px')}</div>
+      ${shot('missione_nuova_card.png', 'Missione rifiutata da 3 autisti: decide la centrale', '--mh:440px')}
+      <div>${shot('dashboard_operativa.png', 'Dashboard operativa', '--mh:210px')}<div style="height:10px"></div>${shot('anagrafica_clienti.png', 'Anagrafiche', '--mh:210px')}</div>
     </div>`,
     notes: {
-      voce: "La centrale vede subito i conteggi delle anagrafiche e può cercare clienti per nome o targa. Nella scheda di una missione trova cliente, luogo e intervento, sceglie un autista oppure preme «Proponi al più vicino». Parte un conto alla rovescia, e una campanella la avvisa se l'autista rifiuta.",
+      voce: "La centrale vede subito la coda critica: polizze da verificare, missioni rifiutate da tre autisti, richieste di supporto. I riquadri aprono l'elenco filtrato. Dalla scheda può proporre, annullare o rettificare il costo, e una campanella segnala rifiuti, scadenze e supporto.",
       semplice: "Tutto ciò che è a schermo arriva dal server tramite API.",
       file: ['`static/index.html`', '`static/app.js`', '`controller/MissionController.java`'],
     },
@@ -272,19 +272,19 @@ export default [
   {
     section: BOT, owner: MEMBRI.m3, title: 'Il dialogo con il cliente',
     html: two(`<div style="text-align:center">${shot('chatbot_dialogo_simulato.png', 'Testi reali del bot, grafica Telegram simulata', '--mh:470px')}</div>`,
-      pts(['Targa riconosciuta dal backend', 'Luogo, intervento, problema', 'Nasce la missione']), '.9fr 1.1fr'),
+      pts(['Targa e telefono sul posto', 'Posizione e problema', 'Nasce la missione']), '.9fr 1.1fr'),
     notes: {
-      voce: "Il bot si chiama Soccorso Stradale Bot. Il cliente scrive la targa e il backend la riconosce. Poi il bot chiede dove si trova, che intervento serve e qual è il problema, una domanda alla volta. Alla fine crea la missione e mostra il codice. Scrivendo STATO il cliente può seguire la richiesta.",
+      voce: "Il bot si chiama Soccorso Stradale Bot. Il cliente scrive la targa e il telefono di chi è sul posto. Poi il bot chiede dove si trova e qual è il problema; il tipo di intervento lo decide il backend. Se la polizza non è verificabile interviene la centrale. Alla fine mostra il codice. Scrivendo STATO il cliente può seguire la richiesta.",
       semplice: "Il bot raccoglie i dati nell'ordine giusto e li passa al backend.",
       file: ['`chatbot/fornitori_chatbot/engine.py`', '`chatbot/fornitori_chatbot/messages.py`', '`service/ChatService.java`'],
     },
   },
   {
     section: MAP, owner: MEMBRI.m4, title: 'Mappe: geocoding e percorso',
-    html: two(shot('mappa_area.png', 'Base a Molfetta, cliente a Terlizzi, officina a Ruvo', '--mh:450px'),
+    html: two(shot('mappa_area.png', 'Deposito e officina a Ruvo, luogo di fermo a Terlizzi', '--mh:450px'),
       pts(['<b>Nominatim</b>: da indirizzo a coordinate', '<b>OSRM</b>: percorso e km', '<b>Leaflet</b>: disegna la mappa'], 'small'), '1.3fr .7fr'),
     notes: {
-      voce: "Le mappe usano tre strumenti. Nominatim trasforma l'indirizzo in coordinate. OSRM calcola il percorso su strada e i chilometri stimati. Leaflet disegna tutto nella pagina. In questo traino l'autista parte da Molfetta, raggiunge il cliente a Terlizzi e porta l'auto a un'officina di Ruvo.",
+      voce: "Le mappe usano tre strumenti. Nominatim trasforma l'indirizzo in coordinate. OSRM calcola il percorso su strada e i chilometri stimati. Leaflet disegna tutto nella pagina. In questo traino l'autista parte da Ruvo, raggiunge il veicolo a Terlizzi e lo riporta all'officina di Ruvo.",
       semplice: "I km stimati vengono proposti alla chiusura; il costo usa quelli effettivi.",
       file: ['`service/MapService.java`', '`static/app.js`'],
     },
@@ -298,9 +298,9 @@ export default [
       box(910, 40, 250, 110, 'Cliente', ['riceve il messaggio'], 'yellow', { ts: 23, ss: 17 }),
       arrow(263, 95, 306, 95), arrow(563, 95, 606, 95), arrow(863, 95, 906, 95),
     ].join(''))}</div>
-    <div style="margin-top:22px">${pts(['Due avvisi: presa in carico e conclusione', 'Due dispatcher non ricevono lo stesso messaggio'])}</div>`,
+    <div style="margin-top:22px">${pts(['Tre avvisi: presa in carico, conclusione, annullamento', 'Due dispatcher non ricevono lo stesso messaggio'])}</div>`,
     notes: {
-      voce: "Il cliente riceve due avvisi: quando un autista prende in carico la richiesta e quando l'intervento è concluso. Il messaggio viene prima salvato nell'outbox, insieme alla missione. Poi il dispatcher del bot, ogni cinque secondi, prende i messaggi in coda, li invia e registra l'esito.",
+      voce: "Il cliente riceve un avviso quando un autista prende in carico la richiesta, quando l'intervento è concluso e se viene annullata, mai con il nome dell'autista. Il messaggio viene prima salvato nell'outbox, insieme alla missione. Poi il dispatcher del bot, ogni cinque secondi, prende i messaggi in coda, li invia e registra l'esito.",
       semplice: "Prima si scrive «da inviare», poi il bot spedisce e segna com'è andata.",
       file: ['`entity/NotificationOutbox.java`', '`chatbot/fornitori_chatbot/notifications.py`'],
     },
@@ -309,13 +309,13 @@ export default [
     section: CH, owner: MEMBRI.team, title: 'Scaletta della demo live',
     html: `<table class="t" style="font-size:23px"><tr><th style="width:70px">#</th><th style="width:300px">Dove</th><th>Cosa mostriamo</th></tr>
       <tr><td>1</td><td>Telegram</td><td>Nasce la richiesta</td></tr>
-      <tr><td>2</td><td>Centrale</td><td>Proponi al più vicino</td></tr>
+      <tr><td>2</td><td>Centrale</td><td>Coda critica e proposta automatica</td></tr>
       <tr><td>3</td><td>Autista</td><td>Proposta, mappa, accetta</td></tr>
-      <tr><td>4</td><td>Telegram</td><td>Avviso con il nome dell'autista</td></tr>
+      <tr><td>4</td><td>Telegram</td><td>Avviso di presa in carico</td></tr>
       <tr><td>5</td><td>Autista</td><td>Chiusura e costo</td></tr>
       <tr><td>6</td><td>Centrale</td><td>Riepilogo aggiornato</td></tr></table>`,
     notes: {
-      voce: "Adesso vediamo il sistema. Su Telegram apriamo una richiesta con una targa dimostrativa. Dalla centrale la proponiamo all'autista più vicino. L'autista, dal telefono, vede la mappa e accetta. Su Telegram arriva l'avviso con il suo nome. Poi chiudiamo con i chilometri e il server calcola il costo.",
+      voce: "Adesso vediamo il sistema. Su Telegram apriamo una richiesta con una targa dimostrativa. Il sistema la propone all'autista più vicino e la centrale la segue. L'autista, dal telefono, vede la mappa e accetta. Su Telegram arriva l'avviso. Poi chiudiamo con i chilometri e il server calcola il costo.",
       semplice: "Tieni aperte tre finestre: centrale, autista e Telegram.",
       file: ['`docs/manuals/MANUALE_UTENTE.md`', '`chatbot/README.md`'],
     },

@@ -11,7 +11,7 @@ Non fa parte dell'applicazione e non aggiunge dipendenze al progetto.
 | `fonts/` | Inter e JetBrains Mono, con le rispettive licenze OFL |
 
 Le immagini stanno in `../img/`. Screenshot e dialogo sono stati catturati dall'app reale su un database temporaneo, con i soli dati di `database/02_seed.sql`.
-La grafica Telegram dei due file `chatbot_*_simulato.png` è simulata; i testi sono quelli prodotti dal bot.
+La grafica Telegram del file `chatbot_dialogo_simulato.png` è simulata; i testi sono quelli prodotti dal motore del bot.
 
 ## Rigenerare i PDF
 
