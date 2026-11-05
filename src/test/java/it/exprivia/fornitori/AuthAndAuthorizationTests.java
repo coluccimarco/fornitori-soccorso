@@ -171,7 +171,7 @@ class AuthAndAuthorizationTests extends IsolatedPostgresTest {
     }
 
     @Test
-    void customerContactsStayHiddenUntilAcceptance() throws Exception {
+    void contactsAreVisibleFromTheProposalAndThePlateAfterAcceptance() throws Exception {
         String phone = jdbc.queryForObject("select telefono from customers where id = 1", String.class);
         String name = jdbc.queryForObject("select nome from customers where id = 1", String.class);
         String plate = jdbc.queryForObject("select targa from customers where id = 1", String.class);
@@ -185,7 +185,7 @@ class AuthAndAuthorizationTests extends IsolatedPostgresTest {
         bodies.add(perform(driver, get("/api/v1/autista/missioni")).andReturn().getResponse().getContentAsString());
         bodies.add(perform(driver, get("/api/v1/autista/missioni/{id}", mission)).andReturn().getResponse().getContentAsString());
         bodies.add(perform(driver, get("/api/v1/missioni/{id}", mission)).andReturn().getResponse().getContentAsString());
-        assertThat(bodies).allSatisfy(body -> assertThat(body).doesNotContain(phone, name, plate, policy));
+        assertThat(bodies).allSatisfy(body -> assertThat(body).contains(phone, name).doesNotContain(plate, policy));
 
         String accepted = perform(driver, post("/api/v1/missioni/{id}/accept", mission))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();

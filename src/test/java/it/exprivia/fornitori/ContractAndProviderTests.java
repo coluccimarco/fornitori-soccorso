@@ -202,6 +202,16 @@ class ContractAndProviderTests {
     }
 
     @Test
+    void osrmLegsAreParsed() {
+        respond("/route", 200, ("{\"code\":\"Ok\",\"routes\":[{\"distance\":3000,\"geometry\":{\"type\":\"LineString\","
+                + "\"coordinates\":[]},\"legs\":[{\"distance\":1000},{\"distance\":2000}]}]}").getBytes(StandardCharsets.UTF_8),
+                Map.of("Content-Type", "application/json"));
+        assertThat(new OsrmRoutingClient(base).route(twoPoints()).legsKm())
+                .usingElementComparator(BigDecimal::compareTo)
+                .containsExactly(new BigDecimal("1"), new BigDecimal("2"));
+    }
+
+    @Test
     void osrmRedirectIsNotFollowed() {
         respond("/route", 302, new byte[0], Map.of("Location", "http://169.254.169.254/latest/meta-data"));
         assertThatThrownBy(() -> new OsrmRoutingClient(base).route(twoPoints()))

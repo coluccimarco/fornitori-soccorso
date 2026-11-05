@@ -16,6 +16,7 @@ import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -31,8 +32,10 @@ import tools.jackson.databind.ObjectMapper;
  */
 @SpringBootTest(properties = {
         "fornitori.chat.service-token=" + IsolatedPostgresTest.CHAT_TOKEN,
-        "fornitori.missions.expiry-delay-ms=3600000"})
+        "fornitori.missions.expiry-delay-ms=3600000",
+        "fornitori.missions.assignment-delay-ms=3600000"})
 @AutoConfigureMockMvc
+@TestPropertySource(properties = "fornitori.missions.auto-assign=false")
 abstract class IsolatedPostgresTest {
     static final String CHAT_TOKEN = "token-di-prova-per-i-test-0123456789abcdef";
     static final String PASSWORD = "Prova-" + UUID.randomUUID();
@@ -62,6 +65,7 @@ abstract class IsolatedPostgresTest {
         }
         jdbc.update("delete from missions where not is_fixture");
         jdbc.update("delete from chat_lookup_grants");
+        jdbc.update("update drivers set disponibile = true");
         jdbc.update("delete from customers where id > 40");
         if (!passwordsReady) {
             jdbc.update("update app_users set password_hash = ?", encoder.encode(PASSWORD));
