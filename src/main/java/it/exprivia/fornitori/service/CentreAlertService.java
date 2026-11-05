@@ -6,29 +6,36 @@ import it.exprivia.fornitori.entity.AppUser;
 import it.exprivia.fornitori.entity.Driver;
 import it.exprivia.fornitori.entity.Mission;
 import it.exprivia.fornitori.entity.MissionEvent;
+import it.exprivia.fornitori.entity.MissionNote;
 import it.exprivia.fornitori.entity.MissionProposal;
 import it.exprivia.fornitori.repository.AppUserRepository;
 import it.exprivia.fornitori.repository.DriverRepository;
 import it.exprivia.fornitori.repository.MissionEventRepository;
+import it.exprivia.fornitori.repository.MissionNoteRepository;
 import it.exprivia.fornitori.repository.MissionProposalRepository;
 import it.exprivia.fornitori.repository.MissionRepository;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** Avvisi per la centrale: proposte rifiutate o lasciate scadere dall'autista. */
+/** Notifiche per la centrale: richieste di supporto aperte, poi proposte rifiutate o lasciate scadere. */
 @Service
 public class CentreAlertService {
     static final String REJECTED = "MISSION_REJECTED";
     static final String EXPIRED = "MISSION_EXPIRED";
+    static final String SUPPORT = "MISSION_SUPPORT_REQUESTED";
     private static final int LIMIT = 50;
 
     private final AppUserRepository users;
     private final MissionEventRepository events;
     private final MissionRepository missions;
     private final MissionProposalRepository proposals;
+    private final MissionNoteRepository notes;
     private final DriverRepository drivers;
 
     public CentreAlertService(
@@ -36,11 +43,13 @@ public class CentreAlertService {
             MissionEventRepository events,
             MissionRepository missions,
             MissionProposalRepository proposals,
+            MissionNoteRepository notes,
             DriverRepository drivers) {
         this.users = users;
         this.events = events;
         this.missions = missions;
         this.proposals = proposals;
+        this.notes = notes;
         this.drivers = drivers;
     }
 
@@ -50,20 +59,46 @@ public class CentreAlertService {
         if (!"responsabile".equals(actor.getRuolo())) {
             throw new ForbiddenOperationException();
         }
-        return events.findLiveAlerts(List.of(REJECTED, EXPIRED), PageRequest.of(0, LIMIT)).stream()
+        List<MissionDtos.CentreAlertResponse> alerts = new ArrayList<>(openSupportRequests());
+        events.findLiveAlerts(List.of(REJECTED, EXPIRED), PageRequest.of(0, LIMIT)).stream()
                 .map(this::toAlert)
-                .toList();
+                .forEach(alerts::add);
+        return alerts;
+    }
+
+    private List<MissionDtos.CentreAlertResponse> openSupportRequests() {
+        List<MissionNote> open = notes.findOpenSupportRequests();
+        if (open.isEmpty()) {
+            return List.of();
+        }
+        // L'id dell'avviso resta quello di un evento: il frontend ci ricorda quali avvisi sono già stati letti.
+        Map<Long, Long> eventByNote = new HashMap<>();
+        events.findByEventTypeAndMissionIdIn(SUPPORT, open.stream().map(MissionNote::getMissionId).toList())
+                .forEach(event -> {
+                    if (event.getDetail().get("noteId") instanceof Number note) {
+                        eventByNote.put(note.longValue(), event.getId());
+                    }
+                });
+        return open.stream().map(note -> {
+            Mission mission = missions.findById(note.getMissionId()).orElseThrow();
+            return new MissionDtos.CentreAlertResponse(
+                    eventByNote.get(note.getId()), "SUPPORTO", mission.getId(), mission.getCodice(),
+                    mission.getDriverId(), driverName(mission.getDriverId()), note.getCreatedAt(),
+                    note.getId(), note.getTesto());
+        }).toList();
     }
 
     private MissionDtos.CentreAlertResponse toAlert(MissionEvent event) {
         Long driverId = driverOf(event);
-        String driverName = driverId == null ? null
-                : drivers.findById(driverId).map(Driver::getNome).orElse(null);
         String code = missions.findById(event.getMissionId()).map(Mission::getCodice).orElse(null);
         return new MissionDtos.CentreAlertResponse(
                 event.getId(),
-                REJECTED.equals(event.getEventType()) ? "rifiutata" : "scaduta",
-                event.getMissionId(), code, driverId, driverName, event.getCreatedAt());
+                REJECTED.equals(event.getEventType()) ? "RIFIUTO" : "SCADENZA",
+                event.getMissionId(), code, driverId, driverName(driverId), event.getCreatedAt(), null, null);
+    }
+
+    private String driverName(Long driverId) {
+        return driverId == null ? null : drivers.findById(driverId).map(Driver::getNome).orElse(null);
     }
 
     /** Il rifiuto salva l'autista nell'evento, la scadenza solo la proposta: si risale da lì. */

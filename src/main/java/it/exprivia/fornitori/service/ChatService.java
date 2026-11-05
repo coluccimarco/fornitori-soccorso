@@ -6,14 +6,13 @@ import it.exprivia.fornitori.dto.ChatDtos;
 import it.exprivia.fornitori.dto.MissionDtos;
 import it.exprivia.fornitori.entity.ChatMissionRequest;
 import it.exprivia.fornitori.entity.Customer;
-import it.exprivia.fornitori.entity.Driver;
 import it.exprivia.fornitori.entity.InsuranceCompany;
 import it.exprivia.fornitori.entity.Mission;
+import it.exprivia.fornitori.enums.ProblemType;
 import it.exprivia.fornitori.entity.NotificationOutbox;
 import it.exprivia.fornitori.repository.ChatMissionRequestRepository;
 import it.exprivia.fornitori.repository.ChatLookupGrantRepository;
 import it.exprivia.fornitori.repository.CustomerRepository;
-import it.exprivia.fornitori.repository.DriverRepository;
 import it.exprivia.fornitori.repository.InsuranceCompanyRepository;
 import it.exprivia.fornitori.repository.MissionRepository;
 import it.exprivia.fornitori.repository.NotificationOutboxRepository;
@@ -39,9 +38,12 @@ import org.springframework.web.server.ResponseStatusException;
 public class ChatService {
     private static final ZoneId BUSINESS_ZONE = ZoneId.of("Europe/Rome");
     private static final List<String> CHAT_CHANNELS = List.of("telegram", "whatsapp");
-    private static final List<String> OPEN_STATES =
-            List.of("nuova", "proposta", "accettata", "non_accettata", "scaduta");
-    private static final String DRIVER_VISIBLE_STATE = "accettata";
+    private static final List<String> OPEN_STATES = List.of(
+            "nuova", "proposta", "accettata", "non_accettata", "scaduta", "verifica_polizza", "gestione_manuale");
+    private static final String CANCELLED = "annullata";
+    private static final String IN_VERIFICATION = "verifica_polizza";
+    private static final int MIN_PLATE_LENGTH = 5;
+    private static final int MAX_PLATE_LENGTH = 10;
     private static final int MAX_NOTIFICATION_ATTEMPTS = 5;
     private static final int MAX_LOOKUPS_PER_MINUTE = 100;
     private static final int MAX_LOOKUPS_PER_MINUTE_BY_SESSION = 10;
@@ -52,7 +54,6 @@ public class ChatService {
     private final CustomerRepository customers;
     private final InsuranceCompanyRepository companies;
     private final MissionRepository missions;
-    private final DriverRepository drivers;
     private final ChatMissionRequestRepository requests;
     private final MissionService missionService;
     private final ChatLookupLimiter limiter;
@@ -67,7 +68,6 @@ public class ChatService {
             CustomerRepository customers,
             InsuranceCompanyRepository companies,
             MissionRepository missions,
-            DriverRepository drivers,
             ChatMissionRequestRepository requests,
             MissionService missionService,
             ChatLookupLimiter limiter,
@@ -80,7 +80,6 @@ public class ChatService {
         this.customers = customers;
         this.companies = companies;
         this.missions = missions;
-        this.drivers = drivers;
         this.requests = requests;
         this.missionService = missionService;
         this.limiter = limiter;
@@ -98,33 +97,75 @@ public class ChatService {
         if (limiter.isBlocked(request.sessionId())) {
             throw new ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "Too many lookup attempts");
         }
-        Optional<Customer> customer = customers.findByTargaNorm(normalize(request.targa()))
-                .filter(this::hasActivePolicy);
+        String plate = normalize(request.targa());
+        Optional<Customer> customer = customers.findByTargaNorm(plate).filter(this::hasActivePolicy);
         if (customer.isEmpty()) {
-            grants.revoke(request.sessionId());
             limiter.recordFailure(request.sessionId());
+            // La polizza la verificherà la centrale; un testo che non è una targa non apre nessuna pratica.
+            if (validPlate(plate)) {
+                grants.grant(request.sessionId(), null, plate, now().plusMinutes(15), now());
+            } else {
+                grants.revoke(request.sessionId());
+            }
             return ChatDtos.VehicleLookupResponse.notVerified();
         }
-        grants.grant(request.sessionId(), customer.get().getId(), now().plusMinutes(15), now());
+        grants.grant(request.sessionId(), customer.get().getId(), plate, now().plusMinutes(15), now());
         String company = companies.findById(customer.get().getCompanyId())
                 .map(InsuranceCompany::getNome)
                 .orElseThrow(() -> new IllegalStateException("Customer company is missing"));
         return new ChatDtos.VehicleLookupResponse(
-                true, customer.get().getId(), customer.get().getNome(), company);
+                true, customer.get().getId(), customer.get().getNome(), company,
+                ChatDtos.VehicleLookupResponse.VERIFIED);
     }
 
     /** La ricerca dell'officina chiama un servizio esterno: resta fuori dalla transazione che blocca il cliente. */
-    public ChatDtos.MissionCreatedResponse createMission(ChatDtos.CreateMissionRequest request) {
-        String channel = validChannel(request.canaleOrigine());
+    public ChatDtos.MissionCreatedResponse createMission(ChatDtos.CreateMissionRequest received) {
+        String channel = validChannel(received.canaleOrigine());
+        ChatDtos.CreateMissionRequest request = withInterventionDecided(received);
         // Prima di chiamare il geocoder esterno: senza un lookup valido la richiesta non ha motivo di costare nulla.
-        if (!requests.existsById(request.requestId())
-                && !grants.permits(request.sessionId(), request.clienteId(), now())) {
+        if (!requests.existsById(request.requestId()) && !isGranted(request)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Lookup richiesto o scaduto");
         }
         ChatDtos.CreateMissionRequest resolved = needsNearestWorkshop(request)
                 ? workshopResolver.withNearestWorkshop(request)
                 : request;
-        return transactions.execute(status -> persistMission(resolved, fingerprint(request), channel));
+        return transactions.execute(status -> persistMission(resolved, fingerprint(received), channel));
+    }
+
+    /** Con tipoProblema decide il backend; senza, è una richiesta del vecchio formato e deve essere completa. */
+    private static ChatDtos.CreateMissionRequest withInterventionDecided(ChatDtos.CreateMissionRequest request) {
+        if (request.tipoProblema() == null) {
+            if (request.clienteId() == null || isBlank(request.tipoIntervento()) || isBlank(request.descrizioneProblema())) {
+                throw badRequest("Richiesta incompleta");
+            }
+            return request;
+        }
+        ProblemType problem = ProblemType.fromCode(request.tipoProblema())
+                .orElseThrow(() -> badRequest("Tipo di problema non valido"));
+        if (isBlank(request.targa()) || !validPlate(normalize(request.targa()))) {
+            throw badRequest("Targa non valida");
+        }
+        if (isBlank(request.telefonoSulPosto())) {
+            throw badRequest("Telefono sul posto obbligatorio");
+        }
+        return request.withIntervention(problem.intervention(), problem.label());
+    }
+
+    private boolean isGranted(ChatDtos.CreateMissionRequest request) {
+        String plate = request.targa() == null ? null : normalize(request.targa());
+        return grants.permits(request.sessionId(), request.clienteId(), plate, now());
+    }
+
+    private static boolean validPlate(String plate) {
+        return plate.length() >= MIN_PLATE_LENGTH && plate.length() <= MAX_PLATE_LENGTH;
+    }
+
+    private static boolean isBlank(String value) {
+        return value == null || value.isBlank();
+    }
+
+    private static ResponseStatusException badRequest(String reason) {
+        return new ResponseStatusException(HttpStatus.BAD_REQUEST, reason);
     }
 
     private boolean needsNearestWorkshop(ChatDtos.CreateMissionRequest request) {
@@ -140,14 +181,19 @@ public class ChatService {
     private ChatDtos.MissionCreatedResponse persistMission(
             ChatDtos.CreateMissionRequest request, String requestFingerprint, String channel) {
         // Serializza i tentativi concorrenti con lo stesso requestId, così il secondo trova il primo.
-        Customer customer = customers.lockById(request.clienteId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cliente inesistente"));
+        Customer customer = null;
+        if (request.clienteId() == null) {
+            grants.lockRequest(request.requestId());
+        } else {
+            customer = customers.lockById(request.clienteId()).orElseThrow(() -> badRequest("Cliente inesistente"));
+        }
 
         Optional<ChatMissionRequest> existing = requests.findById(request.requestId());
         if (existing.isPresent()) {
             Mission mission = missions.findById(existing.get().getMissionId())
                     .orElseThrow(() -> new IllegalStateException("Chat request mission is missing"));
-            if (!request.clienteId().equals(mission.getCustomerId())
+            // Dopo la conferma della polizza la missione ha un cliente che la richiesta originale non poteva indicare.
+            if ((request.clienteId() != null && !request.clienteId().equals(mission.getCustomerId()))
                     || !request.sessionId().equals(existing.get().getSessionId())
                     || !request.destinatario().trim().equals(existing.get().getDestinatario())
                     || !channel.equals(mission.getCanaleOrigine())
@@ -155,49 +201,61 @@ public class ChatService {
                         && !requestFingerprint.equals(existing.get().getRequestFingerprint()))) {
                 throw new MissionConflictException("Chiave di idempotenza già usata");
             }
-            return new ChatDtos.MissionCreatedResponse(mission.getId(), mission.getCodice(), mission.getStato());
+            return created(mission.getId(), mission.getCodice(), mission.getStato());
         }
 
-        if (!hasActivePolicy(customer) || !grants.permits(request.sessionId(), customer.getId(), now())) {
+        if ((customer != null && !hasActivePolicy(customer)) || !isGranted(request)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Lookup richiesto o scaduto");
         }
 
-        MissionDtos.MissionResponse created = missionService.createFromChat(new MissionDtos.CreateMissionRequest(
-                request.clienteId(),
-                request.tipoIntervento(),
-                request.descrizioneProblema(),
-                request.origineIndirizzo(),
-                request.origineLat(),
-                request.origineLng(),
-                request.officinaId(),
-                null,
-                channel));
+        MissionDtos.MissionResponse created = missionService.createFromChat(
+                new MissionDtos.CreateMissionRequest(
+                        request.clienteId(),
+                        request.tipoIntervento(),
+                        request.descrizioneProblema(),
+                        request.origineIndirizzo(),
+                        request.origineLat(),
+                        request.origineLng(),
+                        request.officinaId(),
+                        null,
+                        channel),
+                isBlank(request.telefonoSulPosto()) ? null : request.telefonoSulPosto().trim(),
+                request.tipoProblema(),
+                isBlank(request.targa()) ? null : normalize(request.targa()));
         ChatMissionRequest stored = new ChatMissionRequest(
                 request.requestId(), created.id(), request.sessionId(), request.destinatario().trim(), now());
         stored.setRequestFingerprint(requestFingerprint);
         requests.save(stored);
         // Un lookup autorizza una sola pratica; il retry con lo stesso requestId passa dal ramo sopra.
         grants.revoke(request.sessionId());
-        return new ChatDtos.MissionCreatedResponse(created.id(), created.codice(), created.stato());
+        return created(created.id(), created.codice(), created.stato());
+    }
+
+    private static ChatDtos.MissionCreatedResponse created(Long id, String code, String state) {
+        return new ChatDtos.MissionCreatedResponse(id, code, state, IN_VERIFICATION.equals(state));
     }
 
     @Transactional(readOnly = true)
     public ChatDtos.MissionStatusResponse currentStatus(ChatDtos.MissionStatusRequest request) {
-        Mission mission = missions
-                .findOpenByChat(validChannel(request.canale()), request.destinatario().trim(), OPEN_STATES)
-                .stream()
-                .findFirst()
-                .orElseThrow(MissionNotFoundException::new);
-        String driverName = null;
-        if (DRIVER_VISIBLE_STATE.equals(mission.getStato()) && mission.getDriverId() != null) {
-            driverName = drivers.findById(mission.getDriverId()).map(Driver::getNome).orElse(null);
-        }
+        Mission mission = latestForChat(validChannel(request.canale()), request.destinatario().trim());
         OffsetDateTime updatedAt = Stream.of(
                         mission.getChiusaIl(), mission.getAccettataIl(), mission.getPropostaIl(), mission.getCreataIl())
                 .filter(Objects::nonNull)
                 .max(OffsetDateTime::compareTo)
                 .orElse(mission.getCreataIl());
-        return new ChatDtos.MissionStatusResponse(mission.getCodice(), mission.getStato(), driverName, updatedAt);
+        // Il cliente non riceve mai il nome dell'autista: il campo resta per compatibilità.
+        return new ChatDtos.MissionStatusResponse(mission.getCodice(), mission.getStato(), null, updatedAt);
+    }
+
+    /** La pratica aperta più recente; altrimenti l'ultima, ma solo se annullata: chi chiede deve saperlo. */
+    private Mission latestForChat(String channel, String recipient) {
+        List<String> states = Stream.concat(OPEN_STATES.stream(), Stream.of(CANCELLED, "eseguita")).toList();
+        List<Mission> rows = missions.findOpenByChat(channel, recipient, states);
+        return rows.stream()
+                .filter(mission -> OPEN_STATES.contains(mission.getStato()))
+                .findFirst()
+                .or(() -> rows.stream().findFirst().filter(mission -> CANCELLED.equals(mission.getStato())))
+                .orElseThrow(MissionNotFoundException::new);
     }
 
     /**
@@ -244,7 +302,7 @@ public class ChatService {
                 (String) payload.get("eventType"),
                 notification.getDestinatario(),
                 (String) payload.get("codice"),
-                (String) payload.get("autistaNome"),
+                null,
                 notification.getTentativi());
     }
 
@@ -255,10 +313,17 @@ public class ChatService {
     private static String fingerprint(ChatDtos.CreateMissionRequest request) {
         // Length-prefix each canonical field to avoid separator ambiguity; no plaintext payload persisted.
         StringBuilder canonical = new StringBuilder();
-        for (Object value : java.util.Arrays.asList(request.clienteId(), request.sessionId(),
-                request.destinatario().trim(), validChannel(request.canaleOrigine()),
-                request.tipoIntervento().trim().toLowerCase(Locale.ROOT), request.descrizioneProblema().trim(),
-                request.origineIndirizzo().trim(), request.origineLat(), request.origineLng(), request.officinaId())) {
+        // Il vecchio formato conserva la stessa impronta: un nuovo invio di una richiesta già salvata non dà 409.
+        List<Object> fields = request.tipoProblema() == null
+                ? java.util.Arrays.asList(request.clienteId(), request.sessionId(),
+                        request.destinatario().trim(), validChannel(request.canaleOrigine()),
+                        request.tipoIntervento().trim().toLowerCase(Locale.ROOT), request.descrizioneProblema().trim(),
+                        request.origineIndirizzo().trim(), request.origineLat(), request.origineLng(), request.officinaId())
+                : java.util.Arrays.asList(request.clienteId(), request.sessionId(),
+                        request.destinatario().trim(), validChannel(request.canaleOrigine()),
+                        request.tipoProblema(), normalize(request.targa()), request.telefonoSulPosto().trim(),
+                        request.origineIndirizzo().trim(), request.origineLat(), request.origineLng(), request.officinaId());
+        for (Object value : fields) {
             String text = value instanceof java.math.BigDecimal number
                     ? number.stripTrailingZeros().toPlainString() : Objects.toString(value, "");
             canonical.append(text.length()).append(':').append(text);

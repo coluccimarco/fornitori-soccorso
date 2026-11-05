@@ -16,6 +16,11 @@ public final class MapDtos {
             String origine,
             Long autistaId,
             List<RoutePoint> punti,
-            Map<String, Object> geometria) {
+            Map<String, Object> geometria,
+            BigDecimal km,
+            BigDecimal kmAndata,
+            BigDecimal kmTraino,
+            BigDecimal kmRitorno,
+            BigDecimal kmTotali) {
     }
 }

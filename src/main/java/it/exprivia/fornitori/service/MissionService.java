@@ -13,6 +13,7 @@ import it.exprivia.fornitori.entity.MissionEvent;
 import it.exprivia.fornitori.entity.MissionNote;
 import it.exprivia.fornitori.entity.MissionProposal;
 import it.exprivia.fornitori.entity.NotificationOutbox;
+import it.exprivia.fornitori.entity.Workshop;
 import it.exprivia.fornitori.enums.UserRole;
 import it.exprivia.fornitori.repository.AppUserRepository;
 import it.exprivia.fornitori.repository.ChatMissionRequestRepository;
@@ -28,15 +29,29 @@ import it.exprivia.fornitori.repository.WorkshopRepository;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.TreeMap;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -53,10 +68,28 @@ public class MissionService {
     private static final String ESEGUITA = "eseguita";
     private static final String NON_ACCETTATA = "non_accettata";
     private static final String SCADUTA = "scaduta";
+    private static final String VERIFICA_POLIZZA = "verifica_polizza";
+    private static final String GESTIONE_MANUALE = "gestione_manuale";
+    private static final String ANNULLATA = "annullata";
     private static final List<String> ACTIVE_STATES = List.of(PROPOSTA, ACCETTATA);
-    private static final List<String> ALL_STATES =
-            List.of(NUOVA, PROPOSTA, ACCETTATA, ESEGUITA, NON_ACCETTATA, SCADUTA);
+    private static final List<String> ALL_STATES = List.of(NUOVA, PROPOSTA, ACCETTATA, ESEGUITA, NON_ACCETTATA, SCADUTA,
+            VERIFICA_POLIZZA, GESTIONE_MANUALE, ANNULLATA);
     private static final List<String> PENDING_STATES = List.of(NUOVA, PROPOSTA, ACCETTATA);
+    private static final List<String> CLOSED_STATES = List.of(ESEGUITA, ANNULLATA);
+    private static final List<String> AUTOMATIC_STATES = List.of(NUOVA, NON_ACCETTATA, SCADUTA);
+    private static final List<String> MANAGER_PROPOSABLE_STATES =
+            List.of(NUOVA, NON_ACCETTATA, SCADUTA, GESTIONE_MANUALE);
+    private static final String BY_DRIVER = "autista";
+    private static final String BY_CENTRE = "centrale";
+    private static final String NOTE_NOTICE = "AVVISO";
+    private static final String NOTE_SUPPORT = "SUPPORTO";
+    private static final String REASON_POLICY = "VERIFICA_POLIZZA";
+    private static final String REASON_REJECTIONS = "TRE_RIFIUTI";
+    private static final String REASON_SUPPORT = "SUPPORTO_AUTISTA";
+    private static final int MAX_ESITI_NEGATIVI = 3;
+    private static final int MAX_CRITICAL_ROWS = 20;
+    private static final ZoneId BUSINESS_ZONE = ZoneId.of("Europe/Rome");
+    private static final DateTimeFormatter MONTH = DateTimeFormatter.ofPattern("yyyy-MM");
     private static final BigDecimal ZERO = BigDecimal.ZERO.setScale(2);
 
     private final MissionRepository missions;
@@ -72,6 +105,7 @@ public class MissionService {
     private final AppUserRepository users;
     private final PricingService pricing;
     private final Clock clock;
+    private final ApplicationEventPublisher publisher;
 
     public MissionService(
             MissionRepository missions,
@@ -86,7 +120,8 @@ public class MissionService {
             DriverRepository drivers,
             AppUserRepository users,
             PricingService pricing,
-            Clock clock) {
+            Clock clock,
+            ApplicationEventPublisher publisher) {
         this.missions = missions;
         this.proposals = proposals;
         this.notes = notes;
@@ -100,23 +135,30 @@ public class MissionService {
         this.users = users;
         this.pricing = pricing;
         this.clock = clock;
+        this.publisher = publisher;
     }
 
     @Transactional
     public MissionDtos.MissionResponse create(
             String email, MissionDtos.CreateMissionRequest request) {
         requireRole(email, RESPONSABILE);
-        return createMission(request, userId(email));
+        return createMission(request, userId(email), null, null, null);
     }
 
-    /** Il chatbot non ha un utente: l'identità del cliente è già verificata da ChatService. */
+    /**
+     * Il chatbot non ha un utente: il diritto a creare la pratica è già verificato da ChatService. Senza cliente
+     * la polizza non è verificabile e la missione aspetta la centrale.
+     */
     @Transactional
-    public MissionDtos.MissionResponse createFromChat(MissionDtos.CreateMissionRequest request) {
-        return createMission(request, null);
+    public MissionDtos.MissionResponse createFromChat(
+            MissionDtos.CreateMissionRequest request, String phoneOnSite, String problemType, String declaredPlate) {
+        return createMission(request, null, phoneOnSite, problemType, declaredPlate);
     }
 
-    private MissionDtos.MissionResponse createMission(MissionDtos.CreateMissionRequest request, Long actorId) {
-        if (!customers.existsById(request.clienteId())) {
+    private MissionDtos.MissionResponse createMission(
+            MissionDtos.CreateMissionRequest request, Long actorId,
+            String phoneOnSite, String problemType, String declaredPlate) {
+        if (request.clienteId() != null && !customers.existsById(request.clienteId())) {
             throw badRequest("Cliente inesistente");
         }
         String intervention = validIntervention(request.tipoIntervento());
@@ -145,9 +187,16 @@ public class MissionService {
                 request.officinaId(),
                 request.kmStimati(),
                 now);
+        mission.setChatDetails(phoneOnSite, problemType, declaredPlate);
+        if (request.clienteId() == null) {
+            mission.awaitPolicyVerification();
+        }
         Mission saved = missions.save(mission);
         events.save(new MissionEvent(saved.getId(), actorId, "MISSION_CREATED",
-                Map.of("codice", saved.getCodice(), "stato", NUOVA)));
+                Map.of("codice", saved.getCodice(), "stato", saved.getStato())));
+        if (NUOVA.equals(saved.getStato())) {
+            publisher.publishEvent(new MissionAssignmentRequested(saved.getId()));
+        }
         return toResponse(saved);
     }
 
@@ -156,7 +205,7 @@ public class MissionService {
             String email, Long missionId, MissionDtos.UpdateInterventionRequest request) {
         AppUser actor = requireRole(email, RESPONSABILE);
         Mission mission = lockLiveMission(missionId);
-        if (!List.of(NUOVA, NON_ACCETTATA, SCADUTA).contains(mission.getStato())) {
+        if (!MANAGER_PROPOSABLE_STATES.contains(mission.getStato())) {
             throw conflict("L'intervento non è modificabile nello stato corrente");
         }
         String intervention = validIntervention(request.tipoIntervento());
@@ -184,7 +233,7 @@ public class MissionService {
     public void saveEstimatedKm(MissionDtos.MissionResponse snapshot, BigDecimal km, Long driverId) {
         validateNonNegative(km, "kmStimati");
         missions.lockLiveById(snapshot.id())
-                .filter(mission -> !ESEGUITA.equals(mission.getStato()))
+                .filter(mission -> !CLOSED_STATES.contains(mission.getStato()))
                 .filter(mission -> java.util.Objects.equals(mission.getDriverId(), snapshot.autistaId()))
                 .filter(mission -> java.util.Objects.equals(mission.getPropostaIl(), snapshot.propostaIl()))
                 .filter(mission -> java.util.Objects.equals(mission.getWorkshopId(), snapshot.officinaId()))
@@ -197,14 +246,28 @@ public class MissionService {
     public MissionDtos.ProposalResponse propose(
             String email, Long missionId, MissionDtos.ProposeMissionRequest request) {
         AppUser actor = requireRole(email, RESPONSABILE);
+        return propose(actor.getId(), missionId, request.autistaId(), MANAGER_PROPOSABLE_STATES);
+    }
+
+    /** Stessi controlli di una proposta della centrale, ma una missione in gestione manuale resta alla centrale. */
+    @Transactional
+    public MissionDtos.ProposalResponse proposeAutomatically(Long missionId, Long driverId) {
+        return propose(null, missionId, driverId, AUTOMATIC_STATES);
+    }
+
+    private MissionDtos.ProposalResponse propose(
+            Long actorId, Long missionId, Long driverId, List<String> proposableStates) {
         Mission mission = lockLiveMission(missionId);
-        if (!List.of(NUOVA, NON_ACCETTATA, SCADUTA).contains(mission.getStato())) {
+        if (!proposableStates.contains(mission.getStato())) {
             throw conflict("La missione non è proponibile nello stato corrente");
         }
-        Driver driver = drivers.lockById(request.autistaId())
+        Driver driver = drivers.lockById(driverId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Autista non trovato"));
         if (missions.existsByDriverIdAndFixtureFalseAndStatoIn(driver.getId(), ACTIVE_STATES)) {
             throw conflict("L'autista ha già una missione live attiva");
+        }
+        if (!driver.isDisponibile()) {
+            throw conflict("L'autista non è disponibile");
         }
 
         OffsetDateTime proposedAt = now();
@@ -216,8 +279,9 @@ public class MissionService {
                 new MissionProposal(mission.getId(), driver.getId(), proposedAt, expiresAt));
         mission.propose(driver.getId(), proposedAt, expiresAt);
         missions.save(mission);
-        events.save(new MissionEvent(mission.getId(), actor.getId(), "MISSION_PROPOSED",
-                Map.of("offertaId", proposal.getId(), "autistaId", driver.getId(), "scadenzaIl", expiresAt.toString())));
+        events.save(new MissionEvent(mission.getId(), actorId, "MISSION_PROPOSED",
+                Map.of("offertaId", proposal.getId(), "autistaId", driver.getId(), "scadenzaIl", expiresAt.toString(),
+                        "automatica", actorId == null)));
         return new MissionDtos.ProposalResponse(PROPOSTA, expiresAt, proposal.getId());
     }
 
@@ -245,7 +309,7 @@ public class MissionService {
         proposals.save(proposal);
         events.save(new MissionEvent(missionId, actor.getId(), "MISSION_ACCEPTED",
                 Map.of("autistaId", driver.getId(), "accettataIl", acceptedAt.toString())));
-        addOutboxEvent(mission, "MISSION_ACCEPTED", actor.getId(), driver.getNome(), acceptedAt);
+        addOutboxEvent(mission, "MISSION_ACCEPTED", actor.getId(), acceptedAt);
         return toResponse(mission);
     }
 
@@ -272,6 +336,7 @@ public class MissionService {
         missions.save(mission);
         events.save(new MissionEvent(missionId, actor.getId(), "MISSION_REJECTED",
                 Map.of("offertaId", proposal.getId(), "autistaId", driver.getId())));
+        afterNegativeOutcome(mission);
         return toResponse(mission);
     }
 
@@ -300,8 +365,149 @@ public class MissionService {
         events.save(new MissionEvent(missionId, actor.getId(), "MISSION_COMPLETED",
                 Map.of("autistaId", driver.getId(), "kmEffettivi", request.kmEffettivi(),
                         "costoCalcolato", price.amount(), "notturno", price.night())));
-        addOutboxEvent(mission, "MISSION_COMPLETED", actor.getId(), driver.getNome(), closedAt);
+        addOutboxEvent(mission, "MISSION_COMPLETED", actor.getId(), closedAt);
         return toResponse(mission);
+    }
+
+    /**
+     * Regole del contratto: l'autista annulla solo la propria missione accettata e non riceve compenso; la centrale
+     * annulla ogni stato non finale e, se l'autista aveva accettato, il costo sui km stimati resta attribuito a lui.
+     * estimatedKm serve solo se la missione ne è priva: vedi MissionCancellationService.
+     */
+    @Transactional
+    public MissionDtos.MissionResponse cancel(String email, Long missionId, String motivo, BigDecimal estimatedKm) {
+        AppUser actor = currentUser(email);
+        boolean byDriver = AUTISTA.equals(actor.getRuolo());
+        if (!byDriver && !RESPONSABILE.equals(actor.getRuolo())) {
+            throw new ForbiddenOperationException();
+        }
+        Mission mission = lockLiveMission(missionId);
+        if (byDriver && !requireDriver(actor).getId().equals(mission.getDriverId())) {
+            throw new ForbiddenOperationException();
+        }
+        if (CLOSED_STATES.contains(mission.getStato())) {
+            throw conflict("La missione è già chiusa");
+        }
+        boolean accepted = ACCETTATA.equals(mission.getStato());
+        if (byDriver && !accepted) {
+            throw conflict("L'autista può annullare solo una missione accettata");
+        }
+        String reason = validCancellationReason(motivo);
+        OffsetDateTime cancelledAt = now();
+        closeOpenProposal(missionId, cancelledAt);
+
+        BigDecimal cost = ZERO;
+        Boolean night = null;
+        if (!byDriver && accepted) {
+            BigDecimal km = mission.getKmStimati() != null ? mission.getKmStimati()
+                    : estimatedKm != null ? estimatedKm : ZERO;
+            validateNonNegative(km, "kmStimati");
+            mission.setEstimatedKm(km);
+            PricingService.Price price = pricing.calculate(km, mission.getAccettataIl().toInstant());
+            validateNonNegative(price.amount(), "costoCalcolato");
+            cost = price.amount();
+            night = price.night();
+        }
+        applyCancellation(mission, byDriver ? BY_DRIVER : BY_CENTRE, reason, cancelledAt, cost, night, accepted, actor.getId());
+        return toResponse(mission);
+    }
+
+    private void closeOpenProposal(Long missionId, OffsetDateTime when) {
+        for (String state : ACTIVE_STATES) {
+            proposals.findFirstByMissionIdAndFixtureFalseAndStatoOrderByIdDesc(missionId, state).ifPresent(proposal -> {
+                proposal.respond("chiusa", when);
+                proposals.save(proposal);
+            });
+        }
+    }
+
+    private void applyCancellation(
+            Mission mission, String by, String reason, OffsetDateTime when,
+            BigDecimal cost, Boolean night, boolean keepDriver, Long actorId) {
+        mission.cancel(by, reason, when, cost, night, keepDriver);
+        missions.save(mission);
+        Map<String, Object> detail = new HashMap<>();
+        detail.put("annullataDa", by);
+        detail.put("motivo", reason);
+        detail.put("costoFinale", cost);
+        if (mission.getDriverId() != null) {
+            detail.put("autistaId", mission.getDriverId());
+        }
+        events.save(new MissionEvent(mission.getId(), actorId, "MISSION_CANCELLED", detail));
+        addOutboxEvent(mission, "MISSION_CANCELLED", actorId, when);
+    }
+
+    private static String validCancellationReason(String value) {
+        String reason = value == null ? "" : value.trim();
+        if (reason.length() < 3 || reason.length() > 500) {
+            throw badRequest("Il motivo deve contenere da 3 a 500 caratteri");
+        }
+        return reason;
+    }
+
+    /** Conferma: la missione torna nel flusso normale. Respinta: si chiude a costo zero, senza autista. */
+    @Transactional
+    public MissionDtos.MissionResponse verifyPolicy(
+            String email, Long missionId, MissionDtos.PolicyVerificationRequest request) {
+        AppUser actor = requireRole(email, RESPONSABILE);
+        String outcome = normalize(request.esito()).toUpperCase(Locale.ROOT);
+        if (!List.of("CONFERMATA", "RESPINTA").contains(outcome)) {
+            throw badRequest("Esito non valido");
+        }
+        Mission mission = lockLiveMission(missionId);
+        if (!VERIFICA_POLIZZA.equals(mission.getStato())) {
+            throw conflict("La missione non è in verifica polizza");
+        }
+        String note = request.note() == null || request.note().isBlank() ? null : request.note().trim();
+        if ("RESPINTA".equals(outcome)) {
+            events.save(new MissionEvent(missionId, actor.getId(), "MISSION_POLICY_REJECTED", noteDetail(note)));
+            applyCancellation(mission, BY_CENTRE, note == null ? "Polizza non confermata" : note,
+                    now(), ZERO, null, false, actor.getId());
+            return toResponse(mission);
+        }
+        if (request.clienteId() == null) {
+            throw badRequest("Per confermare la polizza serve il cliente");
+        }
+        Customer customer = customers.findById(request.clienteId()).orElseThrow(() -> badRequest("Cliente inesistente"));
+        LocalDate today = LocalDate.ofInstant(clock.instant(), BUSINESS_ZONE);
+        if (customer.getScadenzaPolizza() == null || customer.getScadenzaPolizza().isBefore(today)) {
+            throw conflict("Il cliente non ha una polizza attiva");
+        }
+        mission.confirmPolicy(customer.getId());
+        missions.save(mission);
+        Map<String, Object> detail = noteDetail(note);
+        detail.put("clienteId", customer.getId());
+        events.save(new MissionEvent(missionId, actor.getId(), "MISSION_POLICY_CONFIRMED", detail));
+        publisher.publishEvent(new MissionAssignmentRequested(missionId));
+        return toResponse(mission);
+    }
+
+    private static Map<String, Object> noteDetail(String note) {
+        Map<String, Object> detail = new HashMap<>();
+        if (note != null) {
+            detail.put("note", note);
+        }
+        return detail;
+    }
+
+    @Transactional
+    public MissionDtos.DriverAvailabilityResponse setAvailability(String email, boolean available) {
+        Driver own = requireDriver(requireRole(email, AUTISTA));
+        Driver driver = drivers.lockById(own.getId()).orElseThrow(ForbiddenOperationException::new);
+        driver.setDisponibile(available);
+        drivers.save(driver);
+        return new MissionDtos.DriverAvailabilityResponse(available);
+    }
+
+    @Transactional(readOnly = true)
+    public boolean isManager(String email) {
+        return RESPONSABILE.equals(currentUser(email).getRuolo());
+    }
+
+    /** Per i processi automatici, che non hanno un utente: mai usato per rispondere a una richiesta. */
+    @Transactional(readOnly = true)
+    public Optional<MissionDtos.MissionResponse> liveSnapshot(Long missionId) {
+        return missions.findById(missionId).filter(mission -> !mission.isFixture()).map(this::toResponse);
     }
 
     @Transactional
@@ -309,8 +515,10 @@ public class MissionService {
             String email, Long missionId, MissionDtos.CostAdjustmentRequest request) {
         AppUser actor = requireRole(email, RESPONSABILE);
         Mission mission = lockLiveMission(missionId);
-        if (!ESEGUITA.equals(mission.getStato())) {
-            throw conflict("È possibile rettificare solo una missione eseguita");
+        boolean attributedCancellation = ANNULLATA.equals(mission.getStato())
+                && BY_CENTRE.equals(mission.getAnnullataDa()) && mission.getDriverId() != null;
+        if (!ESEGUITA.equals(mission.getStato()) && !attributedCancellation) {
+            throw conflict("È possibile rettificare solo una missione eseguita o annullata con costo attribuito");
         }
         String reason = request.motivo().trim();
         if (reason.length() < 3) {
@@ -335,7 +543,7 @@ public class MissionService {
         AppUser actor = currentUser(email);
         Mission mission = missions.findById(missionId).orElseThrow(MissionNotFoundException::new);
         authorizeMissionAccess(actor, mission);
-        return forViewer(actor, toResponse(mission));
+        return AUTISTA.equals(actor.getRuolo()) ? forDriver(toResponse(mission)) : toResponse(mission);
     }
 
     /** Solo alla centrale: all'autista non servono i nomi dei colleghi che hanno rifiutato. */
@@ -357,10 +565,13 @@ public class MissionService {
                 .toList();
     }
 
-    /** Alla centrale i contatti del cliente servono sempre; all'autista solo dopo l'accettazione. */
-    private MissionDtos.MissionResponse forViewer(AppUser viewer, MissionDtos.MissionResponse response) {
-        boolean hidden = AUTISTA.equals(viewer.getRuolo()) && !ACCETTATA.equals(response.stato());
-        return hidden ? response.withoutCustomerContacts() : response;
+    /** I contatti servono all'autista dalla proposta alla chiusura; la targa solo dopo l'accettazione. */
+    private static MissionDtos.MissionResponse forDriver(MissionDtos.MissionResponse response) {
+        return switch (response.stato()) {
+            case ACCETTATA -> response;
+            case PROPOSTA -> response.withoutPlate();
+            default -> response.withoutCustomerContacts();
+        };
     }
 
     @Transactional(readOnly = true)
@@ -371,21 +582,20 @@ public class MissionService {
             throw badRequest("Stato missione non valido");
         }
         Collection<String> states = status == null ? ALL_STATES : List.of(normalize(status));
-        return missions.findByFixtureAndStatoInOrderByCreataIlDesc(fixture, states)
-                .stream().map(this::toResponse).toList();
+        return toResponses(missions.findByFixtureAndStatoInOrderByCreataIlDesc(fixture, states));
     }
 
     @Transactional(readOnly = true)
     public List<MissionDtos.MissionResponse> driverMissions(String email) {
         Driver driver = requireDriver(requireRole(email, AUTISTA));
-        return missions.findByDriverIdAndFixtureFalseAndStatoInOrderByCreataIlDesc(
-                        driver.getId(), ACTIVE_STATES)
-                .stream().map(mission -> toResponse(mission).withoutContactsUnless(ACCETTATA)).toList();
+        return toResponses(missions.findByDriverIdAndFixtureFalseAndStatoInOrderByCreataIlDesc(
+                        driver.getId(), ACTIVE_STATES))
+                .stream().map(MissionService::forDriver).toList();
     }
 
     /**
-     * Solo per l'autista destinatario e finché la missione è aperta. Su una proposta i dati del cliente restano
-     * nascosti; dopo l'accettazione compaiono nome, telefono e targa.
+     * Solo per l'autista destinatario e finché la missione è aperta. Nome, cognome e telefoni si vedono già sulla
+     * proposta, per decidere se accettare; la targa dopo l'accettazione.
      */
     @Transactional(readOnly = true)
     public MissionDtos.DriverMissionDetailResponse driverMissionDetail(String email, Long missionId) {
@@ -406,15 +616,16 @@ public class MissionService {
                         .map(item -> new MissionDtos.DriverWorkshopDetail(
                                 item.getNome(), item.getIndirizzo(), item.getCitta(), item.getLat(), item.getLng()))
                         .orElseThrow(() -> new IllegalStateException("Mission workshop is missing"));
-        // Come chiede il PDF, nome, telefono e targa si vedono solo dopo l'accettazione: chi rifiuta non li ha.
         boolean accepted = ACCETTATA.equals(mission.getStato());
         return new MissionDtos.DriverMissionDetailResponse(
-                toResponse(mission).withoutContactsUnless(ACCETTATA),
+                forDriver(toResponse(mission)),
                 new MissionDtos.DriverCustomerDetail(
-                        accepted ? customer.getNome() : null,
-                        accepted ? customer.getTelefono() : null,
+                        customer.getNome(),
+                        customer.getCognome(),
+                        customer.getTelefono(),
                         accepted ? customer.getTarga() : null,
-                        customer.getModelloVeicolo()),
+                        customer.getModelloVeicolo(),
+                        mission.getTelefonoSulPosto()),
                 workshop,
                 estimatedEarning(mission));
     }
@@ -430,9 +641,9 @@ public class MissionService {
     @Transactional(readOnly = true)
     public MissionDtos.DriverHistoryResponse driverHistory(String email) {
         Driver driver = requireDriver(requireRole(email, AUTISTA));
-        List<MissionDtos.MissionResponse> history =
-                missions.findByDriverIdAndFixtureFalseAndStatoOrderByChiusaIlDesc(driver.getId(), ESEGUITA)
-                        .stream().map(this::toResponse).toList();
+        List<MissionDtos.MissionResponse> history = toResponses(
+                        missions.findByDriverIdAndFixtureFalseAndStatoInOrderByChiusaIlDesc(driver.getId(), CLOSED_STATES))
+                .stream().map(MissionService::forDriver).toList();
         BigDecimal total = history.stream()
                 .map(MissionDtos.MissionResponse::costoFinale)
                 .map(MissionService::requiredCost)
@@ -445,42 +656,114 @@ public class MissionService {
         requireRole(email, RESPONSABILE);
         boolean reference = parseMode(mode);
         List<Mission> rows = missions.findByFixtureAndStatoInOrderByCreataIlDesc(reference, ALL_STATES);
-        long executed = rows.stream().filter(mission -> ESEGUITA.equals(mission.getStato())).count();
-        long pending = rows.stream().filter(mission -> PENDING_STATES.contains(mission.getStato())).count();
-        long expired = rows.stream().filter(mission -> SCADUTA.equals(mission.getStato())).count();
-        long rejected = rows.stream().filter(mission -> NON_ACCETTATA.equals(mission.getStato())).count();
-        BigDecimal total = rows.stream()
-                .filter(mission -> ESEGUITA.equals(mission.getStato()))
-                .map(Mission::getCostoFinale)
-                .map(MissionService::requiredCost)
-                .reduce(ZERO, BigDecimal::add);
+        Map<String, Long> byState = new LinkedHashMap<>();
+        ALL_STATES.forEach(state -> byState.put(state, 0L));
+        rows.forEach(mission -> byState.merge(mission.getStato(), 1L, Long::sum));
+        long pending = PENDING_STATES.stream().mapToLong(byState::get).sum();
 
-        Map<Long, DriverAggregate> aggregates = new HashMap<>();
+        Set<Long> openSupport = rows.isEmpty() ? Set.of() : new HashSet<>(
+                notes.findMissionsWithOpenSupport(rows.stream().map(Mission::getId).toList()));
+        List<MissionDtos.CriticalMission> critical = criticalMissions(rows, openSupport);
+        long criticalCount = rows.stream().filter(mission -> criticalReason(mission, openSupport) != null).count();
+        MissionDtos.DashboardCategories categories = new MissionDtos.DashboardCategories(
+                criticalCount,
+                byState.get(VERIFICA_POLIZZA),
+                byState.get(GESTIONE_MANUALE),
+                openSupport.size(),
+                byState.get(NUOVA),
+                byState.get(PROPOSTA) + byState.get(ACCETTATA),
+                byState.get(NON_ACCETTATA) + byState.get(SCADUTA),
+                byState.get(ESEGUITA),
+                byState.get(ANNULLATA));
+
+        Map<Long, Driver> driversById = drivers.findAll().stream()
+                .collect(Collectors.toMap(Driver::getId, Function.identity()));
+        BigDecimal executedTotal = ZERO;
+        BigDecimal cancelledTotal = ZERO;
+        Map<Long, DriverAggregate> aggregates = new TreeMap<>();
+        Map<String, BigDecimal> perMonth = new TreeMap<>();
         for (Mission mission : rows) {
-            if (!ESEGUITA.equals(mission.getStato())) {
+            boolean executed = ESEGUITA.equals(mission.getStato());
+            if (!executed && !isChargedCancellation(mission)) {
                 continue;
             }
             Long driverId = mission.getDriverId();
-            if (driverId == null) {
-                throw new IllegalStateException("Executed mission is missing its driver");
+            if (driverId == null || !driversById.containsKey(driverId)) {
+                throw new IllegalStateException("Charged mission is missing its driver");
             }
-            Driver driver = drivers.findById(driverId)
-                    .orElseThrow(() -> new IllegalStateException("Executed mission driver is missing"));
+            BigDecimal cost = requiredCost(mission.getCostoFinale());
+            if (executed) {
+                executedTotal = executedTotal.add(cost);
+            } else {
+                cancelledTotal = cancelledTotal.add(cost);
+            }
             DriverAggregate aggregate = aggregates.computeIfAbsent(
-                    driver.getId(), ignored -> new DriverAggregate(driver.getNome()));
-            aggregate.count++;
-            aggregate.total = aggregate.total.add(requiredCost(mission.getCostoFinale()));
+                    driverId, ignored -> new DriverAggregate(driversById.get(driverId).getNome()));
+            aggregate.missions++;
+            aggregate.executed += executed ? 1 : 0;
+            aggregate.total = aggregate.total.add(cost);
+            String month = mission.getChiusaIl().atZoneSameInstant(BUSINESS_ZONE).format(MONTH);
+            perMonth.merge(month, cost, BigDecimal::add);
         }
+        BigDecimal total = executedTotal.add(cancelledTotal);
         List<MissionDtos.DriverTotal> perDriver = aggregates.entrySet().stream()
-                .sorted(Map.Entry.comparingByKey())
+                .filter(entry -> entry.getValue().executed > 0 || entry.getValue().total.signum() > 0)
                 .map(entry -> new MissionDtos.DriverTotal(
-                        entry.getKey(), entry.getValue().name, entry.getValue().count, entry.getValue().total))
+                        entry.getKey(), entry.getValue().name, entry.getValue().executed, entry.getValue().total))
                 .toList();
+        MissionDtos.DashboardCosts costs = new MissionDtos.DashboardCosts(
+                executedTotal, cancelledTotal, total,
+                aggregates.entrySet().stream()
+                        .map(entry -> new MissionDtos.DriverCost(entry.getKey(), entry.getValue().name,
+                                entry.getValue().missions, entry.getValue().total))
+                        .toList(),
+                perMonth.entrySet().stream()
+                        .map(entry -> new MissionDtos.MonthCost(entry.getKey(), entry.getValue()))
+                        .toList());
         return new MissionDtos.DashboardResponse(
-                executed, pending, expired, rejected, total,
+                byState.get(ESEGUITA), pending, byState.get(SCADUTA), byState.get(NON_ACCETTATA), total,
                 reference ? "2026-10-28" : null,
                 reference ? "excel_demo" : "live",
-                perDriver);
+                perDriver, categories, byState, critical, costs);
+    }
+
+    /** L'annullamento dell'autista resta nello storico a zero; solo quello della centrale gli attribuisce un costo. */
+    private static boolean isChargedCancellation(Mission mission) {
+        return ANNULLATA.equals(mission.getStato()) && BY_CENTRE.equals(mission.getAnnullataDa())
+                && mission.getDriverId() != null;
+    }
+
+    private static String criticalReason(Mission mission, Set<Long> openSupport) {
+        if (VERIFICA_POLIZZA.equals(mission.getStato())) {
+            return REASON_POLICY;
+        }
+        if (GESTIONE_MANUALE.equals(mission.getStato())) {
+            return REASON_REJECTIONS;
+        }
+        return openSupport.contains(mission.getId()) ? REASON_SUPPORT : null;
+    }
+
+    private List<MissionDtos.CriticalMission> criticalMissions(List<Mission> rows, Set<Long> openSupport) {
+        List<String> urgency = List.of(REASON_POLICY, REASON_REJECTIONS, REASON_SUPPORT);
+        List<Mission> selected = rows.stream()
+                .filter(mission -> criticalReason(mission, openSupport) != null)
+                .sorted(Comparator
+                        .comparingInt((Mission mission) -> urgency.indexOf(criticalReason(mission, openSupport)))
+                        .thenComparing(Mission::getCreataIl))
+                .limit(MAX_CRITICAL_ROWS)
+                .toList();
+        Map<Long, Customer> customersById = customers.findAllById(selected.stream()
+                        .map(Mission::getCustomerId).filter(Objects::nonNull).collect(Collectors.toSet()))
+                .stream().collect(Collectors.toMap(Customer::getId, Function.identity()));
+        return selected.stream().map(mission -> {
+            Customer customer = mission.getCustomerId() == null ? null : customersById.get(mission.getCustomerId());
+            String plate = mission.getTargaDichiarata() != null || customer == null
+                    ? mission.getTargaDichiarata() : customer.getTarga();
+            return new MissionDtos.CriticalMission(
+                    mission.getId(), mission.getCodice(), mission.getStato(), criticalReason(mission, openSupport),
+                    mission.getCreataIl(), mission.getOrigineIndirizzo(),
+                    customer == null ? null : customer.getNome(), plate, mission.getTelefonoSulPosto());
+        }).toList();
     }
 
     @Transactional(readOnly = true)
@@ -506,7 +789,37 @@ public class MissionService {
         if (text.isEmpty()) {
             throw badRequest("La nota non può essere vuota");
         }
-        return toNoteResponse(notes.save(new MissionNote(missionId, actor.getId(), text)));
+        String type = request.tipo() == null ? NOTE_NOTICE : normalize(request.tipo()).toUpperCase(Locale.ROOT);
+        if (!List.of(NOTE_NOTICE, NOTE_SUPPORT).contains(type)) {
+            throw badRequest("Tipo di nota non valido");
+        }
+        boolean support = NOTE_SUPPORT.equals(type);
+        if (support && !AUTISTA.equals(actor.getRuolo())) {
+            throw new ForbiddenOperationException();
+        }
+        MissionNote note = notes.save(new MissionNote(missionId, actor.getId(), text, type));
+        if (support) {
+            events.save(new MissionEvent(missionId, actor.getId(), CentreAlertService.SUPPORT, Map.of("noteId", note.getId())));
+        }
+        return toNoteResponse(note);
+    }
+
+    @Transactional
+    public MissionDtos.MissionNoteResponse markSupportHandled(String email, Long missionId, Long noteId) {
+        AppUser actor = requireRole(email, RESPONSABILE);
+        MissionNote note = notes.findById(noteId)
+                .filter(candidate -> candidate.getMissionId().equals(missionId))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Nota non trovata"));
+        if (!NOTE_SUPPORT.equals(note.getTipo())) {
+            throw conflict("Solo una richiesta di supporto può essere segnata come gestita");
+        }
+        // Un doppio clic non deve cambiare chi l'ha gestita né quando.
+        if (note.getGestitaIl() == null) {
+            note.markHandled(now(), actor.getId());
+            notes.save(note);
+            events.save(new MissionEvent(missionId, actor.getId(), "MISSION_SUPPORT_HANDLED", Map.of("noteId", noteId)));
+        }
+        return toNoteResponse(note);
     }
 
     @Transactional
@@ -547,17 +860,35 @@ public class MissionService {
         mission.expire();
         missions.save(mission);
         events.save(new MissionEvent(mission.getId(), null, "MISSION_EXPIRED", detail));
+        afterNegativeOutcome(mission);
     }
 
-    private void addOutboxEvent(
-            Mission mission, String eventType, Long actorId, String driverName, OffsetDateTime occurredAt) {
+    /** Al terzo autista che rifiuta o lascia scadere decide la centrale; prima si passa al successivo più vicino. */
+    private void afterNegativeOutcome(Mission mission) {
+        int outcomes = negativeOutcomes(List.of(mission.getId())).getOrDefault(mission.getId(), 0);
+        if (outcomes < MAX_ESITI_NEGATIVI) {
+            publisher.publishEvent(new MissionAssignmentRequested(mission.getId()));
+            return;
+        }
+        mission.requireManualHandling();
+        missions.save(mission);
+        events.save(new MissionEvent(mission.getId(), null, "MISSION_MANUAL_HANDLING",
+                Map.of("motivo", REASON_REJECTIONS, "esitiNegativi", outcomes)));
+    }
+
+    private Map<Long, Integer> negativeOutcomes(Collection<Long> missionIds) {
+        return proposals.countNegativeOutcomes(missionIds).stream().collect(Collectors.toMap(
+                MissionProposalRepository.NegativeOutcomes::getMissionId, row -> (int) row.getTotal()));
+    }
+
+    /** Il cliente non riceve mai il nome dell'autista: il payload non lo contiene. */
+    private void addOutboxEvent(Mission mission, String eventType, Long actorId, OffsetDateTime occurredAt) {
         Map<String, Object> payload = Map.of(
                 "eventType", eventType,
                 "missionId", mission.getId(),
                 "codice", mission.getCodice(),
                 "stato", mission.getStato(),
                 "actorUserId", actorId,
-                "autistaNome", driverName,
                 "occurredAt", occurredAt.toString());
         // Solo le missioni nate in chat hanno una chat a cui rispondere; le altre si chiudono subito.
         String eventKey = eventType + ":" + mission.getId();
@@ -679,33 +1010,55 @@ public class MissionService {
     }
 
     private MissionDtos.MissionResponse toResponse(Mission mission) {
-        boolean operational = !mission.isFixture() && ACTIVE_STATES.contains(mission.getStato());
-        Customer customer = operational ? customers.findById(mission.getCustomerId()).orElseThrow() : null;
-        var workshop = operational && mission.getWorkshopId() != null
-                ? workshops.findById(mission.getWorkshopId()).orElseThrow() : null;
-        return new MissionDtos.MissionResponse(
-                mission.getId(), mission.getCodice(), mission.getStato(), mission.getCustomerId(),
-                mission.getDriverId(), mission.getTipoIntervento(), mission.getCanaleOrigine(),
-                mission.getDescrizioneProblema(), mission.getOrigineIndirizzo(),
-                mission.getOrigineLat(), mission.getOrigineLng(), mission.getWorkshopId(),
-                mission.getKmStimati(), mission.getKmEffettivi(), mission.getCreataIl(),
-                mission.getPropostaIl(), mission.getScadenzaIl(), mission.getAccettataIl(),
-                mission.getChiusaIl(), mission.getNotturno(), mission.getCostoCalcolato(),
-                mission.getCostoFinale(), mission.getRettificaMotivo(),
-                customer == null ? null : customer.getNome(), customer == null ? null : customer.getTelefono(),
-                workshop == null ? null : workshop.getNome(), workshop == null ? null : workshop.getIndirizzo(),
-                workshop == null ? null : workshop.getCitta());
+        return toResponses(List.of(mission)).get(0);
+    }
+
+    private List<MissionDtos.MissionResponse> toResponses(List<Mission> rows) {
+        if (rows.isEmpty()) {
+            return List.of();
+        }
+        List<Long> ids = rows.stream().map(Mission::getId).toList();
+        Map<Long, Customer> customersById = customers.findAllById(rows.stream()
+                        .map(Mission::getCustomerId).filter(Objects::nonNull).collect(Collectors.toSet()))
+                .stream().collect(Collectors.toMap(Customer::getId, Function.identity()));
+        Map<Long, Workshop> workshopsById = workshops.findAllById(rows.stream()
+                        .map(Mission::getWorkshopId).filter(Objects::nonNull).collect(Collectors.toSet()))
+                .stream().collect(Collectors.toMap(Workshop::getId, Function.identity()));
+        Map<Long, Integer> outcomes = negativeOutcomes(ids);
+        Set<Long> openSupport = new HashSet<>(notes.findMissionsWithOpenSupport(ids));
+        return rows.stream().map(mission -> {
+            Customer customer = mission.getCustomerId() == null ? null : customersById.get(mission.getCustomerId());
+            Workshop workshop = mission.getWorkshopId() == null ? null : workshopsById.get(mission.getWorkshopId());
+            return new MissionDtos.MissionResponse(
+                    mission.getId(), mission.getCodice(), mission.getStato(), mission.getCustomerId(),
+                    mission.getDriverId(), mission.getTipoIntervento(), mission.getCanaleOrigine(),
+                    mission.getDescrizioneProblema(), mission.getOrigineIndirizzo(),
+                    mission.getOrigineLat(), mission.getOrigineLng(), mission.getWorkshopId(),
+                    mission.getKmStimati(), mission.getKmEffettivi(), mission.getCreataIl(),
+                    mission.getPropostaIl(), mission.getScadenzaIl(), mission.getAccettataIl(),
+                    mission.getChiusaIl(), mission.getNotturno(), mission.getCostoCalcolato(),
+                    mission.getCostoFinale(), mission.getRettificaMotivo(),
+                    customer == null ? null : customer.getNome(), customer == null ? null : customer.getTelefono(),
+                    workshop == null ? null : workshop.getNome(), workshop == null ? null : workshop.getIndirizzo(),
+                    workshop == null ? null : workshop.getCitta(),
+                    customer == null ? null : customer.getCognome(), mission.getTelefonoSulPosto(),
+                    mission.getTipoProblema(), mission.getTargaDichiarata(), mission.getAnnullataDa(),
+                    mission.getAnnullataIl(), mission.getMotivoAnnullamento(),
+                    outcomes.getOrDefault(mission.getId(), 0), openSupport.contains(mission.getId()));
+        }).toList();
     }
 
     private MissionDtos.MissionNoteResponse toNoteResponse(MissionNote note) {
         String authorName = users.findById(note.getUserId()).map(AppUser::getNome).orElse(null);
         return new MissionDtos.MissionNoteResponse(
-                note.getId(), note.getMissionId(), note.getUserId(), authorName, note.getTesto(), note.getCreatedAt());
+                note.getId(), note.getMissionId(), note.getUserId(), authorName, note.getTesto(), note.getCreatedAt(),
+                note.getTipo(), note.getGestitaIl(), note.getGestitaDa());
     }
 
     private static final class DriverAggregate {
         private final String name;
-        private long count;
+        private long missions;
+        private long executed;
         private BigDecimal total = ZERO;
 
         private DriverAggregate(String name) {

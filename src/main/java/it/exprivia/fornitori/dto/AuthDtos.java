@@ -14,7 +14,7 @@ public final class AuthDtos {
         @Override public String toString() { return "LoginRequest[redacted]"; }
     }
 
-    public record CurrentUser(Long id, String nome, String email, String ruolo, Long autistaId) {
+    public record CurrentUser(Long id, String nome, String email, String ruolo, Long autistaId, Boolean disponibile) {
     }
 
     public record CsrfTokenResponse(String token, String headerName) {

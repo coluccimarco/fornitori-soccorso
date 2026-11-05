@@ -15,6 +15,7 @@ public class Customer {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String nome;
+    private String cognome;
     private String telefono;
     private String targa;
     @Column(name = "targa_norm", nullable = false)
@@ -56,6 +57,8 @@ public class Customer {
 
     public Long getId() { return id; }
     public String getNome() { return nome; }
+    public String getCognome() { return cognome; }
+    public void setCognome(String value) { this.cognome = value; }
     public String getTelefono() { return telefono; }
     public String getTarga() { return targa; }
     public String getTargaNorm() { return targaNorm; }

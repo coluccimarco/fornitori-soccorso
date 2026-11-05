@@ -12,13 +12,14 @@ import org.springframework.data.repository.query.Param;
 
 public interface CustomerRepository extends JpaRepository<Customer, Long> {
     @Query(value = """
-            SELECT c.id AS id, c.nome AS nome, c.telefono AS telefono, c.targa AS targa,
+            SELECT c.id AS id, c.nome AS nome, c.cognome AS cognome, c.telefono AS telefono, c.targa AS targa,
                    c.modello_veicolo AS "modelloVeicolo", c.company_id AS "compagniaId",
                    co.nome AS "compagniaNome", c.numero_polizza AS "numeroPolizza",
                    c.scadenza_polizza AS "scadenzaPolizza", c.citta_residenza AS "cittaResidenza"
             FROM customers c
             JOIN insurance_companies co ON co.id = c.company_id
             WHERE lower(c.nome) LIKE concat('%', lower(:search), '%') ESCAPE '\\'
+               OR lower(c.cognome) LIKE concat('%', lower(:search), '%') ESCAPE '\\'
                OR (:plate <> '' AND c.targa_norm LIKE concat('%', :plate, '%'))
             ORDER BY c.id
             """, nativeQuery = true)
@@ -35,6 +36,7 @@ public interface CustomerRepository extends JpaRepository<Customer, Long> {
     interface CustomerRow {
         Long getId();
         String getNome();
+        String getCognome();
         String getTelefono();
         String getTarga();
         String getModelloVeicolo();

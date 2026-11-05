@@ -27,18 +27,7 @@ public class NearestWorkshopResolver {
         Workshop nearest = workshops.findAll().stream()
                 .min(Comparator.comparingDouble(workshop -> distanceKm(origin, workshop)))
                 .orElseThrow(() -> new MissionConflictException("Nessuna officina disponibile"));
-        return new ChatDtos.CreateMissionRequest(
-                request.sessionId(),
-                request.requestId(),
-                request.clienteId(),
-                request.tipoIntervento(),
-                request.descrizioneProblema(),
-                request.origineIndirizzo(),
-                origin.lat(),
-                origin.lng(),
-                nearest.getId(),
-                request.canaleOrigine(),
-                request.destinatario());
+        return request.withWorkshop(origin.lat(), origin.lng(), nearest.getId());
     }
 
     private GeoPoint origin(ChatDtos.CreateMissionRequest request) {

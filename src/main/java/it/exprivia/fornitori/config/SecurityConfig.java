@@ -135,7 +135,7 @@ public class SecurityConfig {
                         .hasRole(UserRole.AUTISTA.name())
                         .requestMatchers(HttpMethod.GET, "/api/v1/missioni/*", "/api/v1/missioni/*/notes")
                         .hasAnyRole(UserRole.AUTISTA.name(), UserRole.RESPONSABILE.name())
-                        .requestMatchers(HttpMethod.POST, "/api/v1/missioni/*/notes")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/missioni/*/notes", "/api/v1/missioni/*/annulla")
                         .hasAnyRole(UserRole.AUTISTA.name(), UserRole.RESPONSABILE.name())
                         .requestMatchers("/api/v1/**").hasRole(UserRole.RESPONSABILE.name())
                         .anyRequest().denyAll())

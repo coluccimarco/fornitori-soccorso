@@ -17,6 +17,10 @@ public class Driver {
     @Column(name = "vehicle_id", nullable = false)
     private Long vehicleId;
     private String zona;
+    @Column(nullable = false)
+    private boolean disponibile = true;
+    @Column(name = "officina_riferimento_id")
+    private Long officinaRiferimentoId;
 
     protected Driver() {
     }
@@ -27,4 +31,7 @@ public class Driver {
     public String getTelefono() { return telefono; }
     public Long getVehicleId() { return vehicleId; }
     public String getZona() { return zona; }
+    public boolean isDisponibile() { return disponibile; }
+    public void setDisponibile(boolean value) { this.disponibile = value; }
+    public Long getOfficinaRiferimentoId() { return officinaRiferimentoId; }
 }

@@ -35,6 +35,7 @@ public final class RegistryDtos {
     public record CustomerDto(
             Long id,
             String nome,
+            String cognome,
             String telefono,
             String targa,
             String modelloVeicolo,
@@ -51,6 +52,7 @@ public final class RegistryDtos {
 
     public record CreateCustomerRequest(
             @NotBlank @Size(max = 150) @Pattern(regexp = NO_CONTROL_CHARS) String nome,
+            @Size(max = 100) @Pattern(regexp = NO_CONTROL_CHARS) String cognome,
             @NotBlank @Size(max = 32) @Pattern(regexp = "^[+0-9][0-9 ()./-]{4,31}$") String telefono,
             @NotBlank @Size(max = 20) @Pattern(regexp = NO_CONTROL_CHARS) String targa,
             @Size(max = 150) @Pattern(regexp = NO_CONTROL_CHARS) String modelloVeicolo,

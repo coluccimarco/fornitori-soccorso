@@ -19,7 +19,7 @@ public class Mission {
     @Column(nullable = false, unique = true, length = 40)
     private String codice;
 
-    @Column(name = "customer_id", nullable = false)
+    @Column(name = "customer_id")
     private Long customerId;
 
     @Column(name = "driver_id")
@@ -87,6 +87,24 @@ public class Mission {
     @Column(name = "is_fixture", nullable = false)
     private boolean fixture;
 
+    @Column(name = "telefono_sul_posto", length = 32)
+    private String telefonoSulPosto;
+
+    @Column(name = "tipo_problema", length = 30)
+    private String tipoProblema;
+
+    @Column(name = "targa_dichiarata", length = 20)
+    private String targaDichiarata;
+
+    @Column(name = "annullata_da", length = 10)
+    private String annullataDa;
+
+    @Column(name = "annullata_il")
+    private OffsetDateTime annullataIl;
+
+    @Column(name = "motivo_annullamento")
+    private String motivoAnnullamento;
+
     protected Mission() {
     }
 
@@ -115,6 +133,40 @@ public class Mission {
         this.kmStimati = kmStimati;
         this.creataIl = creataIl;
         this.fixture = false;
+    }
+
+    public void setChatDetails(String phoneOnSite, String problemType, String declaredPlate) {
+        this.telefonoSulPosto = phoneOnSite;
+        this.tipoProblema = problemType;
+        this.targaDichiarata = declaredPlate;
+    }
+
+    public void awaitPolicyVerification() {
+        this.stato = "verifica_polizza";
+    }
+
+    public void confirmPolicy(Long customerId) {
+        this.customerId = customerId;
+        this.stato = "nuova";
+    }
+
+    public void requireManualHandling() {
+        this.stato = "gestione_manuale";
+    }
+
+    /** Chi ha accettato resta collegato alla missione; una proposta non ancora accettata non attribuisce nulla. */
+    public void cancel(String by, String reason, OffsetDateTime when, BigDecimal cost, Boolean night, boolean keepDriver) {
+        this.stato = "annullata";
+        this.annullataDa = by;
+        this.motivoAnnullamento = reason;
+        this.annullataIl = when;
+        this.chiusaIl = when;
+        this.costoCalcolato = cost;
+        this.costoFinale = cost;
+        this.notturno = night;
+        if (!keepDriver) {
+            this.driverId = null;
+        }
     }
 
     public void setOriginCoordinates(BigDecimal lat, BigDecimal lng) {
@@ -197,4 +249,10 @@ public class Mission {
     public String getRettificaMotivo() { return rettificaMotivo; }
     public Long getRettificaUtenteId() { return rettificaUtenteId; }
     public boolean isFixture() { return fixture; }
+    public String getTelefonoSulPosto() { return telefonoSulPosto; }
+    public String getTipoProblema() { return tipoProblema; }
+    public String getTargaDichiarata() { return targaDichiarata; }
+    public String getAnnullataDa() { return annullataDa; }
+    public OffsetDateTime getAnnullataIl() { return annullataIl; }
+    public String getMotivoAnnullamento() { return motivoAnnullamento; }
 }
